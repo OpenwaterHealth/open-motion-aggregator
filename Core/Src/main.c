@@ -41,14 +41,6 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 
-// I2C Expander specific
-#define TCA9548_ADDR 0x70
-#define ICM20948_ADDR 0x68
-
-// IMU Sensor Specific
-#define ICM20948_WHO_AM_I_REG 0x00  // WHO_AM_I register address
-#define ICM20948_EXPECTED_ID 0xEA   // Expected device ID
-
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -134,25 +126,6 @@ static void PrintI2CSpeed(I2C_HandleTypeDef* hi2c) {
     printf("I2C Speed: %ld Hz\r\n", scl_freq); // Print the I2C speed in kHz
 }
 
-void I2C_scan(I2C_HandleTypeDef* hi2c) {
-
-    // Iterate through all possible 7-bit addresses
-    for (uint8_t address = 0x00; address <= 0x7F; address++) {
-        HAL_StatusTypeDef status;
-        status = HAL_I2C_IsDeviceReady(hi2c, address << 1, 2, 50); // Address shift left by 1 for read/write bit
-        if (status == HAL_OK) {
-        	printf("%2x ", address);
-        }else{
-        	printf("-- ");
-        }
-        if ((address + 1) % 16 == 0)  printf("\r\n");
-    }
-
-	printf("\r\n");
-	fflush(stdout);
-
-}
-
 /* USER CODE END 0 */
 
 /**
@@ -163,7 +136,6 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-  uint8_t id = 0;
 
   /* USER CODE END 1 */
 
@@ -228,24 +200,13 @@ int main(void)
 
   // test i2c
   PrintI2CSpeed(&hi2c1);
-  I2C_scan(&hi2c1);
+  I2C_scan(&hi2c1, NULL, 0, true);
 
-  HAL_StatusTypeDef status = ICM20948_ReadID(&hi2c1, &id);
-  if (status == HAL_OK)
-  {
-      if (id == ICM20948_EXPECTED_ID)
-      {
-          printf("ICM-20948 detected! WHO_AM_I = 0x%02X\r\n", id);
-      }
-      else
-      {
-          Error_Handler();
-      }
-  }
-  else
-  {
-      Error_Handler();
-  }
+
+  if(ICM20948_IsAlive(&hi2c1,0) == HAL_OK)
+	  printf("I2C Expander detected");
+  else printf("I2C Expander detected");
+
 
   // enable USB PHY
 

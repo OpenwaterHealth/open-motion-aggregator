@@ -19,6 +19,7 @@ uint8_t read_status_register_of_slave(I2C_HandleTypeDef * pI2c, uint8_t slave_ad
 uint8_t read_data_register_of_slave(I2C_HandleTypeDef * pI2c, uint8_t slave_addr, uint8_t* pBuffer, size_t rx_len);
 void reset_slaves(I2C_HandleTypeDef * pI2c);
 HAL_StatusTypeDef TCA9548A_SelectChannel(I2C_HandleTypeDef *hi2c, uint8_t address, uint8_t channel);
-static HAL_StatusTypeDef ICM20948_ReadID(I2C_HandleTypeDef *hi2c, uint8_t *id);
+HAL_StatusTypeDef ICM20948_ReadID(I2C_HandleTypeDef *hi2c, uint8_t *id);
+HAL_StatusTypeDef ICM20948_IsAlive(I2C_HandleTypeDef *hi2c,   uint8_t id);
 
 #endif /* INC_I2C_MASTER_H_ */

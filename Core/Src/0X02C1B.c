@@ -144,14 +144,14 @@ int X02C1B_detect(CameraDevice *cam)
 int X02C1B_fsin_on()
 {
 //	  HAL_TIM_Base_Start(&htim2);
-	  HAL_TIM_PWM_Start(&htim2,TIM_CHANNEL_1);
+	  HAL_TIM_PWM_Start(&htim8,TIM_CHANNEL_4);
 	  printf("COMPLETED\r\n");
 
       return 0;
 }
 int X02C1B_fsin_off()
 {
-	  HAL_TIM_PWM_Stop(&htim2,TIM_CHANNEL_1);
+	  HAL_TIM_PWM_Stop(&htim8,TIM_CHANNEL_4);
    	  printf("COMPLETED\r\n");
       return 0;
 }
