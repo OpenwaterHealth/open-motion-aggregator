@@ -26,6 +26,7 @@
 #include "usbd_cdc_if.h"
 #include "logging.h"
 #include "utils.h"
+#include "i2c_master.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdbool.h>
@@ -150,33 +151,6 @@ void I2C_scan(I2C_HandleTypeDef* hi2c) {
 	printf("\r\n");
 	fflush(stdout);
 
-}
-
-HAL_StatusTypeDef TCA9548A_SelectChannel(I2C_HandleTypeDef *hi2c, uint8_t address, uint8_t channel)
-{
-    if (channel > 7) {
-        return HAL_ERROR;  // Invalid channel
-    }
-
-    uint8_t data = (1 << channel);  // Set the corresponding bit for the channel
-    return HAL_I2C_Master_Transmit(hi2c, address << 1, &data, 1, HAL_MAX_DELAY);
-}
-
-static HAL_StatusTypeDef ICM20948_ReadID(I2C_HandleTypeDef *hi2c, uint8_t *id)
-{
-    HAL_StatusTypeDef result;
-    uint8_t reg = ICM20948_WHO_AM_I_REG;
-
-    // Send the register address to read from
-    result = HAL_I2C_Master_Transmit(hi2c, ICM20948_ADDR << 1, &reg, 1, HAL_MAX_DELAY);
-    if (result != HAL_OK)
-    {
-        return result;  // Return if there's an error transmitting the register address
-    }
-
-    // Read the WHO_AM_I register
-    result = HAL_I2C_Master_Receive(hi2c, ICM20948_ADDR << 1, id, 1, HAL_MAX_DELAY);
-    return result;
 }
 
 /* USER CODE END 0 */

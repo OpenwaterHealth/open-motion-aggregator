@@ -14,5 +14,4 @@
 uint16_t util_crc16(const uint8_t* buf, uint32_t size);
 uint16_t util_hw_crc16(uint8_t* buf, uint32_t size);
 void printBuffer(const uint8_t* buffer, uint32_t size);
-
 #endif /* INC_UTILS_H_ */

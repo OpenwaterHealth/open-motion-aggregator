@@ -12,7 +12,7 @@
 
 #include <stdio.h>
 #include <stdint.h>
-
+#include <stdbool.h>
 /*
  * UART Communication Protocol Packet Structure:
  *
@@ -119,5 +119,20 @@ typedef struct  {
 } UartPacket;
 
 UartPacket process_if_command(UartPacket cmd);
+
+typedef struct {
+	uint16_t id;
+	GPIO_TypeDef * 	cresetb_port;
+	uint16_t  		cresetb_pin;
+	GPIO_TypeDef *	gpio0_port;
+	uint16_t  		gpio0_pin;
+	I2C_HandleTypeDef * pI2c;
+	bool 			useUsart; // use usart over spi
+	SPI_HandleTypeDef * pSpi;
+	USART_HandleTypeDef * pUart;
+	uint16_t 		i2c_target;
+	uint8_t 		gain;
+	uint8_t 		exposure;
+} CameraDevice;
 
 #endif /* INC_COMMON_H_ */
