@@ -62,6 +62,7 @@ SPI_HandleTypeDef hspi4;
 SPI_HandleTypeDef hspi6;
 
 TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim4;
 TIM_HandleTypeDef htim8;
 TIM_HandleTypeDef htim12;
 
@@ -102,6 +103,7 @@ static void MX_USART3_Init(void);
 static void MX_USART6_Init(void);
 static void MX_TIM8_Init(void);
 static void MX_TIM12_Init(void);
+static void MX_TIM4_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
@@ -178,7 +180,9 @@ int main(void)
   MX_USART3_Init();
   MX_USART6_Init();
   MX_TIM8_Init();
+//  MX_USB_DEVICE_Init();
   MX_TIM12_Init();
+  MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
   init_dma_logging();
 
@@ -211,21 +215,22 @@ int main(void)
   // enable USB PHY
 
   // Start PWM on Channel 4
-  if (HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4) != HAL_OK)
-  {
-      // PWM start Error
-      Error_Handler();
-  }
+//  if (HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2) != HAL_OK)
+//  {
+//      // PWM start Error
+//      Error_Handler();
+//  }
 
+//  X02C1B_fsin_on();
   HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
   HAL_Delay(100);
   MX_USB_DEVICE_Init();
   HAL_Delay(100);
 
-
-  // turn on framesync
-  // HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
-  // HAL_GPIO_WritePin(FSOUT_EN_GPIO_Port, FSOUT_EN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
+//   turn on framesync
+   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
+   HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_RESET);
 
   printf("System Running\r\n");
   comms_start();
@@ -684,6 +689,55 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);
+
+}
+
+/**
+  * @brief TIM4 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_TIM4_Init(void)
+{
+
+  /* USER CODE BEGIN TIM4_Init 0 */
+
+  /* USER CODE END TIM4_Init 0 */
+
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
+  TIM_OC_InitTypeDef sConfigOC = {0};
+
+  /* USER CODE BEGIN TIM4_Init 1 */
+
+  /* USER CODE END TIM4_Init 1 */
+  htim4.Instance = TIM4;
+  htim4.Init.Prescaler = 1000;
+  htim4.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim4.Init.Period = 5999;
+  htim4.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim4.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_PWM_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sConfigOC.OCMode = TIM_OCMODE_PWM1;
+  sConfigOC.Pulse = 3000;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
+  if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN TIM4_Init 2 */
+
+  /* USER CODE END TIM4_Init 2 */
+  HAL_TIM_MspPostInit(&htim4);
 
 }
 
@@ -1151,14 +1205,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(FSIN_EN_GPIO_Port, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : FSIN_Pin */
-  GPIO_InitStruct.Pin = FSIN_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-  GPIO_InitStruct.Alternate = GPIO_AF2_TIM4;
-  HAL_GPIO_Init(FSIN_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : FS_OUT_EN_Pin */
   GPIO_InitStruct.Pin = FS_OUT_EN_Pin;
