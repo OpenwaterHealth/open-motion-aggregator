@@ -18,11 +18,11 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "usb_device.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "uart_comms.h"
+#include "usb_device.h"
 #include "usbd_cdc_if.h"
 #include "logging.h"
 #include "utils.h"
@@ -180,7 +180,6 @@ int main(void)
   MX_USART3_Init();
   MX_USART6_Init();
   MX_TIM8_Init();
-//  MX_USB_DEVICE_Init();
   MX_TIM12_Init();
   MX_TIM4_Init();
   /* USER CODE BEGIN 2 */
@@ -728,7 +727,7 @@ static void MX_TIM4_Init(void)
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
   sConfigOC.Pulse = 3000;
-  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_LOW;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_2) != HAL_OK)
   {
