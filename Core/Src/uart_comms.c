@@ -11,6 +11,7 @@
 #include "utils.h"
 #include <string.h>
 #include "usbd_cdc_if.h"
+#include "if_commands.h"
 
 // Private variables
 extern uint8_t rxBuffer[COMMAND_MAX_SIZE];
@@ -188,43 +189,6 @@ NextDataPacket:
 void comms_start() {
 	comms_receive_task(NULL);
 }
-
-
-UartPacket process_if_command(UartPacket cmd)
-{
-	UartPacket uartResp;
-	uartResp.id = cmd.id;
-	uartResp.packet_type = OW_RESP;
-	uartResp.addr = 0;
-	uartResp.reserved = 0;
-	uartResp.data_len = 0;
-	uartResp.data = 0;
-	switch (cmd.packet_type)
-	{
-	case OW_CMD:
-		uartResp.command = cmd.command;
-		switch(cmd.command)
-		{
-		case OW_CMD_PING:
-			printf("ping response\r\n");
-			break;
-		case OW_CMD_NOP:
-			printf("NOP response\r\n");
-			break;
-		default:
-			break;
-		}
-		break;
-	default:
-		uartResp.data_len = 0;
-		uartResp.packet_type = OW_UNKNOWN;
-		// uartResp.data = (uint8_t*)&cmd.tag;
-		break;
-	}
-
-	return uartResp;
-}
-
 
 // Callback functions
 void comms_handle_RxCpltCallback(UART_HandleTypeDef *huart, uint16_t pos) {

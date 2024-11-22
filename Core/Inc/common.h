@@ -1,75 +1,26 @@
 /*
  * common.h
  *
- *  Created on: Mar 12, 2024
- *      Author: gvigelet
+ *  Created on: Sep 30, 2024
+ *      Author: GeorgeVigelette
  */
 
 #ifndef INC_COMMON_H_
 #define INC_COMMON_H_
 
-#define COMMAND_MAX_SIZE 2048
-
 #include <stdio.h>
 #include <stdint.h>
 #include <stdbool.h>
-/*
- * UART Communication Protocol Packet Structure:
- *
- * | Start Byte | ID | Packet Type | Command | addr | reserved | Length | Payload | CRC16 | End Byte |
- *
- * Definitions:
- *
- * Start Byte:
- *   - A predefined byte to indicate the beginning of a packet.
- *   - Value: 0xAA (as per USTX_ProtocolTypes)
- *
- * ID:
- *   - ID for transaction used for response or continuation data.
- *
- * Packet Type:
- *   - Indicates the type of the packet being sent or received.
- *   - Possible values:
- *     - OW_ACK: Acknowledgment packet (Value: 0xE0)
- *     - OW_NAK: Negative acknowledgment packet (Value: 0xE1)
- *     - OW_CMD: Command packet (Value: 0xE2)
- *     - OW_RESP: Response packet (Value: 0xE3)
- *     - OW_DATA: Data packet (Value: 0xE4)
- *     - OW_JSON: JSON data packet (Value: 0xE5)
- *     - OW_BAD_CRC: Bad CRC error packet (Value: 0xEE)
- *     - OW_ERROR: General error packet (Value: 0xEF)
- *
- * Command:
- *   - Specifies the command or action to be taken.
- *   - Possible values:
- *     - USTX_NOP: No operation command (Value: 0xB0)
- *     - USTX_PING: Ping command (Value: 0xB1)
- *     - USTX_VERSION: Request for version information (Value: 0xB2)
- *     - USTX_ID: Request for ID information (Value: 0xB3)
- *
- * Length:
- *   - Indicates the length of the payload data.
- *
- * Payload:
- *   - Contains the actual data or information being sent or received.
- *   - Size can vary up to a maximum of COMMAND_MAX_SIZE (2048 bytes).
- *
- * CRC16:
- *   - A 16-bit Cyclic Redundancy Check value for error-checking purposes.
- *   - Helps in detecting errors in the transmitted data.
- *
- * End Byte:
- *   - A predefined byte to indicate the end of a packet.
- *   - Value: 0xDD (as per USTX_ProtocolTypes)
- *
- */
+#include "stm32h7xx_hal.h"
 
-
+#define MAX_BITSTREAM_SIZE 200 * 1024
+#define COMMAND_MAX_SIZE 2048
 
 typedef enum {
 	OW_START_BYTE = 0xAA,
 	OW_END_BYTE = 0xDD,
 } USTX_ProtocolTypes;
+
 
 typedef enum {
 	OW_ACK = 0xE0,
@@ -78,7 +29,8 @@ typedef enum {
 	OW_RESP = 0xE3,
 	OW_DATA = 0xE4,
 	OW_JSON = 0xE5,
-	OW_HISTO = 0xE6,
+	OW_FPGA = 0xE6,
+	OW_CAMERA = 0xE7,
 	OW_I2C_PASSTHRU = 0xE9,
 	OW_BAD_PARSE = 0xEC,
 	OW_BAD_CRC = 0xED,
@@ -101,11 +53,38 @@ typedef enum {
 	OW_CMD_ECHO = 0x03,
 	OW_CMD_TOGGLE_LED = 0x04,
 	OW_CMD_HWID = 0x05,
-	OW_CMD_START = 0x06,
-	OW_CMD_STOP = 0x07,
 	OW_CMD_NOP = 0x0E,
 	OW_CMD_RESET = 0x0F,
 } UstxGlobalCommands;
+
+typedef enum {
+	OW_FPGA_SCAN = 0x10,
+	OW_FPGA_ON = 0x11,
+	OW_FPGA_OFF = 0x12,
+	OW_FPGA_ACTIVATE = 0x13,
+	OW_FPGA_ID = 0x14,
+	OW_FPGA_ENTER_SRAM_PROG = 0x15,
+	OW_FPGA_EXIT_SRAM_PROG = 0x16,
+	OW_FPGA_ERASE_SRAM = 0x17,
+	OW_FPGA_PROG_SRAM = 0x18,
+	OW_FPGA_BITSTREAM = 0x19,
+	OW_FPGA_USERCODE = 0x1D,
+	OW_FPGA_STATUS = 0x1E,
+	OW_FPGA_RESET = 0x1F,
+	OW_FPGA_SOFT_RESET = 0x1A,
+	OW_HISTO = 0x1B,
+} MotionFPGACommands;
+
+typedef enum {
+	OW_CAMERA_SCAN = 0x20,
+	OW_CAMERA_ON = 0x21,
+	OW_CAMERA_OFF = 0x22,
+	OW_CAMERA_SET_CONFIG = 0x29,
+	OW_CAMERA_STATUS = 0x2E,
+	OW_CAMERA_RESET = 0x2F,
+	OW_CAMERA_FSIN_ON = 0x26,
+	OW_CAMERA_FSIN_OFF = 0x27,
+} MotionCAMERACommands;
 
 typedef struct  {
 	uint16_t id;
@@ -117,8 +96,6 @@ typedef struct  {
 	uint8_t* data;
 	uint16_t crc;
 } UartPacket;
-
-UartPacket process_if_command(UartPacket cmd);
 
 typedef struct {
 	uint16_t id;
@@ -134,5 +111,6 @@ typedef struct {
 	uint8_t 		gain;
 	uint8_t 		exposure;
 } CameraDevice;
+
 
 #endif /* INC_COMMON_H_ */

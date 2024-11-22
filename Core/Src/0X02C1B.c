@@ -143,15 +143,16 @@ int X02C1B_detect(CameraDevice *cam)
 
 int X02C1B_fsin_on()
 {
-//	  HAL_TIM_Base_Start(&htim2);
-	  HAL_TIM_PWM_Start(&htim8,TIM_CHANNEL_4);
+	   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
+	   HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_RESET);
 	  printf("COMPLETED\r\n");
 
       return 0;
 }
 int X02C1B_fsin_off()
 {
-	  HAL_TIM_PWM_Stop(&htim8,TIM_CHANNEL_4);
+	   HAL_TIM_PWM_Stop(&htim4, TIM_CHANNEL_2);
+	   HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_SET);
    	  printf("COMPLETED\r\n");
       return 0;
 }

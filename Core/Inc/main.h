@@ -115,6 +115,11 @@ extern TIM_HandleTypeDef htim12;
 extern TIM_HandleTypeDef htim8;
 extern CRC_HandleTypeDef   hcrc;
 extern UART_HandleTypeDef huart4;
+extern TIM_HandleTypeDef htim4;
+
+extern CameraDevice cam;
+extern CameraDevice cam1;
+extern CameraDevice cam2;
 
 #define DEBUG_UART huart4
 

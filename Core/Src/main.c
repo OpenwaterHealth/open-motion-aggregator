@@ -79,7 +79,11 @@ uint8_t FIRMWARE_VERSION_DATA[3] = {1, 0, 0};
 
 uint8_t rxBuffer[COMMAND_MAX_SIZE];
 uint8_t txBuffer[COMMAND_MAX_SIZE];
+__attribute__((section(".RAM_D1"))) uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE];  // 160KB buffer
 
+CameraDevice cam;
+CameraDevice cam1;
+CameraDevice cam2;
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -207,10 +211,39 @@ int main(void)
 
 
   if(ICM20948_IsAlive(&hi2c1,0) == HAL_OK)
-	  printf("I2C Expander detected");
-  else printf("I2C Expander detected");
+	  printf("IMU detected");
+  else printf("IMU detected");
 
+  HAL_Delay(100);
 
+  // enable USB PHY
+  TCA9548A_SelectChannel(&hi2c1, 0x70, 0);
+  HAL_Delay(100);
+
+  I2C_scan(&hi2c1, NULL, 0, true);
+  cam1.id = 0;
+	cam1.cresetb_port = CRESET_1_GPIO_Port;
+	cam1.cresetb_pin = CRESET_1_Pin;
+	cam1.gpio0_port = GPIO0_1_GPIO_Port;
+	cam1.gpio0_pin = GPIO0_1_Pin;
+	cam1.useUsart = false;
+	cam1.pI2c = &hi2c1;
+	cam1.pSpi = &hspi3;
+	cam1.pUart = NULL;
+	cam1.i2c_target = 0x40;
+
+	cam2.id = 1;
+	cam2.cresetb_port = CRESET_2_GPIO_Port;
+	cam2.cresetb_pin = CRESET_2_Pin;
+	cam2.gpio0_port = GPIO0_2_GPIO_Port;
+	cam2.gpio0_pin = GPIO0_2_Pin;
+	cam2.useUsart = true;
+	cam2.pI2c = &hi2c1;//?
+	cam2.pSpi = NULL;
+	cam2.pUart = &husart2;
+	cam2.i2c_target = 0x40;
+
+	cam = cam1;
   // enable USB PHY
 
   // Start PWM on Channel 4
@@ -228,8 +261,8 @@ int main(void)
 
   HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
 //   turn on framesync
-   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
-   HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_RESET);
+//   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
+//   HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_RESET);
 
   printf("System Running\r\n");
   comms_start();
