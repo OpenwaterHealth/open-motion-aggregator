@@ -120,6 +120,12 @@ extern TIM_HandleTypeDef htim4;
 extern CameraDevice cam;
 extern CameraDevice cam1;
 extern CameraDevice cam2;
+extern CameraDevice cam3;
+extern CameraDevice cam4;
+extern CameraDevice cam5;
+extern CameraDevice cam6;
+extern CameraDevice cam7;
+extern CameraDevice cam8;
 
 #define DEBUG_UART huart4
 

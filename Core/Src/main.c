@@ -92,6 +92,12 @@ uint8_t *pRecieveHistoUart = uartRxBufferA;
 CameraDevice cam;
 CameraDevice cam1;
 CameraDevice cam2;
+CameraDevice cam3;
+CameraDevice cam4;
+CameraDevice cam5;
+CameraDevice cam6;
+CameraDevice cam7;
+CameraDevice cam8;
 
 /* USER CODE END PV */
 
@@ -269,6 +275,85 @@ int main(void)
 	cam1.pSpi = &hspi3;
 	cam1.pUart = NULL;
 	cam1.i2c_target = 0x40;
+
+	cam2.id = 1;
+	cam2.cresetb_port = CRESET_2_GPIO_Port;
+	cam2.cresetb_pin = CRESET_2_Pin;
+	cam2.gpio0_port = GPIO0_2_GPIO_Port;
+	cam2.gpio0_pin = GPIO0_2_Pin;
+	cam2.useUsart = false;
+	cam2.pI2c = &hi2c1;
+	cam2.pSpi = &hspi6;
+	cam2.pUart = NULL;
+	cam2.i2c_target = 0x40;
+
+	cam3.id = 2;
+	cam3.cresetb_port = CRESET_3_GPIO_Port;
+	cam3.cresetb_pin = CRESET_3_Pin;
+	cam3.gpio0_port = GPIO0_3_GPIO_Port;
+	cam3.gpio0_pin = GPIO0_3_Pin;
+	cam3.useUsart = true;
+	cam3.pI2c = &hi2c1;
+	cam3.pSpi = NULL;
+	cam3.pUart = &husart3;
+	cam3.i2c_target = 0x40;
+
+	cam4.id = 3;
+	cam4.cresetb_port = CRESET_4_GPIO_Port;
+	cam4.cresetb_pin = CRESET_4_Pin;
+	cam4.gpio0_port = GPIO0_4_GPIO_Port;
+	cam4.gpio0_pin = GPIO0_4_Pin;
+	cam4.useUsart = true;
+	cam4.pI2c = &hi2c1;
+	cam4.pSpi = NULL;
+	cam4.pUart = &husart6;
+	cam4.i2c_target = 0x40;
+
+	cam5.id = 4;
+	cam5.cresetb_port = CRESET_5_GPIO_Port;
+	cam5.cresetb_pin = CRESET_5_Pin;
+	cam5.gpio0_port = GPIO0_5_GPIO_Port;
+	cam5.gpio0_pin = GPIO0_5_Pin;
+	cam5.useUsart = true;
+	cam5.pI2c = &hi2c1;
+	cam5.pSpi = NULL;
+	cam5.pUart = &husart1;
+	cam5.i2c_target = 0x40;
+
+	cam6.id = 5;
+	cam6.cresetb_port = CRESET_6_GPIO_Port;
+	cam6.cresetb_pin = CRESET_6_Pin;
+	cam6.gpio0_port = GPIO0_6_GPIO_Port;
+	cam6.gpio0_pin = GPIO0_6_Pin;
+	cam6.useUsart = false;
+	cam6.pI2c = &hi2c1;
+	cam6.pSpi = &hspi3;
+	cam6.pUart = NULL;
+	cam6.i2c_target = 0x40;
+
+	cam7.id = 6;
+	cam7.cresetb_port = CRESET_7_GPIO_Port;
+	cam7.cresetb_pin = CRESET_7_Pin;
+	cam7.gpio0_port = GPIO0_7_GPIO_Port;
+	cam7.gpio0_pin = GPIO0_7_Pin;
+	cam7.useUsart = false;
+	cam7.pI2c = &hi2c1;
+	cam7.pSpi = &hspi2;
+	cam7.pUart = NULL;
+	cam7.i2c_target = 0x40;
+
+	cam8.id = 7;
+	cam8.cresetb_port = CRESET_8_GPIO_Port;
+	cam8.cresetb_pin = CRESET_8_Pin;
+	cam8.gpio0_port = GPIO0_8_GPIO_Port;
+	cam8.gpio0_pin = GPIO0_8_Pin;
+	cam8.useUsart = false;
+	cam8.pI2c = &hi2c1;
+	cam8.pSpi = &hspi4;
+	cam8.pUart = NULL;
+	cam8.i2c_target = 0x40;
+
+
 	cam = cam1;
 
 
