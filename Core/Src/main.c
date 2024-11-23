@@ -40,7 +40,7 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define SPI_PACKET_LENGTH 4096
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -81,9 +81,18 @@ uint8_t rxBuffer[COMMAND_MAX_SIZE];
 uint8_t txBuffer[COMMAND_MAX_SIZE];
 __attribute__((section(".RAM_D1"))) uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE];  // 160KB buffer
 
+uint8_t spiRxBufferA[SPI_PACKET_LENGTH] = {0};
+uint8_t spiRxBufferB[SPI_PACKET_LENGTH] = {0};
+uint8_t *pRecieveHistoSpi = spiRxBufferA;
+
+uint8_t uartRxBufferA[SPI_PACKET_LENGTH] = {0};
+uint8_t uartRxBufferB[SPI_PACKET_LENGTH] = {0};
+uint8_t *pRecieveHistoUart = uartRxBufferA;
+
 CameraDevice cam;
 CameraDevice cam1;
 CameraDevice cam2;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -207,7 +216,6 @@ int main(void)
 
   // test i2c
   PrintI2CSpeed(&hi2c1);
-  I2C_scan(&hi2c1, NULL, 0, true);
 
 
   if(ICM20948_IsAlive(&hi2c1,0) == HAL_OK)
@@ -215,36 +223,12 @@ int main(void)
   else printf("IMU detected");
 
   HAL_Delay(100);
+  I2C_scan(&hi2c1, NULL, 0, true);
 
-  // enable USB PHY
   TCA9548A_SelectChannel(&hi2c1, 0x70, 0);
-  HAL_Delay(100);
+  HAL_Delay(1000);
 
   I2C_scan(&hi2c1, NULL, 0, true);
-  cam1.id = 0;
-	cam1.cresetb_port = CRESET_1_GPIO_Port;
-	cam1.cresetb_pin = CRESET_1_Pin;
-	cam1.gpio0_port = GPIO0_1_GPIO_Port;
-	cam1.gpio0_pin = GPIO0_1_Pin;
-	cam1.useUsart = false;
-	cam1.pI2c = &hi2c1;
-	cam1.pSpi = &hspi3;
-	cam1.pUart = NULL;
-	cam1.i2c_target = 0x40;
-
-	cam2.id = 1;
-	cam2.cresetb_port = CRESET_2_GPIO_Port;
-	cam2.cresetb_pin = CRESET_2_Pin;
-	cam2.gpio0_port = GPIO0_2_GPIO_Port;
-	cam2.gpio0_pin = GPIO0_2_Pin;
-	cam2.useUsart = true;
-	cam2.pI2c = &hi2c1;//?
-	cam2.pSpi = NULL;
-	cam2.pUart = &husart2;
-	cam2.i2c_target = 0x40;
-
-	cam = cam1;
-  // enable USB PHY
 
   // Start PWM on Channel 4
 //  if (HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2) != HAL_OK)
@@ -254,15 +238,39 @@ int main(void)
 //  }
 
 //  X02C1B_fsin_on();
+
+
+  HAL_GPIO_WritePin(CRESET_1_GPIO_Port, CRESET_1_Pin, GPIO_PIN_SET);
+  HAL_Delay(100);
+  HAL_GPIO_WritePin(CRESET_1_GPIO_Port, CRESET_1_Pin, GPIO_PIN_RESET);
+
+
   HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
   HAL_Delay(100);
   MX_USB_DEVICE_Init();
-  HAL_Delay(100);
+
+//  HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
+
 
   HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
 //   turn on framesync
 //   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
 //   HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_RESET);
+
+   //Configure and set default camera
+
+	cam1.id = 0;
+	cam1.cresetb_port = CRESET_1_GPIO_Port;
+	cam1.cresetb_pin = CRESET_1_Pin;
+	cam1.gpio0_port = GPIO0_1_GPIO_Port;
+	cam1.gpio0_pin = GPIO0_1_Pin;
+	cam1.useUsart = false;
+	cam1.pI2c = &hi2c1;
+	cam1.pSpi = &hspi3;
+	cam1.pUart = NULL;
+	cam1.i2c_target = 0x40;
+	cam = cam1;
+
 
   printf("System Running\r\n");
   comms_start();
@@ -1206,6 +1214,18 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+
+ // Deinitialize the analog mode (optional but good practice)
+  HAL_GPIO_DeInit(GPIOE, CRESET_1_Pin);
+
+  // Reconfigure the pin as digital output
+  GPIO_InitStruct.Pin = CRESET_1_Pin; // Same pin
+  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
+  GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
+  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
 
   /*Configure GPIO pins : CRESET_6_Pin PD2 PD3 CRESET_5_Pin
                            PD4 PD0 PD15 PD11
