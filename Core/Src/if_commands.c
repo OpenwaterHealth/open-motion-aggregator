@@ -60,6 +60,10 @@ static void process_basic_command(UartPacket *uartResp, UartPacket cmd)
 		uartResp->command = cmd.command;
 //		HAL_GPIO_TogglePin(LED_YELLOW_GPIO_Port, LED_YELLOW_Pin);
 		break;
+	case OW_CMD_I2C_BROADCAST:
+		printf("Broadcasting I2C on all channels");
+		TCA9548A_SelectBroadcast(cam.pI2c, 0x70);
+		break;
 	default:
 		uartResp->data_len = 0;
 		uartResp->packet_type = OW_UNKNOWN;
@@ -203,6 +207,12 @@ static void process_camera_commands(UartPacket *uartResp, UartPacket cmd)
 		printf("Disabling FSIN...\r\n");
 		X02C1B_fsin_off();
 		break;
+	case OW_CAMERA_SWITCH:
+		uint8_t channel = cmd.data[0];
+		printf("Switching to camera %d",channel);
+        TCA9548A_SelectChannel(cam.pI2c, 0x70, channel);
+		cam = cam_array[channel];
+
 
 	default:
 		uartResp->data_len = 0;

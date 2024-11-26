@@ -55,6 +55,7 @@ typedef enum {
 	OW_CMD_HWID = 0x05,
 	OW_CMD_NOP = 0x0E,
 	OW_CMD_RESET = 0x0F,
+	OW_CMD_I2C_BROADCAST = 0x06,
 } UstxGlobalCommands;
 
 typedef enum {
@@ -84,6 +85,7 @@ typedef enum {
 	OW_CAMERA_RESET = 0x2F,
 	OW_CAMERA_FSIN_ON = 0x26,
 	OW_CAMERA_FSIN_OFF = 0x27,
+	OW_CAMERA_SWITCH = 0x28,
 } MotionCAMERACommands;
 
 typedef struct  {

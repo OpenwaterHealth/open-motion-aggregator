@@ -166,6 +166,11 @@ HAL_StatusTypeDef TCA9548A_SelectChannel(I2C_HandleTypeDef *hi2c, uint8_t addres
     return HAL_I2C_Master_Transmit(hi2c, address << 1, &data, 1, HAL_MAX_DELAY);
 }
 
+HAL_StatusTypeDef TCA9548A_SelectBroadcast(I2C_HandleTypeDef *hi2c, uint8_t address)
+{
+    uint8_t data = 0xFF;  // Set the corresponding bit for the channel
+    return HAL_I2C_Master_Transmit(hi2c, address << 1, &data, 1, HAL_MAX_DELAY);
+}
 
 
 HAL_StatusTypeDef ICM20948_ReadID(I2C_HandleTypeDef *hi2c, uint8_t *id)

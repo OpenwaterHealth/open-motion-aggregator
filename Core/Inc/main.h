@@ -126,6 +126,7 @@ extern CameraDevice cam5;
 extern CameraDevice cam6;
 extern CameraDevice cam7;
 extern CameraDevice cam8;
+extern CameraDevice cam_array[];
 
 #define DEBUG_UART huart4
 

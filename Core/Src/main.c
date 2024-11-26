@@ -86,7 +86,7 @@ const osThreadAttr_t defaultTask_attributes = {
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
-uint8_t FIRMWARE_VERSION_DATA[3] = {1, 0, 0};
+uint8_t FIRMWARE_VERSION_DATA[3] = {1, 0, 1};
 
 osThreadId_t comTaskHandle;
 const osThreadAttr_t comTask_attributes = {
@@ -116,6 +116,8 @@ CameraDevice cam5;
 CameraDevice cam6;
 CameraDevice cam7;
 CameraDevice cam8;
+
+CameraDevice cam_array[8];
 
 /* USER CODE END PV */
 
@@ -257,16 +259,13 @@ int main(void)
 
   I2C_scan(&hi2c1, NULL, 0, true);
 
-  HAL_GPIO_WritePin(CRESET_1_GPIO_Port, CRESET_1_Pin, GPIO_PIN_SET);
-  HAL_Delay(100);
-  HAL_GPIO_WritePin(CRESET_1_GPIO_Port, CRESET_1_Pin, GPIO_PIN_RESET);
-
+//  HAL_GPIO_WritePin(CRESET_1_GPIO_Port, CRESET_1_Pin, GPIO_PIN_SET);
+//  HAL_Delay(100);
+//  HAL_GPIO_WritePin(CRESET_1_GPIO_Port, CRESET_1_Pin, GPIO_PIN_RESET);
 
   HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
   HAL_Delay(100);
   MX_USB_DEVICE_Init();
-
-//  HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
 
 
   HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
@@ -283,6 +282,7 @@ int main(void)
 	cam1.pSpi = NULL;
 	cam1.pUart = &husart2;
 	cam1.i2c_target = 0;
+	cam_array[0] = cam1;
 	init_camera(&cam1);
 
 	cam2.id = 1;
@@ -295,6 +295,7 @@ int main(void)
 	cam2.pSpi = &hspi6;
 	cam2.pUart = NULL;
 	cam2.i2c_target = 1;
+	cam_array[1] = cam2;
 	init_camera(&cam2);
 
 	cam3.id = 2;
@@ -307,6 +308,7 @@ int main(void)
 	cam3.pSpi = NULL;
 	cam3.pUart = &husart3;
 	cam3.i2c_target = 2;
+	cam_array[2] = cam3;
 	init_camera(&cam3);
 
 	cam4.id = 3;
@@ -319,6 +321,7 @@ int main(void)
 	cam4.pSpi = NULL;
 	cam4.pUart = &husart6;
 	cam4.i2c_target = 3;
+	cam_array[3] = cam4;
 	init_camera(&cam4);
 
 	cam5.id = 4;
@@ -331,6 +334,7 @@ int main(void)
 	cam5.pSpi = NULL;
 	cam5.pUart = &husart1;
 	cam5.i2c_target = 4;
+	cam_array[4] = cam5;
 	init_camera(&cam5);
 
 	cam6.id = 5;
@@ -343,6 +347,7 @@ int main(void)
 	cam6.pSpi = &hspi3;
 	cam6.pUart = NULL;
 	cam6.i2c_target = 5;
+	cam_array[5] = cam6;
 	init_camera(&cam6);
 
 	cam7.id = 6;
@@ -355,6 +360,7 @@ int main(void)
 	cam7.pSpi = &hspi2;
 	cam7.pUart = NULL;
 	cam7.i2c_target = 6;
+	cam_array[6] = cam7;
 	init_camera(&cam7);
 
 	cam8.id = 7;
@@ -367,8 +373,8 @@ int main(void)
 	cam8.pSpi = &hspi4;
 	cam8.pUart = NULL;
 	cam8.i2c_target = 7;
+	cam_array[7] = cam8;
 	init_camera(&cam8);
-
 
 	cam = cam6;
     TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
