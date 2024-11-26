@@ -242,24 +242,49 @@ int main(void)
   GPIO_InitTypeDef GPIO_InitStruct = {0};
 
   // Deinitialize the analog mode (optional but good practice)
-   HAL_GPIO_DeInit(GPIOE, CRESET_1_Pin);
-
-   // Reconfigure the pin as digital output
+   HAL_GPIO_DeInit(CRESET_1_GPIO_Port, CRESET_1_Pin);
    GPIO_InitStruct.Pin = CRESET_1_Pin; // Same pin
    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
    GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
-   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+   HAL_GPIO_Init(CRESET_1_GPIO_Port, &GPIO_InitStruct);
 
-   // Deinitialize the analog mode (optional but good practice)
-    HAL_GPIO_DeInit(GPIO0_1_GPIO_Port, GPIO0_1_Pin);
+   HAL_GPIO_DeInit(GPIO0_1_GPIO_Port, GPIO0_1_Pin);
+   GPIO_InitStruct.Pin = GPIO0_1_Pin; // Same pin
+   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
+   GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
+   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
+   HAL_GPIO_Init(GPIO0_1_GPIO_Port, &GPIO_InitStruct);
 
-    // Reconfigure the pin as digital output
-    GPIO_InitStruct.Pin = GPIO0_1_Pin; // Same pin
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
-    GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
-    HAL_GPIO_Init(GPIO0_1_GPIO_Port, &GPIO_InitStruct);
+
+   HAL_GPIO_DeInit(CRESET_6_GPIO_Port, CRESET_6_Pin);
+   GPIO_InitStruct.Pin = CRESET_6_Pin; // Same pin
+   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
+   GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
+   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
+   HAL_GPIO_Init(CRESET_6_GPIO_Port, &GPIO_InitStruct);
+
+   HAL_GPIO_DeInit(GPIO0_6_GPIO_Port, GPIO0_6_Pin);
+   GPIO_InitStruct.Pin = GPIO0_6_Pin; // Same pin
+   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
+   GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
+   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
+   HAL_GPIO_Init(GPIO0_6_GPIO_Port, &GPIO_InitStruct);
+
+
+   HAL_GPIO_DeInit(CRESET_3_GPIO_Port, CRESET_3_Pin);
+   GPIO_InitStruct.Pin = CRESET_3_Pin; // Same pin
+   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
+   GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
+   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
+   HAL_GPIO_Init(CRESET_3_GPIO_Port, &GPIO_InitStruct);
+
+   HAL_GPIO_DeInit(GPIO0_3_GPIO_Port, GPIO0_3_Pin);
+   GPIO_InitStruct.Pin = GPIO0_3_Pin; // Same pin
+   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
+   GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
+   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
+   HAL_GPIO_Init(GPIO0_3_GPIO_Port, &GPIO_InitStruct);
 
   // enable I2C MUX
   HAL_GPIO_WritePin(MUX_RESET_GPIO_Port, MUX_RESET_Pin, GPIO_PIN_SET);
@@ -275,7 +300,7 @@ int main(void)
   HAL_Delay(100);
   I2C_scan(&hi2c1, NULL, 0, true);
 
-  TCA9548A_SelectChannel(&hi2c1, 0x70, 0);
+  TCA9548A_SelectChannel(&hi2c1, 0x70, 5);
   HAL_Delay(1000);
 
   I2C_scan(&hi2c1, NULL, 0, true);
@@ -301,11 +326,11 @@ int main(void)
 	cam1.cresetb_pin = CRESET_1_Pin;
 	cam1.gpio0_port = GPIO0_1_GPIO_Port;
 	cam1.gpio0_pin = GPIO0_1_Pin;
-	cam1.useUsart = false;
+	cam1.useUsart = true;
 	cam1.pI2c = &hi2c1;
-	cam1.pSpi = &hspi3;
-	cam1.pUart = NULL;
-	cam1.i2c_target = 0x40;
+	cam1.pSpi = NULL;
+	cam1.pUart = &husart2;
+	cam1.i2c_target = 0;
 
 	cam2.id = 1;
 	cam2.cresetb_port = CRESET_2_GPIO_Port;
@@ -316,7 +341,7 @@ int main(void)
 	cam2.pI2c = &hi2c1;
 	cam2.pSpi = &hspi6;
 	cam2.pUart = NULL;
-	cam2.i2c_target = 0x40;
+	cam2.i2c_target = 1;
 
 	cam3.id = 2;
 	cam3.cresetb_port = CRESET_3_GPIO_Port;
@@ -327,7 +352,7 @@ int main(void)
 	cam3.pI2c = &hi2c1;
 	cam3.pSpi = NULL;
 	cam3.pUart = &husart3;
-	cam3.i2c_target = 0x40;
+	cam3.i2c_target = 2;
 
 	cam4.id = 3;
 	cam4.cresetb_port = CRESET_4_GPIO_Port;
@@ -338,7 +363,7 @@ int main(void)
 	cam4.pI2c = &hi2c1;
 	cam4.pSpi = NULL;
 	cam4.pUart = &husart6;
-	cam4.i2c_target = 0x40;
+	cam4.i2c_target = 3;
 
 	cam5.id = 4;
 	cam5.cresetb_port = CRESET_5_GPIO_Port;
@@ -349,7 +374,7 @@ int main(void)
 	cam5.pI2c = &hi2c1;
 	cam5.pSpi = NULL;
 	cam5.pUart = &husart1;
-	cam5.i2c_target = 0x40;
+	cam5.i2c_target = 4;
 
 	cam6.id = 5;
 	cam6.cresetb_port = CRESET_6_GPIO_Port;
@@ -360,7 +385,7 @@ int main(void)
 	cam6.pI2c = &hi2c1;
 	cam6.pSpi = &hspi3;
 	cam6.pUart = NULL;
-	cam6.i2c_target = 0x40;
+	cam6.i2c_target = 5;
 
 	cam7.id = 6;
 	cam7.cresetb_port = CRESET_7_GPIO_Port;
@@ -371,7 +396,7 @@ int main(void)
 	cam7.pI2c = &hi2c1;
 	cam7.pSpi = &hspi2;
 	cam7.pUart = NULL;
-	cam7.i2c_target = 0x40;
+	cam7.i2c_target = 6;
 
 	cam8.id = 7;
 	cam8.cresetb_port = CRESET_8_GPIO_Port;
@@ -382,10 +407,14 @@ int main(void)
 	cam8.pI2c = &hi2c1;
 	cam8.pSpi = &hspi4;
 	cam8.pUart = NULL;
-	cam8.i2c_target = 0x40;
+	cam8.i2c_target = 7;
 
 
-	cam = cam1;
+	cam = cam6;
+    TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
+
+  HAL_USART_Receive_IT(&husart2, pRecieveHistoUart, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi, SPI_PACKET_LENGTH);
 
 
   printf("System Running\r\n");
@@ -656,7 +685,7 @@ static void MX_SPI2_Init(void)
   hspi2.Init.Mode = SPI_MODE_SLAVE;
   hspi2.Init.Direction = SPI_DIRECTION_2LINES;
   hspi2.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi2.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi2.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi2.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi2.Init.NSS = SPI_NSS_SOFT;
   hspi2.Init.FirstBit = SPI_FIRSTBIT_LSB;
@@ -703,7 +732,7 @@ static void MX_SPI3_Init(void)
   hspi3.Init.Mode = SPI_MODE_SLAVE;
   hspi3.Init.Direction = SPI_DIRECTION_2LINES;
   hspi3.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi3.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi3.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi3.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi3.Init.NSS = SPI_NSS_SOFT;
   hspi3.Init.FirstBit = SPI_FIRSTBIT_LSB;
@@ -750,7 +779,7 @@ static void MX_SPI4_Init(void)
   hspi4.Init.Mode = SPI_MODE_SLAVE;
   hspi4.Init.Direction = SPI_DIRECTION_2LINES;
   hspi4.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi4.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi4.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi4.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi4.Init.NSS = SPI_NSS_SOFT;
   hspi4.Init.FirstBit = SPI_FIRSTBIT_LSB;
@@ -797,7 +826,7 @@ static void MX_SPI6_Init(void)
   hspi6.Init.Mode = SPI_MODE_SLAVE;
   hspi6.Init.Direction = SPI_DIRECTION_2LINES;
   hspi6.Init.DataSize = SPI_DATASIZE_8BIT;
-  hspi6.Init.CLKPolarity = SPI_POLARITY_LOW;
+  hspi6.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi6.Init.CLKPhase = SPI_PHASE_2EDGE;
   hspi6.Init.NSS = SPI_NSS_SOFT;
   hspi6.Init.FirstBit = SPI_FIRSTBIT_LSB;
@@ -1140,13 +1169,13 @@ static void MX_USART2_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   husart2.Instance = USART2;
-  husart2.Init.BaudRate = 115200;
+  husart2.Init.BaudRate = 4167000;
   husart2.Init.WordLength = USART_WORDLENGTH_8B;
   husart2.Init.StopBits = USART_STOPBITS_1;
   husart2.Init.Parity = USART_PARITY_NONE;
-  husart2.Init.Mode = USART_MODE_TX_RX;
-  husart2.Init.CLKPolarity = USART_POLARITY_LOW;
-  husart2.Init.CLKPhase = USART_PHASE_1EDGE;
+  husart2.Init.Mode = USART_MODE_RX;
+  husart2.Init.CLKPolarity = USART_POLARITY_HIGH;
+  husart2.Init.CLKPhase = USART_PHASE_2EDGE;
   husart2.Init.CLKLastBit = USART_LASTBIT_DISABLE;
   husart2.Init.ClockPrescaler = USART_PRESCALER_DIV1;
   husart2.SlaveMode = USART_SLAVEMODE_ENABLE;
@@ -1162,7 +1191,7 @@ static void MX_USART2_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_USARTEx_DisableFifoMode(&husart2) != HAL_OK)
+  if (HAL_USARTEx_EnableFifoMode(&husart2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -1422,7 +1451,122 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 		logging_UART_TxCpltCallback(huart);
 	}
 }
+void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
+    if (husart->Instance == USART2) { // Check if the interrupt is for USART2
+        UartPacket telem;
+        telem.id = 0; // Arbitrarily deciding that all telem packets have id 0
+        telem.packet_type = OW_DATA;
+        telem.command = OW_HISTO;
+        telem.data_len = SPI_PACKET_LENGTH; // Use appropriate packet length for USART
+        telem.data = pRecieveHistoUart;
+        telem.addr = 0;
 
+        UART_INTERFACE_SendDMA(&telem);
+
+        // Toggle receive buffer
+        pRecieveHistoUart = (pRecieveHistoUart == uartRxBufferA) ? uartRxBufferB : uartRxBufferA;
+
+        // Re-enable UART interrupt reception for the next data packet
+        if (HAL_USART_Receive_IT(&husart2, pRecieveHistoUart, SPI_PACKET_LENGTH) != HAL_OK) {
+            Error_Handler();  // Handle any error during re-enabling
+        }
+    }
+}
+
+
+// Error handling callback for USART
+void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart) {
+    if (husart->Instance == USART2) {  // Check if the error is for USART1 (you can replace with the correct USART instance)
+        // Identify specific errors using error codes
+        printf("USART Error occurred: ");
+
+        if (husart->ErrorCode & HAL_USART_ERROR_PE) {
+            printf("Parity error ");
+        }
+        if (husart->ErrorCode & HAL_USART_ERROR_NE) {
+            printf("Noise error ");
+        }
+        if (husart->ErrorCode & HAL_USART_ERROR_FE) {
+            printf("Framing error ");
+        }
+        if (husart->ErrorCode & HAL_USART_ERROR_ORE) {
+            printf("Overrun error ");
+        }
+        if (husart->ErrorCode & HAL_USART_ERROR_DMA) {
+            printf("DMA transfer error ");
+        }
+        printf("\n");
+
+        // Reset USART and buffer state
+        HAL_USART_DeInit(husart);             // Deinitialize USART
+        HAL_USART_Init(husart);               // Reinitialize USART
+
+        // Re-enable interrupt reception
+//        pReceiveBuffer = (pReceiveBuffer == usartRxBufferA) ? usartRxBufferB : usartRxBufferA;
+
+        // Re-enable USART interrupt reception for the next byte
+//        if (HAL_USART_Receive_IT(husart, pReceiveBuffer, USART_PACKET_LENGTH) != HAL_OK) {
+            Error_Handler();  // Handle any error during re-enabling
+//        }
+    }
+}
+
+// Interrupt handler for SPI reception
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
+    if (hspi->Instance == SPI3) { // Check if the interrupt is for SPI1
+
+    	UartPacket telem;
+    	telem.id = 0; // arbitrarily deciding that all telem packets have id 0
+    	telem.packet_type = OW_DATA;
+    	telem.command = OW_HISTO;
+    	telem.data_len = SPI_PACKET_LENGTH;
+    	telem.data = pRecieveHistoSpi;
+    	telem.addr = 0;
+
+    	UART_INTERFACE_SendDMA(&telem);
+
+    	pRecieveHistoSpi = (pRecieveHistoSpi == spiRxBufferA) ? spiRxBufferB : spiRxBufferA;
+        // Re-enable SPI interrupt reception for the next byte
+        if (HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi, SPI_PACKET_LENGTH) != HAL_OK) {
+            Error_Handler();  // Handle any error during re-enabling
+        }
+    }
+}
+
+// Error handling callback for SPI
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
+    if (hspi->Instance == SPI3) { // Check if the error is for SPI1
+        // Identify specific errors using error codes
+        printf("SPI Error occurred: ");
+        if (hspi->ErrorCode & HAL_SPI_ERROR_OVR) {
+            printf("Overrun error ");
+        }
+        if (hspi->ErrorCode & HAL_SPI_ERROR_MODF) {
+            printf("Mode fault error ");
+        }
+        if (hspi->ErrorCode & HAL_SPI_ERROR_CRC) {
+            printf("CRC error ");
+        }
+        if (hspi->ErrorCode & HAL_SPI_ERROR_FRE) {
+            printf("Frame error ");
+        }
+        if (hspi->ErrorCode & HAL_SPI_ERROR_DMA) {
+            printf("DMA transfer error ");
+        }
+        printf("\n");
+
+        // Reset SPI and buffer state
+        HAL_SPI_DeInit(hspi);             // Deinitialize SPI
+        HAL_SPI_Init(hspi);               // Reinitialize SPI
+
+        // Re-enable interrupt reception
+    	pRecieveHistoSpi = (pRecieveHistoSpi == spiRxBufferA) ? spiRxBufferB : spiRxBufferA;
+		// Re-enable SPI interrupt reception for the next byte
+		if (HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi, SPI_PACKET_LENGTH) != HAL_OK) {
+			Error_Handler();  // Handle any error during re-enabling
+		}
+    }
+}
 
 void vApplicationIdleHook( void )
 {
