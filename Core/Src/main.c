@@ -150,6 +150,7 @@ void StartDefaultTask(void *argument);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 void COMTask(void *argument);
+void init_camera(CameraDevice *cam);
 
 static void PrintI2CSpeed(I2C_HandleTypeDef* hi2c) {
     // Assuming the timing is configured in I2C_TIMINGR register
@@ -237,55 +238,6 @@ int main(void)
   printf("Openwater open-MOTION Aggregator FW v%d.%d.%d\r\n\r\n",FIRMWARE_VERSION_DATA[0], FIRMWARE_VERSION_DATA[1], FIRMWARE_VERSION_DATA[2]);
   printf("CPU Clock Frequency: %lu MHz\r\n", HAL_RCC_GetSysClockFreq() / 1000000);
   printf("Initializing, please wait ...\r\n");
-
-  // reinit a bunch of gpio
-  GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-  // Deinitialize the analog mode (optional but good practice)
-   HAL_GPIO_DeInit(CRESET_1_GPIO_Port, CRESET_1_Pin);
-   GPIO_InitStruct.Pin = CRESET_1_Pin; // Same pin
-   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
-   GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
-   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
-   HAL_GPIO_Init(CRESET_1_GPIO_Port, &GPIO_InitStruct);
-
-   HAL_GPIO_DeInit(GPIO0_1_GPIO_Port, GPIO0_1_Pin);
-   GPIO_InitStruct.Pin = GPIO0_1_Pin; // Same pin
-   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
-   GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
-   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
-   HAL_GPIO_Init(GPIO0_1_GPIO_Port, &GPIO_InitStruct);
-
-
-   HAL_GPIO_DeInit(CRESET_6_GPIO_Port, CRESET_6_Pin);
-   GPIO_InitStruct.Pin = CRESET_6_Pin; // Same pin
-   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
-   GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
-   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
-   HAL_GPIO_Init(CRESET_6_GPIO_Port, &GPIO_InitStruct);
-
-   HAL_GPIO_DeInit(GPIO0_6_GPIO_Port, GPIO0_6_Pin);
-   GPIO_InitStruct.Pin = GPIO0_6_Pin; // Same pin
-   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
-   GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
-   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
-   HAL_GPIO_Init(GPIO0_6_GPIO_Port, &GPIO_InitStruct);
-
-
-   HAL_GPIO_DeInit(CRESET_3_GPIO_Port, CRESET_3_Pin);
-   GPIO_InitStruct.Pin = CRESET_3_Pin; // Same pin
-   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
-   GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
-   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
-   HAL_GPIO_Init(CRESET_3_GPIO_Port, &GPIO_InitStruct);
-
-   HAL_GPIO_DeInit(GPIO0_3_GPIO_Port, GPIO0_3_Pin);
-   GPIO_InitStruct.Pin = GPIO0_3_Pin; // Same pin
-   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
-   GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
-   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
-   HAL_GPIO_Init(GPIO0_3_GPIO_Port, &GPIO_InitStruct);
-
   // enable I2C MUX
   HAL_GPIO_WritePin(MUX_RESET_GPIO_Port, MUX_RESET_Pin, GPIO_PIN_SET);
 
@@ -331,6 +283,7 @@ int main(void)
 	cam1.pSpi = NULL;
 	cam1.pUart = &husart2;
 	cam1.i2c_target = 0;
+	init_camera(&cam1);
 
 	cam2.id = 1;
 	cam2.cresetb_port = CRESET_2_GPIO_Port;
@@ -342,6 +295,7 @@ int main(void)
 	cam2.pSpi = &hspi6;
 	cam2.pUart = NULL;
 	cam2.i2c_target = 1;
+	init_camera(&cam2);
 
 	cam3.id = 2;
 	cam3.cresetb_port = CRESET_3_GPIO_Port;
@@ -353,6 +307,7 @@ int main(void)
 	cam3.pSpi = NULL;
 	cam3.pUart = &husart3;
 	cam3.i2c_target = 2;
+	init_camera(&cam3);
 
 	cam4.id = 3;
 	cam4.cresetb_port = CRESET_4_GPIO_Port;
@@ -364,6 +319,7 @@ int main(void)
 	cam4.pSpi = NULL;
 	cam4.pUart = &husart6;
 	cam4.i2c_target = 3;
+	init_camera(&cam4);
 
 	cam5.id = 4;
 	cam5.cresetb_port = CRESET_5_GPIO_Port;
@@ -375,6 +331,7 @@ int main(void)
 	cam5.pSpi = NULL;
 	cam5.pUart = &husart1;
 	cam5.i2c_target = 4;
+	init_camera(&cam5);
 
 	cam6.id = 5;
 	cam6.cresetb_port = CRESET_6_GPIO_Port;
@@ -386,6 +343,7 @@ int main(void)
 	cam6.pSpi = &hspi3;
 	cam6.pUart = NULL;
 	cam6.i2c_target = 5;
+	init_camera(&cam6);
 
 	cam7.id = 6;
 	cam7.cresetb_port = CRESET_7_GPIO_Port;
@@ -397,6 +355,7 @@ int main(void)
 	cam7.pSpi = &hspi2;
 	cam7.pUart = NULL;
 	cam7.i2c_target = 6;
+	init_camera(&cam7);
 
 	cam8.id = 7;
 	cam8.cresetb_port = CRESET_8_GPIO_Port;
@@ -408,6 +367,7 @@ int main(void)
 	cam8.pSpi = &hspi4;
 	cam8.pUart = NULL;
 	cam8.i2c_target = 7;
+	init_camera(&cam8);
 
 
 	cam = cam6;
@@ -1612,6 +1572,26 @@ void COMTask(void *argument)
 	  printf("Starting COM Task\r\n");
 	  comms_start_task();
 }
+
+void init_camera(CameraDevice *cam){
+	GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+	HAL_GPIO_DeInit(cam->cresetb_port, cam->cresetb_pin);
+	GPIO_InitStruct.Pin = cam->cresetb_pin; // Same pin
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
+	GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
+	HAL_GPIO_Init(cam->cresetb_port, &GPIO_InitStruct);
+
+	HAL_GPIO_DeInit(cam->gpio0_port, cam->gpio0_pin);
+	GPIO_InitStruct.Pin = cam->gpio0_pin; // Same pin
+	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
+	GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
+	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
+	HAL_GPIO_Init(cam->gpio0_port, &GPIO_InitStruct);
+}
+
+
 
 /* USER CODE END 4 */
 
