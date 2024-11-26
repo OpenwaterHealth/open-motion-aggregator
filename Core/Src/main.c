@@ -88,6 +88,13 @@ const osThreadAttr_t defaultTask_attributes = {
 /* USER CODE BEGIN PV */
 uint8_t FIRMWARE_VERSION_DATA[3] = {1, 0, 0};
 
+osThreadId_t comTaskHandle;
+const osThreadAttr_t comTask_attributes = {
+  .name = "comTask",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+
 uint8_t rxBuffer[COMMAND_MAX_SIZE];
 uint8_t txBuffer[COMMAND_MAX_SIZE];
 __attribute__((section(".RAM_D1"))) uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE];  // 160KB buffer
@@ -128,12 +135,12 @@ static void MX_SPI6_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_UART4_Init(void);
 static void MX_USART1_Init(void);
-static void MX_USART2_Init(void);
 static void MX_USART3_Init(void);
 static void MX_USART6_Init(void);
 static void MX_TIM8_Init(void);
 static void MX_TIM12_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_USART2_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -142,6 +149,7 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+void COMTask(void *argument);
 
 static void PrintI2CSpeed(I2C_HandleTypeDef* hi2c) {
     // Assuming the timing is configured in I2C_TIMINGR register
@@ -208,12 +216,12 @@ int main(void)
   MX_TIM2_Init();
   MX_UART4_Init();
   MX_USART1_Init();
-  MX_USART2_Init();
   MX_USART3_Init();
   MX_USART6_Init();
   MX_TIM8_Init();
   MX_TIM12_Init();
   MX_TIM4_Init();
+  MX_USART2_Init();
   /* USER CODE BEGIN 2 */
   init_dma_logging();
 
@@ -229,6 +237,29 @@ int main(void)
   printf("Openwater open-MOTION Aggregator FW v%d.%d.%d\r\n\r\n",FIRMWARE_VERSION_DATA[0], FIRMWARE_VERSION_DATA[1], FIRMWARE_VERSION_DATA[2]);
   printf("CPU Clock Frequency: %lu MHz\r\n", HAL_RCC_GetSysClockFreq() / 1000000);
   printf("Initializing, please wait ...\r\n");
+
+  // reinit a bunch of gpio
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+  // Deinitialize the analog mode (optional but good practice)
+   HAL_GPIO_DeInit(GPIOE, CRESET_1_Pin);
+
+   // Reconfigure the pin as digital output
+   GPIO_InitStruct.Pin = CRESET_1_Pin; // Same pin
+   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
+   GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
+   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
+   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
+
+   // Deinitialize the analog mode (optional but good practice)
+    HAL_GPIO_DeInit(GPIO0_1_GPIO_Port, GPIO0_1_Pin);
+
+    // Reconfigure the pin as digital output
+    GPIO_InitStruct.Pin = GPIO0_1_Pin; // Same pin
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
+    GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
+    HAL_GPIO_Init(GPIO0_1_GPIO_Port, &GPIO_InitStruct);
 
   // enable I2C MUX
   HAL_GPIO_WritePin(MUX_RESET_GPIO_Port, MUX_RESET_Pin, GPIO_PIN_SET);
@@ -249,16 +280,6 @@ int main(void)
 
   I2C_scan(&hi2c1, NULL, 0, true);
 
-  // Start PWM on Channel 4
-//  if (HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2) != HAL_OK)
-//  {
-//      // PWM start Error
-//      Error_Handler();
-//  }
-
-//  X02C1B_fsin_on();
-
-
   HAL_GPIO_WritePin(CRESET_1_GPIO_Port, CRESET_1_Pin, GPIO_PIN_SET);
   HAL_Delay(100);
   HAL_GPIO_WritePin(CRESET_1_GPIO_Port, CRESET_1_Pin, GPIO_PIN_RESET);
@@ -272,9 +293,6 @@ int main(void)
 
 
   HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
-//   turn on framesync
-//   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
-//   HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_RESET);
 
    //Configure and set default camera
 
@@ -371,7 +389,6 @@ int main(void)
 
 
   printf("System Running\r\n");
-  comms_start();
   /* USER CODE END 2 */
 
   /* Init scheduler */
@@ -398,7 +415,7 @@ int main(void)
   defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  /* add threads, ... */
+  comTaskHandle = osThreadNew(COMTask, NULL, &comTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -1123,7 +1140,7 @@ static void MX_USART2_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   husart2.Instance = USART2;
-  husart2.Init.BaudRate = 5242880;
+  husart2.Init.BaudRate = 115200;
   husart2.Init.WordLength = USART_WORDLENGTH_8B;
   husart2.Init.StopBits = USART_STOPBITS_1;
   husart2.Init.Parity = USART_PARITY_NONE;
@@ -1349,18 +1366,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
 
-
- // Deinitialize the analog mode (optional but good practice)
-  HAL_GPIO_DeInit(GPIOE, CRESET_1_Pin);
-
-  // Reconfigure the pin as digital output
-  GPIO_InitStruct.Pin = CRESET_1_Pin; // Same pin
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
-  GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
-  HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-
   /*Configure GPIO pins : CRESET_6_Pin PD2 PD3 CRESET_5_Pin
                            PD4 PD0 PD15 PD11
                            GPIO0_4_Pin */
@@ -1457,6 +1462,13 @@ configconfigCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook
 function is called if a stack overflow is detected. */
 for( ;; );
 }
+
+void COMTask(void *argument)
+{
+	  printf("Starting COM Task\r\n");
+	  comms_start_task();
+}
+
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
