@@ -99,13 +99,39 @@ uint8_t rxBuffer[COMMAND_MAX_SIZE];
 uint8_t txBuffer[COMMAND_MAX_SIZE];
 __attribute__((section(".RAM_D1"))) uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE];  // 160KB buffer
 
-uint8_t spiRxBufferA[SPI_PACKET_LENGTH] = {0};
-uint8_t spiRxBufferB[SPI_PACKET_LENGTH] = {0};
-uint8_t *pRecieveHistoSpi = spiRxBufferA;
+// Spi data buffers, 2 3 4 6
+uint8_t spi2RxBufferA[SPI_PACKET_LENGTH] = {0};
+uint8_t spi2RxBufferB[SPI_PACKET_LENGTH] = {0};
+uint8_t *pRecieveHistoSpi2 = spi2RxBufferA;
 
-uint8_t uartRxBufferA[SPI_PACKET_LENGTH] = {0};
-uint8_t uartRxBufferB[SPI_PACKET_LENGTH] = {0};
-uint8_t *pRecieveHistoUart = uartRxBufferA;
+uint8_t spi3RxBufferA[SPI_PACKET_LENGTH] = {0};
+uint8_t spi3RxBufferB[SPI_PACKET_LENGTH] = {0};
+uint8_t *pRecieveHistoSpi3 = spi3RxBufferA;
+
+uint8_t spi4RxBufferA[SPI_PACKET_LENGTH] = {0};
+uint8_t spi4RxBufferB[SPI_PACKET_LENGTH] = {0};
+uint8_t *pRecieveHistoSpi4 = spi4RxBufferA;
+
+uint8_t spi6RxBufferA[SPI_PACKET_LENGTH] = {0};
+uint8_t spi6RxBufferB[SPI_PACKET_LENGTH] = {0};
+uint8_t *pRecieveHistoSpi6 = spi6RxBufferA;
+
+
+uint8_t usart1RxBufferA[SPI_PACKET_LENGTH] = {0};
+uint8_t usart1RxBufferB[SPI_PACKET_LENGTH] = {0};
+uint8_t *pRecieveHistoUsart1 = usart1RxBufferA;
+
+uint8_t usart2RxBufferA[SPI_PACKET_LENGTH] = {0};
+uint8_t usart2RxBufferB[SPI_PACKET_LENGTH] = {0};
+uint8_t *pRecieveHistoUsart2 = usart2RxBufferA;
+
+uint8_t usart3RxBufferA[SPI_PACKET_LENGTH] = {0};
+uint8_t usart3RxBufferB[SPI_PACKET_LENGTH] = {0};
+uint8_t *pRecieveHistoUsart3 = usart3RxBufferA;
+
+uint8_t usart6RxBufferA[SPI_PACKET_LENGTH] = {0};
+uint8_t usart6RxBufferB[SPI_PACKET_LENGTH] = {0};
+uint8_t *pRecieveHistoUsart6 = usart6RxBufferA;
 
 CameraDevice cam;
 CameraDevice cam1;
@@ -246,7 +272,6 @@ int main(void)
   // test i2c
   PrintI2CSpeed(&hi2c1);
 
-
   if(ICM20948_IsAlive(&hi2c1,0) == HAL_OK)
 	  printf("IMU detected");
   else printf("IMU detected");
@@ -259,10 +284,6 @@ int main(void)
 
   I2C_scan(&hi2c1, NULL, 0, true);
 
-//  HAL_GPIO_WritePin(CRESET_1_GPIO_Port, CRESET_1_Pin, GPIO_PIN_SET);
-//  HAL_Delay(100);
-//  HAL_GPIO_WritePin(CRESET_1_GPIO_Port, CRESET_1_Pin, GPIO_PIN_RESET);
-
   HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
   HAL_Delay(100);
   MX_USB_DEVICE_Init();
@@ -270,8 +291,7 @@ int main(void)
 
   HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
 
-   //Configure and set default camera
-
+   //Configure, initialize, and set default camera
 	cam1.id = 0;
 	cam1.cresetb_port = CRESET_1_GPIO_Port;
 	cam1.cresetb_pin = CRESET_1_Pin;
@@ -379,8 +399,14 @@ int main(void)
 	cam = cam6;
     TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
 
-  HAL_USART_Receive_IT(&husart2, pRecieveHistoUart, SPI_PACKET_LENGTH);
-  HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi, SPI_PACKET_LENGTH);
+    HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
+    HAL_USART_Receive_IT(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH);
+    HAL_USART_Receive_IT(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
+    HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH);
+    HAL_SPI_Receive_IT(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_IT(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
 
 
   printf("System Running\r\n");
@@ -1192,8 +1218,8 @@ static void MX_USART3_Init(void)
   husart3.Init.StopBits = USART_STOPBITS_1;
   husart3.Init.Parity = USART_PARITY_NONE;
   husart3.Init.Mode = USART_MODE_TX_RX;
-  husart3.Init.CLKPolarity = USART_POLARITY_LOW;
-  husart3.Init.CLKPhase = USART_PHASE_1EDGE;
+  husart3.Init.CLKPolarity = USART_POLARITY_HIGH;
+  husart3.Init.CLKPhase = USART_PHASE_2EDGE;
   husart3.Init.CLKLastBit = USART_LASTBIT_DISABLE;
   husart3.Init.ClockPrescaler = USART_PRESCALER_DIV1;
   husart3.SlaveMode = USART_SLAVEMODE_ENABLE;
@@ -1418,31 +1444,56 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	}
 }
 void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
-    if (husart->Instance == USART2) { // Check if the interrupt is for USART2
-        UartPacket telem;
-        telem.id = 0; // Arbitrarily deciding that all telem packets have id 0
-        telem.packet_type = OW_DATA;
-        telem.command = OW_HISTO;
-        telem.data_len = SPI_PACKET_LENGTH; // Use appropriate packet length for USART
-        telem.data = pRecieveHistoUart;
-        telem.addr = 0;
-
+	printf("handler getting hit");
+    UartPacket telem;
+    telem.id = 0; // Arbitrarily deciding that all telem packets have id 0
+    telem.packet_type = OW_DATA;
+    telem.command = OW_HISTO;
+    telem.data_len = SPI_PACKET_LENGTH; // Use appropriate packet length for USART
+    telem.addr = 0;
+	if (husart->Instance == USART1) { // Check if the interrupt is for USART2
+        telem.data = pRecieveHistoUsart1;
         UART_INTERFACE_SendDMA(&telem);
 
-        // Toggle receive buffer
-        pRecieveHistoUart = (pRecieveHistoUart == uartRxBufferA) ? uartRxBufferB : uartRxBufferA;
-
-        // Re-enable UART interrupt reception for the next data packet
-        if (HAL_USART_Receive_IT(&husart2, pRecieveHistoUart, SPI_PACKET_LENGTH) != HAL_OK) {
+        pRecieveHistoUsart1 = (pRecieveHistoUsart1 == usart1RxBufferA) ? usart1RxBufferB : usart1RxBufferA;
+        if (HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH) != HAL_OK) {
             Error_Handler();  // Handle any error during re-enabling
         }
     }
+	else if (husart->Instance == USART2) { // Check if the interrupt is for USART2
+        telem.data = pRecieveHistoUsart2;
+        UART_INTERFACE_SendDMA(&telem);
+
+        pRecieveHistoUsart2 = (pRecieveHistoUsart2 == usart2RxBufferA) ? usart2RxBufferB : usart2RxBufferA;
+        if (HAL_USART_Receive_IT(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH) != HAL_OK) {
+            Error_Handler();  // Handle any error during re-enabling
+        }
+    }
+	else if (husart->Instance == USART3) { // Check if the interrupt is for USART2
+        telem.data = pRecieveHistoUsart3;
+        UART_INTERFACE_SendDMA(&telem);
+
+        pRecieveHistoUsart3 = (pRecieveHistoUsart3 == usart3RxBufferA) ? usart3RxBufferB : usart3RxBufferA;
+        if (HAL_USART_Receive_IT(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH) != HAL_OK) {
+            Error_Handler();  // Handle any error during re-enabling
+        }
+    }
+	else if (husart->Instance == USART6) { // Check if the interrupt is for USART2
+        telem.data = pRecieveHistoUsart6;
+        UART_INTERFACE_SendDMA(&telem);
+
+        pRecieveHistoUsart6 = (pRecieveHistoUsart6 == usart6RxBufferA) ? usart6RxBufferB : usart6RxBufferA;
+        if (HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH) != HAL_OK) {
+            Error_Handler();  // Handle any error during re-enabling
+        }
+    }
+
 }
 
 
 // Error handling callback for USART
 void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart) {
-    if (husart->Instance == USART2) {  // Check if the error is for USART1 (you can replace with the correct USART instance)
+//    if (husart->Instance == USART2) {  // Check if the error is for USART1 (you can replace with the correct USART instance)
         // Identify specific errors using error codes
         printf("USART Error occurred: ");
 
@@ -1474,29 +1525,57 @@ void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart) {
 //        if (HAL_USART_Receive_IT(husart, pReceiveBuffer, USART_PACKET_LENGTH) != HAL_OK) {
             Error_Handler();  // Handle any error during re-enabling
 //        }
-    }
+//    }
 }
 
 // Interrupt handler for SPI reception
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
-    if (hspi->Instance == SPI3) { // Check if the interrupt is for SPI1
+	UartPacket telem;
+	telem.id = 0; // arbitrarily deciding that all telem packets have id 0
+	telem.packet_type = OW_DATA;
+	telem.command = OW_HISTO;
+	telem.data_len = SPI_PACKET_LENGTH;
+	telem.addr = 0;
 
-    	UartPacket telem;
-    	telem.id = 0; // arbitrarily deciding that all telem packets have id 0
-    	telem.packet_type = OW_DATA;
-    	telem.command = OW_HISTO;
-    	telem.data_len = SPI_PACKET_LENGTH;
-    	telem.data = pRecieveHistoSpi;
-    	telem.addr = 0;
+	if(hspi->Instance == SPI2){
+		telem.data = pRecieveHistoSpi2;
+		pRecieveHistoSpi2 = (pRecieveHistoSpi2 == spi2RxBufferA) ? spi2RxBufferB : spi2RxBufferA;
 
-    	UART_INTERFACE_SendDMA(&telem);
+		UART_INTERFACE_SendDMA(&telem);
 
-    	pRecieveHistoSpi = (pRecieveHistoSpi == spiRxBufferA) ? spiRxBufferB : spiRxBufferA;
-        // Re-enable SPI interrupt reception for the next byte
-        if (HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi, SPI_PACKET_LENGTH) != HAL_OK) {
-            Error_Handler();  // Handle any error during re-enabling
-        }
-    }
+		if (HAL_SPI_Receive_IT(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH) != HAL_OK) {
+			Error_Handler();  // Handle any error during re-enabling
+		}
+	}	else if(hspi->Instance == SPI3){
+		telem.data = pRecieveHistoSpi3;
+		pRecieveHistoSpi3 = (pRecieveHistoSpi3 == spi3RxBufferA) ? spi3RxBufferB : spi3RxBufferA;
+
+		UART_INTERFACE_SendDMA(&telem);
+
+		if (HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH) != HAL_OK) {
+			Error_Handler();  // Handle any error during re-enabling
+		}
+	} else if(hspi->Instance == SPI4){
+		telem.data = pRecieveHistoSpi4;
+		pRecieveHistoSpi4 = (pRecieveHistoSpi4 == spi4RxBufferA) ? spi4RxBufferB : spi4RxBufferA;
+
+		UART_INTERFACE_SendDMA(&telem);
+
+		if (HAL_SPI_Receive_IT(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH) != HAL_OK) {
+			Error_Handler();  // Handle any error during re-enabling
+		}
+	} else if(hspi->Instance == SPI6){
+
+		telem.data = pRecieveHistoSpi6;
+		pRecieveHistoSpi6 = (pRecieveHistoSpi6 == spi6RxBufferA) ? spi6RxBufferB : spi6RxBufferA;
+
+		UART_INTERFACE_SendDMA(&telem);
+
+		if (HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH) != HAL_OK) {
+			Error_Handler();  // Handle any error during re-enabling
+		}
+
+	}
 }
 
 // Error handling callback for SPI
@@ -1526,9 +1605,9 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
         HAL_SPI_Init(hspi);               // Reinitialize SPI
 
         // Re-enable interrupt reception
-    	pRecieveHistoSpi = (pRecieveHistoSpi == spiRxBufferA) ? spiRxBufferB : spiRxBufferA;
+    	pRecieveHistoSpi3 = (pRecieveHistoSpi3 == spi3RxBufferA) ? spi3RxBufferB : spi3RxBufferA;
 		// Re-enable SPI interrupt reception for the next byte
-		if (HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi, SPI_PACKET_LENGTH) != HAL_OK) {
+		if (HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
     }
