@@ -276,13 +276,13 @@ int main(void)
 	  printf("IMU detected");
   else printf("IMU detected");
 
+
+  TCA9548A_SelectChannel(&hi2c1, 0x70, 0);
   HAL_Delay(100);
   I2C_scan(&hi2c1, NULL, 0, true);
 
-  TCA9548A_SelectChannel(&hi2c1, 0x70, 5);
   HAL_Delay(1000);
 
-  I2C_scan(&hi2c1, NULL, 0, true);
 
   HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
   HAL_Delay(100);
@@ -1114,8 +1114,8 @@ static void MX_USART1_Init(void)
   husart1.Init.StopBits = USART_STOPBITS_1;
   husart1.Init.Parity = USART_PARITY_NONE;
   husart1.Init.Mode = USART_MODE_TX_RX;
-  husart1.Init.CLKPolarity = USART_POLARITY_LOW;
-  husart1.Init.CLKPhase = USART_PHASE_1EDGE;
+  husart1.Init.CLKPolarity = USART_POLARITY_HIGH;
+  husart1.Init.CLKPhase = USART_PHASE_2EDGE;
   husart1.Init.CLKLastBit = USART_LASTBIT_DISABLE;
   husart1.Init.ClockPrescaler = USART_PRESCALER_DIV1;
   husart1.SlaveMode = USART_SLAVEMODE_ENABLE;
@@ -1161,7 +1161,7 @@ static void MX_USART2_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   husart2.Instance = USART2;
-  husart2.Init.BaudRate = 4167000;
+  husart2.Init.BaudRate = 9600;
   husart2.Init.WordLength = USART_WORDLENGTH_8B;
   husart2.Init.StopBits = USART_STOPBITS_1;
   husart2.Init.Parity = USART_PARITY_NONE;
@@ -1183,7 +1183,7 @@ static void MX_USART2_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_USARTEx_EnableFifoMode(&husart2) != HAL_OK)
+  if (HAL_USARTEx_DisableFifoMode(&husart2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -1444,7 +1444,8 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	}
 }
 void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
-	printf("handler getting hit");
+//	printf("handler getting hit");
+	/*
     UartPacket telem;
     telem.id = 0; // Arbitrarily deciding that all telem packets have id 0
     telem.packet_type = OW_DATA;
@@ -1487,6 +1488,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
             Error_Handler();  // Handle any error during re-enabling
         }
     }
+    */
 
 }
 
@@ -1661,6 +1663,7 @@ void COMTask(void *argument)
 void init_camera(CameraDevice *cam){
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
 
+	// Reconfigure CRESETB Pin
 	HAL_GPIO_DeInit(cam->cresetb_port, cam->cresetb_pin);
 	GPIO_InitStruct.Pin = cam->cresetb_pin; // Same pin
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
@@ -1668,14 +1671,36 @@ void init_camera(CameraDevice *cam){
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
 	HAL_GPIO_Init(cam->cresetb_port, &GPIO_InitStruct);
 
+	// Reconfigure GPIO0 Pin
 	HAL_GPIO_DeInit(cam->gpio0_port, cam->gpio0_pin);
 	GPIO_InitStruct.Pin = cam->gpio0_pin; // Same pin
 	GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
 	GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
 	GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
 	HAL_GPIO_Init(cam->gpio0_port, &GPIO_InitStruct);
-}
 
+	/*
+	if(cam->useUsart) {
+		// Reconfigure USART TX Pin
+		HAL_GPIO_DeInit(cam->cresetb_port, cam->cresetb_pin);
+		cam->pUart->
+		GPIO_InitStruct.Pin = cam->cresetb_pin; // Same pin
+		GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
+		GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
+		HAL_GPIO_Init(cam->cresetb_port, &GPIO_InitStruct);
+	}
+	else {
+		// Reconfigure SPI Pin
+		HAL_GPIO_DeInit(cam->cresetb_port, cam->cresetb_pin);
+		GPIO_InitStruct.Pin = cam->cresetb_pin; // Same pin
+		GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP; // Push-pull output
+		GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down
+		GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Set the speed
+		HAL_GPIO_Init(cam->cresetb_port, &GPIO_InitStruct);
+	}
+	*/
+}
 
 
 /* USER CODE END 4 */
