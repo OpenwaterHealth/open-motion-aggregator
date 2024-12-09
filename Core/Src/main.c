@@ -399,14 +399,14 @@ int main(void)
 	cam = cam6;
     TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
 
-    HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
+//    HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
     HAL_USART_Receive_IT(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH);
-    HAL_USART_Receive_IT(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
-    HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH);
-    HAL_SPI_Receive_IT(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
-  HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
-  HAL_SPI_Receive_IT(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH);
-  HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
+//    HAL_USART_Receive_IT(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
+//    HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH);
+//    HAL_SPI_Receive_IT(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
+//  HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
+//  HAL_SPI_Receive_IT(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH);
+//  HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
 
 
   printf("System Running\r\n");
@@ -475,11 +475,6 @@ void SystemClock_Config(void)
 
   /** Configure the main internal regulator output voltage
   */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
-
-  while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
-
-  __HAL_RCC_SYSCFG_CLK_ENABLE();
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
 
   while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
@@ -1161,11 +1156,11 @@ static void MX_USART2_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   husart2.Instance = USART2;
-  husart2.Init.BaudRate = 9600;
+  husart2.Init.BaudRate = 4167000;
   husart2.Init.WordLength = USART_WORDLENGTH_8B;
   husart2.Init.StopBits = USART_STOPBITS_1;
   husart2.Init.Parity = USART_PARITY_NONE;
-  husart2.Init.Mode = USART_MODE_RX;
+  husart2.Init.Mode = USART_MODE_TX_RX;
   husart2.Init.CLKPolarity = USART_POLARITY_HIGH;
   husart2.Init.CLKPhase = USART_PHASE_2EDGE;
   husart2.Init.CLKLastBit = USART_LASTBIT_DISABLE;
@@ -1183,7 +1178,7 @@ static void MX_USART2_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_USARTEx_DisableFifoMode(&husart2) != HAL_OK)
+  if (HAL_USARTEx_EnableFifoMode(&husart2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -1445,7 +1440,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 }
 void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 //	printf("handler getting hit");
-	/*
+
     UartPacket telem;
     telem.id = 0; // Arbitrarily deciding that all telem packets have id 0
     telem.packet_type = OW_DATA;
@@ -1488,8 +1483,6 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
             Error_Handler();  // Handle any error during re-enabling
         }
     }
-    */
-
 }
 
 
@@ -1525,7 +1518,7 @@ void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart) {
 
         // Re-enable USART interrupt reception for the next byte
 //        if (HAL_USART_Receive_IT(husart, pReceiveBuffer, USART_PACKET_LENGTH) != HAL_OK) {
-            Error_Handler();  // Handle any error during re-enabling
+//            Error_Handler();  // Handle any error during re-enabling
 //        }
 //    }
 }
