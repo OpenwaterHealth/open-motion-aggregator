@@ -34,6 +34,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "event_groups.h"
 
 /* USER CODE END Includes */
 
@@ -144,6 +145,7 @@ CameraDevice cam7;
 CameraDevice cam8;
 
 CameraDevice cam_array[8];
+EventGroupHandle_t xHistoRxEventGroup;
 
 /* USER CODE END PV */
 
@@ -440,7 +442,10 @@ int main(void)
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
-  /* add events, ... */
+  xHistoRxEventGroup = xEventGroupCreate();
+
+  xTaskCreate(vTaskWaitForAllBits, "WaitTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
@@ -1525,52 +1530,57 @@ void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart) {
 
 // Interrupt handler for SPI reception
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
-	UartPacket telem;
-	telem.id = 0; // arbitrarily deciding that all telem packets have id 0
-	telem.packet_type = OW_DATA;
-	telem.command = OW_HISTO;
-	telem.data_len = SPI_PACKET_LENGTH;
-	telem.addr = 0;
+	BaseType_t xHigherPriorityTaskWoken, xResult;
+	xHigherPriorityTaskWoken = pdFALSE;
+	uint8_t xBitToSet = 0x00;
 
 	if(hspi->Instance == SPI2){
-		telem.data = pRecieveHistoSpi2;
+//		telem.data = pRecieveHistoSpi2;
 		pRecieveHistoSpi2 = (pRecieveHistoSpi2 == spi2RxBufferA) ? spi2RxBufferB : spi2RxBufferA;
-
-		UART_INTERFACE_SendDMA(&telem);
-
+		xBitToSet = BIT_6;
 		if (HAL_SPI_Receive_IT(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
 	}	else if(hspi->Instance == SPI3){
-		telem.data = pRecieveHistoSpi3;
+//		telem.data = pRecieveHistoSpi3;
 		pRecieveHistoSpi3 = (pRecieveHistoSpi3 == spi3RxBufferA) ? spi3RxBufferB : spi3RxBufferA;
-
-		UART_INTERFACE_SendDMA(&telem);
-
+		xBitToSet = BIT_5;
 		if (HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
 	} else if(hspi->Instance == SPI4){
-		telem.data = pRecieveHistoSpi4;
+//		telem.data = pRecieveHistoSpi4;
 		pRecieveHistoSpi4 = (pRecieveHistoSpi4 == spi4RxBufferA) ? spi4RxBufferB : spi4RxBufferA;
-
-		UART_INTERFACE_SendDMA(&telem);
+		xBitToSet = BIT_7;
 
 		if (HAL_SPI_Receive_IT(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
 	} else if(hspi->Instance == SPI6){
-
-		telem.data = pRecieveHistoSpi6;
+//		telem.data = pRecieveHistoSpi6;
 		pRecieveHistoSpi6 = (pRecieveHistoSpi6 == spi6RxBufferA) ? spi6RxBufferB : spi6RxBufferA;
-
-		UART_INTERFACE_SendDMA(&telem);
-
+		xBitToSet = BIT_1;
 		if (HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
 
 	}
+
+    xResult = xEventGroupSetBitsFromISR(
+    								xHistoRxEventGroup,   /* The event group being updated. */
+									xBitToSet, /* The bits being set. */
+	                                &xHigherPriorityTaskWoken );
+
+	/* Was the message posted successfully? */
+	if( xResult != pdFAIL )
+	{
+		/* If xHigherPriorityTaskWoken is now set to pdTRUE then a context
+		   switch should be requested. The macro used is port specific and will
+		   be either portYIELD_FROM_ISR() or portEND_SWITCHING_ISR() - refer to
+		   the documentation page for the port being used. */
+		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+	}
+
 }
 
 // Error handling callback for SPI
@@ -1694,7 +1704,31 @@ void init_camera(CameraDevice *cam){
 	}
 	*/
 }
+// Task to wait for all bits
+void vTaskWaitForAllBits(void *pvParameters)
+{
+    EventBits_t uxBits;
 
+    for (;;)
+    {
+        printf("Task is waiting for all bits to be set...\n");
+
+        // Wait for all bits (BIT_0 | BIT_1 | BIT_2) to be set
+        uxBits = xEventGroupWaitBits(
+            xHistoRxEventGroup,
+			BIT_0 | BIT_1 | BIT_2, // Bits to wait for
+            pdFALSE,           // Do not clear bits on exit
+            pdTRUE,            // Wait for all bits to be set
+            portMAX_DELAY      // Wait indefinitely
+        );
+
+        // Check if all bits are set
+        if ((uxBits & (BIT_0 | BIT_1 | BIT_2)) == (BIT_0 | BIT_1 | BIT_2))
+        {
+            printf("All bits are set! Task unblocked.\n");
+        }
+    }
+}
 
 /* USER CODE END 4 */
 
