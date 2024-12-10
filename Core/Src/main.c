@@ -399,7 +399,7 @@ int main(void)
 	cam = cam6;
     TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
 
-//    HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
+    HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
     HAL_USART_Receive_IT(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH);
 //    HAL_USART_Receive_IT(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
 //    HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH);
@@ -1104,7 +1104,7 @@ static void MX_USART1_Init(void)
 
   /* USER CODE END USART1_Init 1 */
   husart1.Instance = USART1;
-  husart1.Init.BaudRate = 5242880;
+  husart1.Init.BaudRate = 4167000;
   husart1.Init.WordLength = USART_WORDLENGTH_8B;
   husart1.Init.StopBits = USART_STOPBITS_1;
   husart1.Init.Parity = USART_PARITY_NONE;
@@ -1126,7 +1126,7 @@ static void MX_USART1_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_USARTEx_DisableFifoMode(&husart1) != HAL_OK)
+  if (HAL_USARTEx_EnableFifoMode(&husart1) != HAL_OK)
   {
     Error_Handler();
   }
@@ -1208,7 +1208,7 @@ static void MX_USART3_Init(void)
 
   /* USER CODE END USART3_Init 1 */
   husart3.Instance = USART3;
-  husart3.Init.BaudRate = 115200;
+  husart3.Init.BaudRate = 4167000;
   husart3.Init.WordLength = USART_WORDLENGTH_8B;
   husart3.Init.StopBits = USART_STOPBITS_1;
   husart3.Init.Parity = USART_PARITY_NONE;
@@ -1230,7 +1230,7 @@ static void MX_USART3_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_USARTEx_DisableFifoMode(&husart3) != HAL_OK)
+  if (HAL_USARTEx_EnableFifoMode(&husart3) != HAL_OK)
   {
     Error_Handler();
   }
