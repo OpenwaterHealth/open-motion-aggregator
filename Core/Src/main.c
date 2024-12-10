@@ -401,12 +401,12 @@ int main(void)
 
     HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
     HAL_USART_Receive_IT(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH);
-//    HAL_USART_Receive_IT(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
-//    HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH);
-//    HAL_SPI_Receive_IT(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
-//  HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
-//  HAL_SPI_Receive_IT(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH);
-//  HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
+    HAL_USART_Receive_IT(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
+    HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH);
+    HAL_SPI_Receive_IT(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_IT(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
 
 
   printf("System Running\r\n");
@@ -1260,13 +1260,13 @@ static void MX_USART6_Init(void)
 
   /* USER CODE END USART6_Init 1 */
   husart6.Instance = USART6;
-  husart6.Init.BaudRate = 5242880;
+  husart6.Init.BaudRate = 4167000;
   husart6.Init.WordLength = USART_WORDLENGTH_8B;
   husart6.Init.StopBits = USART_STOPBITS_1;
   husart6.Init.Parity = USART_PARITY_NONE;
   husart6.Init.Mode = USART_MODE_TX_RX;
-  husart6.Init.CLKPolarity = USART_POLARITY_LOW;
-  husart6.Init.CLKPhase = USART_PHASE_1EDGE;
+  husart6.Init.CLKPolarity = USART_POLARITY_HIGH;
+  husart6.Init.CLKPhase = USART_PHASE_2EDGE;
   husart6.Init.CLKLastBit = USART_LASTBIT_DISABLE;
   husart6.Init.ClockPrescaler = USART_PRESCALER_DIV1;
   husart6.SlaveMode = USART_SLAVEMODE_ENABLE;
@@ -1282,7 +1282,7 @@ static void MX_USART6_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_USARTEx_DisableFifoMode(&husart6) != HAL_OK)
+  if (HAL_USARTEx_EnableFifoMode(&husart6) != HAL_OK)
   {
     Error_Handler();
   }
