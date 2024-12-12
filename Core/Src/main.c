@@ -65,6 +65,10 @@ SPI_HandleTypeDef hspi2;
 SPI_HandleTypeDef hspi3;
 SPI_HandleTypeDef hspi4;
 SPI_HandleTypeDef hspi6;
+DMA_HandleTypeDef hdma_spi2_rx;
+DMA_HandleTypeDef hdma_spi3_rx;
+DMA_HandleTypeDef hdma_spi4_rx;
+DMA_HandleTypeDef hdma_spi6_rx;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim4;
@@ -78,6 +82,10 @@ USART_HandleTypeDef husart3;
 USART_HandleTypeDef husart6;
 DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_uart4_tx;
+DMA_HandleTypeDef hdma_usart1_rx;
+DMA_HandleTypeDef hdma_usart2_rx;
+DMA_HandleTypeDef hdma_usart3_rx;
+DMA_HandleTypeDef hdma_usart6_rx;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -155,6 +163,7 @@ void PeriphCommonClock_Config(void);
 static void MPU_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
+static void MX_BDMA_Init(void);
 static void MX_CRC_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_RNG_Init(void);
@@ -237,6 +246,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
+  MX_BDMA_Init();
   MX_CRC_Init();
   MX_I2C1_Init();
   MX_RNG_Init();
@@ -275,15 +285,18 @@ int main(void)
   PrintI2CSpeed(&hi2c1);
 
   if(ICM20948_IsAlive(&hi2c1,0) == HAL_OK)
-	  printf("IMU detected");
-  else printf("IMU detected");
+	  printf("IMU detected\r\n");
+  else printf("IMU detected\r\n\n");
 
+  for(int i = 0;i<8;i++){
+	  TCA9548A_SelectChannel(&hi2c1, 0x70, i);
+	  HAL_Delay(10);
+	  printf("I2C Scanning bus %d\r\n",i);
+	  I2C_scan(&hi2c1, NULL, 0, true);
+	  HAL_Delay(10);
+  }
 
-  TCA9548A_SelectChannel(&hi2c1, 0x70, 0);
   HAL_Delay(100);
-  I2C_scan(&hi2c1, NULL, 0, true);
-
-  HAL_Delay(1000);
 
 
   HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
@@ -401,15 +414,26 @@ int main(void)
 	cam = cam6;
     TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
 
-    HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
-    HAL_USART_Receive_IT(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH);
-    HAL_USART_Receive_IT(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
-    HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH);
-    HAL_SPI_Receive_IT(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
-  HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
-  HAL_SPI_Receive_IT(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH);
-  HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
+//    HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
+//    HAL_USART_Receive_IT(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH);
+//    HAL_USART_Receive_IT(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
+//    HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH);
 
+//  HAL_SPI_Receive_IT(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
+//  HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
+//  HAL_SPI_Receive_IT(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH);
+//  HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
+
+
+  HAL_SPI_Receive_DMA(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_DMA(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_DMA(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_DMA(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
+//
+  HAL_USART_Receive_DMA(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH);
+  HAL_USART_Receive_DMA(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
+  HAL_USART_Receive_DMA(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH);
+  HAL_USART_Receive_DMA(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
 
   printf("System Running\r\n");
   /* USER CODE END 2 */
@@ -1304,11 +1328,28 @@ static void MX_USART6_Init(void)
 /**
   * Enable DMA controller clock
   */
+static void MX_BDMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_BDMA_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* BDMA_Channel0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(BDMA_Channel0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(BDMA_Channel0_IRQn);
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
 static void MX_DMA_Init(void)
 {
 
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream0_IRQn interrupt configuration */
@@ -1317,6 +1358,30 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream1_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream1_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream1_IRQn);
+  /* DMA1_Stream2_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream2_IRQn);
+  /* DMA1_Stream3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
+  /* DMA1_Stream4_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+  /* DMA1_Stream6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+  /* DMA1_Stream7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream7_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream7_IRQn);
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
+  /* DMAMUX1_OVR_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMAMUX1_OVR_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMAMUX1_OVR_IRQn);
 
 }
 
@@ -1444,7 +1509,7 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 	}
 }
 void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
-//	printf("handler getting hit");
+    printf("handler getting hit");
 
     UartPacket telem;
     telem.id = 0; // Arbitrarily deciding that all telem packets have id 0
@@ -1457,7 +1522,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
         UART_INTERFACE_SendDMA(&telem);
 
         pRecieveHistoUsart1 = (pRecieveHistoUsart1 == usart1RxBufferA) ? usart1RxBufferB : usart1RxBufferA;
-        if (HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH) != HAL_OK) {
+        if (HAL_USART_Receive_DMA(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH) != HAL_OK) {
             Error_Handler();  // Handle any error during re-enabling
         }
     }
@@ -1466,7 +1531,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
         UART_INTERFACE_SendDMA(&telem);
 
         pRecieveHistoUsart2 = (pRecieveHistoUsart2 == usart2RxBufferA) ? usart2RxBufferB : usart2RxBufferA;
-        if (HAL_USART_Receive_IT(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH) != HAL_OK) {
+        if (HAL_USART_Receive_DMA(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH) != HAL_OK) {
             Error_Handler();  // Handle any error during re-enabling
         }
     }
@@ -1475,7 +1540,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
         UART_INTERFACE_SendDMA(&telem);
 
         pRecieveHistoUsart3 = (pRecieveHistoUsart3 == usart3RxBufferA) ? usart3RxBufferB : usart3RxBufferA;
-        if (HAL_USART_Receive_IT(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH) != HAL_OK) {
+        if (HAL_USART_Receive_DMA(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH) != HAL_OK) {
             Error_Handler();  // Handle any error during re-enabling
         }
     }
@@ -1484,7 +1549,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
         UART_INTERFACE_SendDMA(&telem);
 
         pRecieveHistoUsart6 = (pRecieveHistoUsart6 == usart6RxBufferA) ? usart6RxBufferB : usart6RxBufferA;
-        if (HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH) != HAL_OK) {
+        if (HAL_USART_Receive_DMA(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH) != HAL_OK) {
             Error_Handler();  // Handle any error during re-enabling
         }
     }
@@ -1512,7 +1577,7 @@ void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart) {
         if (husart->ErrorCode & HAL_USART_ERROR_DMA) {
             printf("DMA transfer error ");
         }
-        printf("\n");
+        printf("\r\n");
 
         // Reset USART and buffer state
         HAL_USART_DeInit(husart);             // Deinitialize USART
@@ -1530,40 +1595,61 @@ void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart) {
 
 // Interrupt handler for SPI reception
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
+
+	UartPacket telem;
+	telem.id = 0; // arbitrarily deciding that all telem packets have id 0
+	telem.packet_type = OW_DATA;
+	telem.command = OW_HISTO;
+	telem.data_len = SPI_PACKET_LENGTH;
+	telem.addr = 0;
+
+
 	BaseType_t xHigherPriorityTaskWoken, xResult;
 	xHigherPriorityTaskWoken = pdFALSE;
 	uint8_t xBitToSet = 0x00;
-
+	printf("asdf");
 	if(hspi->Instance == SPI2){
-//		telem.data = pRecieveHistoSpi2;
+		telem.data = pRecieveHistoSpi2;
+		telem.id = 6; // cam7
+		UART_INTERFACE_SendDMA(&telem);
+
 		pRecieveHistoSpi2 = (pRecieveHistoSpi2 == spi2RxBufferA) ? spi2RxBufferB : spi2RxBufferA;
 		xBitToSet = BIT_6;
-		if (HAL_SPI_Receive_IT(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH) != HAL_OK) {
+		if (HAL_SPI_Receive_DMA(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
 	}	else if(hspi->Instance == SPI3){
-//		telem.data = pRecieveHistoSpi3;
+		telem.data = pRecieveHistoSpi3;
+		telem.id = 5;
+		UART_INTERFACE_SendDMA(&telem);
+
 		pRecieveHistoSpi3 = (pRecieveHistoSpi3 == spi3RxBufferA) ? spi3RxBufferB : spi3RxBufferA;
 		xBitToSet = BIT_5;
-		if (HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH) != HAL_OK) {
+		if (HAL_SPI_Receive_DMA(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
 	} else if(hspi->Instance == SPI4){
-//		telem.data = pRecieveHistoSpi4;
+		telem.data = pRecieveHistoSpi4;
+		telem.id = 7;
+		UART_INTERFACE_SendDMA(&telem);
+
 		pRecieveHistoSpi4 = (pRecieveHistoSpi4 == spi4RxBufferA) ? spi4RxBufferB : spi4RxBufferA;
 		xBitToSet = BIT_7;
 
-		if (HAL_SPI_Receive_IT(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH) != HAL_OK) {
+		if (HAL_SPI_Receive_DMA(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
 	} else if(hspi->Instance == SPI6){
-//		telem.data = pRecieveHistoSpi6;
+		telem.data = pRecieveHistoSpi6;
+		telem.id = 1;
+		UART_INTERFACE_SendDMA(&telem);
+
+		printf("spi6");
 		pRecieveHistoSpi6 = (pRecieveHistoSpi6 == spi6RxBufferA) ? spi6RxBufferB : spi6RxBufferA;
 		xBitToSet = BIT_1;
-		if (HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH) != HAL_OK) {
+		if (HAL_SPI_Receive_DMA(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
-
 	}
 
     xResult = xEventGroupSetBitsFromISR(
@@ -1585,37 +1671,37 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 // Error handling callback for SPI
 void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
-    if (hspi->Instance == SPI3) { // Check if the error is for SPI1
-        // Identify specific errors using error codes
-        printf("SPI Error occurred: ");
-        if (hspi->ErrorCode & HAL_SPI_ERROR_OVR) {
-            printf("Overrun error ");
-        }
-        if (hspi->ErrorCode & HAL_SPI_ERROR_MODF) {
-            printf("Mode fault error ");
-        }
-        if (hspi->ErrorCode & HAL_SPI_ERROR_CRC) {
-            printf("CRC error ");
-        }
-        if (hspi->ErrorCode & HAL_SPI_ERROR_FRE) {
-            printf("Frame error ");
-        }
-        if (hspi->ErrorCode & HAL_SPI_ERROR_DMA) {
-            printf("DMA transfer error ");
-        }
-        printf("\n");
+	// Identify specific errors using error codes
+	printf("SPI Error occurred: ");
+	if (hspi->ErrorCode & HAL_SPI_ERROR_OVR) {
+		printf("Overrun error ");
+	}
+	if (hspi->ErrorCode & HAL_SPI_ERROR_MODF) {
+		printf("Mode fault error ");
+	}
+	if (hspi->ErrorCode & HAL_SPI_ERROR_CRC) {
+		printf("CRC error ");
+	}
+	if (hspi->ErrorCode & HAL_SPI_ERROR_FRE) {
+		printf("Frame error ");
+	}
+	if (hspi->ErrorCode & HAL_SPI_ERROR_DMA) {
+		printf("DMA transfer error ");
+	}
+	printf("\r\n");
 
-        // Reset SPI and buffer state
-        HAL_SPI_DeInit(hspi);             // Deinitialize SPI
-        HAL_SPI_Init(hspi);               // Reinitialize SPI
+	// Reset SPI and buffer state
+	HAL_SPI_DeInit(hspi);             // Deinitialize SPI
+	Error_Handler();  // Handle any error during re-enabling
 
-        // Re-enable interrupt reception
-    	pRecieveHistoSpi3 = (pRecieveHistoSpi3 == spi3RxBufferA) ? spi3RxBufferB : spi3RxBufferA;
-		// Re-enable SPI interrupt reception for the next byte
-		if (HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH) != HAL_OK) {
-			Error_Handler();  // Handle any error during re-enabling
-		}
-    }
+/*	HAL_SPI_Init(hspi);               // Reinitialize SPI
+
+	// Re-enable interrupt reception
+//    	pRecieveHistoSpi3 = (pRecieveHistoSpi3 == spi3RxBufferA) ? spi3RxBufferB : spi3RxBufferA;
+	// Re-enable SPI interrupt reception for the next byte
+	if (HAL_SPI_Receive_IT(hspi, pRecieveHistoSpi3, SPI_PACKET_LENGTH) != HAL_OK) {
+	}
+*/
 }
 
 void vApplicationIdleHook( void )

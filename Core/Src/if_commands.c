@@ -209,7 +209,7 @@ static void process_camera_commands(UartPacket *uartResp, UartPacket cmd)
 		break;
 	case OW_CAMERA_SWITCH:
 		uint8_t channel = cmd.data[0];
-		printf("Switching to camera %d",channel);
+		printf("Switching to camera %d\r\n",channel);
         TCA9548A_SelectChannel(cam.pI2c, 0x70, channel);
 		cam = cam_array[channel];
 
@@ -291,7 +291,7 @@ UartPacket process_if_command(UartPacket cmd)
 		break;
 	case OW_I2C_PASSTHRU:
 
-		print_uart_packet(&cmd);
+//		print_uart_packet(&cmd);
 
         // printBuffer(cmd.data, 10);
 		i2c_packet_fromBuffer(cmd.data, &i2c_packet);

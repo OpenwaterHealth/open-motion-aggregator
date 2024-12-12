@@ -54,7 +54,6 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
-void vTaskWaitForAllBits(void *pvParameters);
 
 /* USER CODE BEGIN EFP */
 
@@ -140,6 +139,7 @@ extern CameraDevice cam_array[];
 #define BIT_5    ( 1 << 5 )
 #define BIT_6    ( 1 << 6 )
 #define BIT_7    ( 1 << 7 )
+void vTaskWaitForAllBits(void *pvParameters);
 
 /* USER CODE END Private defines */
 
