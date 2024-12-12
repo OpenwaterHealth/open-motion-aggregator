@@ -468,18 +468,13 @@ int main(void)
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
-//  xHistoRxEventGroup = xEventGroupCreate();
-//  if(xHistoRxEventGroup == NULL){
-//	  printf("Could not create new event group\r\n");
-//	  Error_Handler();
-//  }
+
 
   event_flags_id = osEventFlagsNew(NULL); // Default attributes
   if (event_flags_id == NULL) {
       // Handle creation error
       printf("Failed to create Event Flags\n");
   }
-  configASSERT(event_flags_id != NULL);
 
 	uint32_t flags = osEventFlagsSet(event_flags_id, 0x00);
 	if (flags == (uint32_t)osFlagsErrorUnknown) {
@@ -493,7 +488,6 @@ int main(void)
 	}
 
   histoTaskHandle = osThreadNew(vTaskWaitForAllBits, NULL, &histoTask_attributes);
-//  xTaskCreate(vTaskWaitForAllBits, "WaitTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 
   HAL_SPI_Receive_DMA(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
   HAL_SPI_Receive_DMA(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
@@ -1640,15 +1634,11 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 	telem.data_len = SPI_PACKET_LENGTH;
 	telem.addr = 0;
 
-
-	BaseType_t xHigherPriorityTaskWoken, xResult;
-	xHigherPriorityTaskWoken = pdFALSE;
-	EventBits_t xBitToSet = 0x00;
-	printf("asdf");
+	uint32_t xBitToSet = 0x00;
 	if(hspi->Instance == SPI2){
 		telem.data = pRecieveHistoSpi2;
 		telem.id = 6; // cam7
-		UART_INTERFACE_SendDMA(&telem);
+//		UART_INTERFACE_SendDMA(&telem);
 
 		pRecieveHistoSpi2 = (pRecieveHistoSpi2 == spi2RxBufferA) ? spi2RxBufferB : spi2RxBufferA;
 		xBitToSet = BIT_6;
@@ -1658,8 +1648,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 	}	else if(hspi->Instance == SPI3){
 		telem.data = pRecieveHistoSpi3;
 		telem.id = 5;
-		UART_INTERFACE_SendDMA(&telem);
-		printf("bit set");
+//		UART_INTERFACE_SendDMA(&telem);
 		pRecieveHistoSpi3 = (pRecieveHistoSpi3 == spi3RxBufferA) ? spi3RxBufferB : spi3RxBufferA;
 		xBitToSet = BIT_5;
 		if (HAL_SPI_Receive_DMA(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH) != HAL_OK) {
@@ -1668,7 +1657,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 	} else if(hspi->Instance == SPI4){
 		telem.data = pRecieveHistoSpi4;
 		telem.id = 7;
-		UART_INTERFACE_SendDMA(&telem);
+//		UART_INTERFACE_SendDMA(&telem);
 
 		pRecieveHistoSpi4 = (pRecieveHistoSpi4 == spi4RxBufferA) ? spi4RxBufferB : spi4RxBufferA;
 		xBitToSet = BIT_7;
@@ -1679,9 +1668,8 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 	} else if(hspi->Instance == SPI6){
 		telem.data = pRecieveHistoSpi6;
 		telem.id = 1;
-		UART_INTERFACE_SendDMA(&telem);
+//		UART_INTERFACE_SendDMA(&telem);
 
-		printf("spi6");
 		pRecieveHistoSpi6 = (pRecieveHistoSpi6 == spi6RxBufferA) ? spi6RxBufferB : spi6RxBufferA;
 		xBitToSet = BIT_1;
 		if (HAL_SPI_Receive_DMA(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH) != HAL_OK) {
@@ -1689,30 +1677,11 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 		}
 	}
 
-//    xResult = xEventGroupSetBitsFromISR(
-//    								xHistoRxEventGroup,   /* The event group being updated. */
-//									BIT_5, /* The bits being set. */
-//	                                &xHigherPriorityTaskWoken );
-//
-//	/* Was the message posted successfully? */
-//	if( xResult != pdFAIL )
-//	{
-//		/* If xHigherPriorityTaskWoken is now set to pdTRUE then a context
-//		   switch should be requested. The macro used is port specific and will
-//		   be either portYIELD_FROM_ISR() or portEND_SWITCHING_ISR() - refer to
-//		   the documentation page for the port being used. */
-//		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
-//	}
-
-	if (event_flags_id == NULL) {
-	    printf("Event Flags not initialized\n");
-	}
-
-	if (osKernelGetState() != osKernelRunning) {
-	    printf("RTOS kernel not running\n");
+	if (osKernelGetState() != osKernelRunning || event_flags_id == NULL) {
+	    printf("Error with posting event flags \r\n");
 	}
 	else {
-		uint32_t flags = osEventFlagsSet(event_flags_id, BIT_5);
+		uint32_t flags = osEventFlagsSet(event_flags_id, xBitToSet);
 		if (flags == (uint32_t)osFlagsErrorUnknown) {
 			printf("osFlagsErrorUnknown!\r\n");
 		}
@@ -1723,7 +1692,6 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 			printf("osFlagsErrorResource!\r\n");
 		}
 	}
-//	 osThreadYield();
 }
 
 // Error handling callback for SPI
@@ -1850,15 +1818,12 @@ void init_camera(CameraDevice *cam){
 // Task to wait for all bits
 void vTaskWaitForAllBits(void *pvParameters)
 {
-    EventBits_t uxBits;
     uint32_t flags;
     for (;;)
     {
-        printf("Task is waiting for all bits to be set...\r\n");
+        flags = osEventFlagsWait(event_flags_id, ( BIT_5 | BIT_6 | BIT_7 ), osFlagsWaitAll, osWaitForever);
 
-        flags = osEventFlagsWait(event_flags_id, BIT_5, osFlagsWaitAny, osWaitForever);
-
-        printf("\n\n\n\nAll bits are set! Task unblocked.\r\n\n\n\n");
+        printf("All bits are set! Task unblocked.\r\n");
 
 
 //        // Wait for all bits (BIT_0 | BIT_1 | BIT_2) to be set
