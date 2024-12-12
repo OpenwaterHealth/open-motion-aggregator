@@ -61,7 +61,7 @@ static void process_basic_command(UartPacket *uartResp, UartPacket cmd)
 //		HAL_GPIO_TogglePin(LED_YELLOW_GPIO_Port, LED_YELLOW_Pin);
 		break;
 	case OW_CMD_I2C_BROADCAST:
-		printf("Broadcasting I2C on all channels");
+		printf("Broadcasting I2C on all channels\r\n");
 		TCA9548A_SelectBroadcast(cam.pI2c, 0x70);
 		break;
 	default:

@@ -18,7 +18,6 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
-#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -91,7 +90,7 @@ DMA_HandleTypeDef hdma_usart6_rx;
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 128 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
@@ -100,6 +99,13 @@ uint8_t FIRMWARE_VERSION_DATA[3] = {1, 0, 1};
 osThreadId_t comTaskHandle;
 const osThreadAttr_t comTask_attributes = {
   .name = "comTask",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+
+osThreadId_t histoTaskHandle;
+const osThreadAttr_t histoTask_attributes = {
+  .name = "histoTask",
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
@@ -154,6 +160,7 @@ CameraDevice cam8;
 
 CameraDevice cam_array[8];
 EventGroupHandle_t xHistoRxEventGroup;
+osEventFlagsId_t event_flags_id;
 
 /* USER CODE END PV */
 
@@ -425,22 +432,17 @@ int main(void)
 //  HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
 
 
-  HAL_SPI_Receive_DMA(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
-  HAL_SPI_Receive_DMA(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
-  HAL_SPI_Receive_DMA(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH);
-  HAL_SPI_Receive_DMA(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
-//
-  HAL_USART_Receive_DMA(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH);
-  HAL_USART_Receive_DMA(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
-  HAL_USART_Receive_DMA(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH);
-  HAL_USART_Receive_DMA(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
 
   printf("System Running\r\n");
   /* USER CODE END 2 */
 
   /* Init scheduler */
-  osKernelInitialize();
+  osStatus_t status;
 
+  status = osKernelInitialize();
+  if (status != osOK) {
+      printf("Kernel initialization failed!\n");
+  }
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
@@ -466,15 +468,50 @@ int main(void)
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
-  xHistoRxEventGroup = xEventGroupCreate();
+//  xHistoRxEventGroup = xEventGroupCreate();
+//  if(xHistoRxEventGroup == NULL){
+//	  printf("Could not create new event group\r\n");
+//	  Error_Handler();
+//  }
 
-  xTaskCreate(vTaskWaitForAllBits, "WaitTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+  event_flags_id = osEventFlagsNew(NULL); // Default attributes
+  if (event_flags_id == NULL) {
+      // Handle creation error
+      printf("Failed to create Event Flags\n");
+  }
+  configASSERT(event_flags_id != NULL);
+
+	uint32_t flags = osEventFlagsSet(event_flags_id, 0x00);
+	if (flags == (uint32_t)osFlagsErrorUnknown) {
+		printf("osFlagsErrorUnknown!\r\n");
+	}
+	else if (flags == (uint32_t)osFlagsErrorParameter) {
+		printf("osFlagsErrorParameter!\r\n");
+	}
+	else if (flags == (uint32_t)osFlagsErrorResource) {
+		printf("osFlagsErrorResource!\r\n");
+	}
+
+  histoTaskHandle = osThreadNew(vTaskWaitForAllBits, NULL, &histoTask_attributes);
+//  xTaskCreate(vTaskWaitForAllBits, "WaitTask", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+
+  HAL_SPI_Receive_DMA(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_DMA(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_DMA(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_DMA(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
+
+  HAL_USART_Receive_DMA(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH);
+  HAL_USART_Receive_DMA(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
+  HAL_USART_Receive_DMA(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH);
+  HAL_USART_Receive_DMA(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
 
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
-  osKernelStart();
-
+  status = osKernelStart();
+  if (status != osOK) {
+      printf("Kernel start failed!\n");
+  }
   /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
@@ -1606,7 +1643,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 	BaseType_t xHigherPriorityTaskWoken, xResult;
 	xHigherPriorityTaskWoken = pdFALSE;
-	uint8_t xBitToSet = 0x00;
+	EventBits_t xBitToSet = 0x00;
 	printf("asdf");
 	if(hspi->Instance == SPI2){
 		telem.data = pRecieveHistoSpi2;
@@ -1622,7 +1659,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 		telem.data = pRecieveHistoSpi3;
 		telem.id = 5;
 		UART_INTERFACE_SendDMA(&telem);
-
+		printf("bit set");
 		pRecieveHistoSpi3 = (pRecieveHistoSpi3 == spi3RxBufferA) ? spi3RxBufferB : spi3RxBufferA;
 		xBitToSet = BIT_5;
 		if (HAL_SPI_Receive_DMA(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH) != HAL_OK) {
@@ -1652,21 +1689,41 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 		}
 	}
 
-    xResult = xEventGroupSetBitsFromISR(
-    								xHistoRxEventGroup,   /* The event group being updated. */
-									xBitToSet, /* The bits being set. */
-	                                &xHigherPriorityTaskWoken );
+//    xResult = xEventGroupSetBitsFromISR(
+//    								xHistoRxEventGroup,   /* The event group being updated. */
+//									BIT_5, /* The bits being set. */
+//	                                &xHigherPriorityTaskWoken );
+//
+//	/* Was the message posted successfully? */
+//	if( xResult != pdFAIL )
+//	{
+//		/* If xHigherPriorityTaskWoken is now set to pdTRUE then a context
+//		   switch should be requested. The macro used is port specific and will
+//		   be either portYIELD_FROM_ISR() or portEND_SWITCHING_ISR() - refer to
+//		   the documentation page for the port being used. */
+//		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+//	}
 
-	/* Was the message posted successfully? */
-	if( xResult != pdFAIL )
-	{
-		/* If xHigherPriorityTaskWoken is now set to pdTRUE then a context
-		   switch should be requested. The macro used is port specific and will
-		   be either portYIELD_FROM_ISR() or portEND_SWITCHING_ISR() - refer to
-		   the documentation page for the port being used. */
-		portYIELD_FROM_ISR( xHigherPriorityTaskWoken );
+	if (event_flags_id == NULL) {
+	    printf("Event Flags not initialized\n");
 	}
 
+	if (osKernelGetState() != osKernelRunning) {
+	    printf("RTOS kernel not running\n");
+	}
+	else {
+		uint32_t flags = osEventFlagsSet(event_flags_id, BIT_5);
+		if (flags == (uint32_t)osFlagsErrorUnknown) {
+			printf("osFlagsErrorUnknown!\r\n");
+		}
+		else if (flags == (uint32_t)osFlagsErrorParameter) {
+			printf("osFlagsErrorParameter!\r\n");
+		}
+		else if (flags == (uint32_t)osFlagsErrorResource) {
+			printf("osFlagsErrorResource!\r\n");
+		}
+	}
+//	 osThreadYield();
 }
 
 // Error handling callback for SPI
@@ -1794,25 +1851,32 @@ void init_camera(CameraDevice *cam){
 void vTaskWaitForAllBits(void *pvParameters)
 {
     EventBits_t uxBits;
-
+    uint32_t flags;
     for (;;)
     {
-        printf("Task is waiting for all bits to be set...\n");
+        printf("Task is waiting for all bits to be set...\r\n");
 
-        // Wait for all bits (BIT_0 | BIT_1 | BIT_2) to be set
-        uxBits = xEventGroupWaitBits(
-            xHistoRxEventGroup,
-			BIT_0 | BIT_1 | BIT_2, // Bits to wait for
-            pdFALSE,           // Do not clear bits on exit
-            pdTRUE,            // Wait for all bits to be set
-            portMAX_DELAY      // Wait indefinitely
-        );
+        flags = osEventFlagsWait(event_flags_id, BIT_5, osFlagsWaitAny, osWaitForever);
 
-        // Check if all bits are set
-        if ((uxBits & (BIT_0 | BIT_1 | BIT_2)) == (BIT_0 | BIT_1 | BIT_2))
-        {
-            printf("All bits are set! Task unblocked.\n");
-        }
+        printf("\n\n\n\nAll bits are set! Task unblocked.\r\n\n\n\n");
+
+
+//        // Wait for all bits (BIT_0 | BIT_1 | BIT_2) to be set
+//        uxBits = xEventGroupWaitBits(
+//            xHistoRxEventGroup,
+//			BIT_5, // Bits to wait for
+//            pdFALSE,           // Do not clear bits on exit
+//            pdTRUE,            // Wait for all bits to be set
+//            portMAX_DELAY      // Wait indefinitely
+//        );
+//
+//        // Check if all bits are set
+//        if ((uxBits & (BIT_5)) == (BIT_5))
+//        {
+//            printf("\n\n\n\nAll bits are set! Task unblocked.\n\n\n\n");
+//        }
+
+
     }
 }
 
