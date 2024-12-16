@@ -72,10 +72,23 @@ void MX_USB_DEVICE_Init(void)
   {
     Error_Handler();
   }
-  if (USBD_RegisterClass(&hUsbDeviceHS, &USBD_CDC) != USBD_OK)
-  {
+
+  /* Store HID Instance Class ID */
+  HID_InstID = hUsbDeviceFS.classId;
+  /* Register the HID Class */
+  if(USBD_RegisterClassComposite(&hUsbDeviceHS, USBD_HID_CLASS, CLASS_TYPE_HID, &HID_EpAdd_Inst) != USBD_OK)
     Error_Handler();
-  }
+  /* Store the HID Class */
+  CDC_InstID = hUsbDeviceFS.classId;
+  /* Register CDC Class First Instance */
+  if(USBD_RegisterClassComposite(&hUsbDeviceHS, USBD_CDC_CLASS, CLASS_TYPE_CDC, CDC_EpAdd_Inst) != USBD_OK)
+    Error_Handler();
+
+  // if (USBD_RegisterClass(&hUsbDeviceHS, &USBD_CDC) != USBD_OK)
+  // {
+  //   Error_Handler();
+  // }
+  
   if (USBD_CDC_RegisterInterface(&hUsbDeviceHS, &USBD_Interface_fops_HS) != USBD_OK)
   {
     Error_Handler();

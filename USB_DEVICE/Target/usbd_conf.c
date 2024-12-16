@@ -24,6 +24,8 @@
 #include "usbd_def.h"
 #include "usbd_core.h"
 #include "usbd_cdc.h"
+#include "usbd_hid.h"
+#include "usbd_video.h"
 
 /* USER CODE BEGIN Includes */
 
