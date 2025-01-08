@@ -103,7 +103,7 @@ osThreadId_t dataTaskHandle;
 const osThreadAttr_t dataTask_attributes = {
   .name = "comTask",
   .stack_size = 256 * 4,
-  .priority = (osPriority_t) osPriorityNormal,
+  .priority = (osPriority_t) osPriorityHigh,
 };
 
 uint8_t rxBuffer[COMMAND_MAX_SIZE];
@@ -459,7 +459,7 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
   comTaskHandle = osThreadNew(COMTask, NULL, &comTask_attributes);
 
-  dataTaskHandle = osThreadNew(ProcessDataTask,NULL,&dataTask_attributes);
+//  dataTaskHandle = osThreadNew(ProcessDataTask,NULL,&dataTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -1184,8 +1184,8 @@ static void MX_USART2_Init(void)
   husart2.Init.StopBits = USART_STOPBITS_1;
   husart2.Init.Parity = USART_PARITY_NONE;
   husart2.Init.Mode = USART_MODE_TX_RX;
-  husart2.Init.CLKPolarity = USART_POLARITY_LOW;
-  husart2.Init.CLKPhase = USART_PHASE_1EDGE;
+  husart2.Init.CLKPolarity = USART_POLARITY_HIGH;
+  husart2.Init.CLKPhase = USART_PHASE_2EDGE;
   husart2.Init.CLKLastBit = USART_LASTBIT_DISABLE;
   husart2.Init.ClockPrescaler = USART_PRESCALER_DIV1;
   husart2.SlaveMode = USART_SLAVEMODE_ENABLE;
@@ -1201,7 +1201,7 @@ static void MX_USART2_Init(void)
   {
     Error_Handler();
   }
-  if (HAL_USARTEx_EnableFifoMode(&husart2) != HAL_OK)
+  if (HAL_USARTEx_DisableFifoMode(&husart2) != HAL_OK)
   {
     Error_Handler();
   }
@@ -1701,7 +1701,8 @@ void ProcessDataTask(void *argument) {
 	        	if (status == HAL_OK) timeout = true;
 	        	else if (status == HAL_BUSY && ticks>timeout_time) {
 	        		ticks++;
-	        	    vTaskDelay(1);
+	        		osDelay(1);
+	        	    printf("busy");
 	        	}
 	        	else {
 	        		printf("UART HANDLER TIMED OUT\r\n");
