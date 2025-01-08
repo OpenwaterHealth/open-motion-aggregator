@@ -421,21 +421,6 @@ int main(void)
     TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
 
 
-//    printf("RX DMA Destination Address: 0x%08lX\n", (unsigned long)hspi6.hdmarx->Instance->M0AR);
-//    printf("TX DMA Destination Address: 0x%08lX\n", (unsigned long)hspi6.hdmatx->Instance->M0AR);
-
-//    HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
-//    HAL_USART_Receive_IT(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH);
-//    HAL_USART_Receive_IT(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
-//    HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH);
-
-//  HAL_SPI_Receive_IT(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
-//  HAL_SPI_Receive_IT(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
-//  HAL_SPI_Receive_IT(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH);
-//  HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
-
-
-
   printf("System Running\r\n");
   /* USER CODE END 2 */
 
@@ -1526,8 +1511,8 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 		logging_UART_TxCpltCallback(huart);
 	}
 }
+
 void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
-    printf("handler getting hit");
 
     UartPacket telem;
     telem.id = 0; // Arbitrarily deciding that all telem packets have id 0
@@ -1535,9 +1520,13 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
     telem.command = OW_HISTO;
     telem.data_len = SPI_PACKET_LENGTH; // Use appropriate packet length for USART
     telem.addr = 0;
+
+	uint32_t xBitToSet = 0x00;
+
 	if (husart->Instance == USART1) { // Check if the interrupt is for USART2
         telem.data = pRecieveHistoUsart1;
         UART_INTERFACE_SendDMA(&telem);
+		xBitToSet = BIT_4;
 
         pRecieveHistoUsart1 = (pRecieveHistoUsart1 == usart1RxBufferA) ? usart1RxBufferB : usart1RxBufferA;
         if (HAL_USART_Receive_DMA(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH) != HAL_OK) {
@@ -1547,6 +1536,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 	else if (husart->Instance == USART2) { // Check if the interrupt is for USART2
         telem.data = pRecieveHistoUsart2;
         UART_INTERFACE_SendDMA(&telem);
+		xBitToSet = BIT_0;
 
         pRecieveHistoUsart2 = (pRecieveHistoUsart2 == usart2RxBufferA) ? usart2RxBufferB : usart2RxBufferA;
         if (HAL_USART_Receive_DMA(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH) != HAL_OK) {
@@ -1556,6 +1546,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 	else if (husart->Instance == USART3) { // Check if the interrupt is for USART2
         telem.data = pRecieveHistoUsart3;
         UART_INTERFACE_SendDMA(&telem);
+		xBitToSet = BIT_2;
 
         pRecieveHistoUsart3 = (pRecieveHistoUsart3 == usart3RxBufferA) ? usart3RxBufferB : usart3RxBufferA;
         if (HAL_USART_Receive_DMA(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH) != HAL_OK) {
@@ -1565,14 +1556,34 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 	else if (husart->Instance == USART6) { // Check if the interrupt is for USART2
         telem.data = pRecieveHistoUsart6;
         UART_INTERFACE_SendDMA(&telem);
+		xBitToSet = BIT_3;
 
         pRecieveHistoUsart6 = (pRecieveHistoUsart6 == usart6RxBufferA) ? usart6RxBufferB : usart6RxBufferA;
         if (HAL_USART_Receive_DMA(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH) != HAL_OK) {
             Error_Handler();  // Handle any error during re-enabling
         }
     }
-}
 
+	osKernelState_t state = osKernelGetState();
+	if (state != osKernelRunning) {
+		printf("Kernel not running, state is %i \r\n", state);
+	}
+	else if(event_flags_id == NULL){
+		printf("Event flags nullified \r\n");
+	}
+	else {
+		uint32_t flags = osEventFlagsSet(event_flags_id, xBitToSet);
+		if (flags == (uint32_t)osFlagsErrorUnknown) {
+			printf("osFlagsErrorUnknown!\r\n");
+		}
+		else if (flags == (uint32_t)osFlagsErrorParameter) {
+			printf("osFlagsErrorParameter!\r\n");
+		}
+		else if (flags == (uint32_t)osFlagsErrorResource) {
+			printf("osFlagsErrorResource!\r\n");
+		}
+	}
+}
 
 // Error handling callback for USART
 void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart) {
@@ -1599,7 +1610,8 @@ void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart) {
 
         // Reset USART and buffer state
         HAL_USART_DeInit(husart);             // Deinitialize USART
-        HAL_USART_Init(husart);               // Reinitialize USART
+
+        Error_Handler();
 
         // Re-enable interrupt reception
 //        pReceiveBuffer = (pReceiveBuffer == usartRxBufferA) ? usartRxBufferB : usartRxBufferA;
@@ -1663,7 +1675,8 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 //			Error_Handler();  // Handle any error during re-enabling
 //		}
 	}
-  osKernelState_t state = osKernelGetState();
+
+	osKernelState_t state = osKernelGetState();
 	if (state != osKernelRunning) {
 	    printf("Kernel not running, state is %i \r\n", state);
 	}
