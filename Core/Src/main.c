@@ -292,6 +292,8 @@ int main(void)
 	  printf("IMU detected\r\n");
   else printf("IMU detected\r\n\n");
 
+  HAL_Delay(2000);
+
   for(int i = 0;i<8;i++){
 	  TCA9548A_SelectChannel(&hi2c1, 0x70, i);
 	  HAL_Delay(300);
@@ -872,7 +874,7 @@ static void MX_SPI6_Init(void)
   /* SPI6 parameter configuration*/
   hspi6.Instance = SPI6;
   hspi6.Init.Mode = SPI_MODE_SLAVE;
-  hspi6.Init.Direction = SPI_DIRECTION_2LINES;
+  hspi6.Init.Direction = SPI_DIRECTION_2LINES_RXONLY;
   hspi6.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi6.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi6.Init.CLKPhase = SPI_PHASE_2EDGE;
