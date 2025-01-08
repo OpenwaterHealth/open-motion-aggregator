@@ -45,6 +45,8 @@
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
 #define SPI_PACKET_LENGTH 4096
+#define USART_PACKET_LENGTH 4100
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -78,6 +80,7 @@ USART_HandleTypeDef husart3;
 USART_HandleTypeDef husart6;
 DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_uart4_tx;
+DMA_HandleTypeDef hdma_usart2_rx;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -91,6 +94,13 @@ uint8_t FIRMWARE_VERSION_DATA[3] = {1, 0, 1};
 
 osThreadId_t comTaskHandle;
 const osThreadAttr_t comTask_attributes = {
+  .name = "comTask",
+  .stack_size = 256 * 4,
+  .priority = (osPriority_t) osPriorityNormal,
+};
+
+osThreadId_t dataTaskHandle;
+const osThreadAttr_t dataTask_attributes = {
   .name = "comTask",
   .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
@@ -122,8 +132,8 @@ uint8_t usart1RxBufferA[SPI_PACKET_LENGTH] = {0};
 uint8_t usart1RxBufferB[SPI_PACKET_LENGTH] = {0};
 uint8_t *pRecieveHistoUsart1 = usart1RxBufferA;
 
-uint8_t usart2RxBufferA[SPI_PACKET_LENGTH] = {0};
-uint8_t usart2RxBufferB[SPI_PACKET_LENGTH] = {0};
+uint8_t usart2RxBufferA[USART_PACKET_LENGTH] = {0};
+uint8_t usart2RxBufferB[USART_PACKET_LENGTH] = {0};
 uint8_t *pRecieveHistoUsart2 = usart2RxBufferA;
 
 uint8_t usart3RxBufferA[SPI_PACKET_LENGTH] = {0};
@@ -145,6 +155,8 @@ CameraDevice cam7;
 CameraDevice cam8;
 
 CameraDevice cam_array[8];
+
+volatile bool dataTransferComplete = false;
 
 /* USER CODE END PV */
 
@@ -180,6 +192,7 @@ void StartDefaultTask(void *argument);
 /* USER CODE BEGIN 0 */
 void COMTask(void *argument);
 void init_camera(CameraDevice *cam);
+void ProcessDataTask(void *argument);
 
 static void PrintI2CSpeed(I2C_HandleTypeDef* hi2c) {
     // Assuming the timing is configured in I2C_TIMINGR register
@@ -415,6 +428,8 @@ int main(void)
 
     HAL_SPI_Receive_DMA(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
 
+	HAL_USART_Receive_DMA(&husart2, pRecieveHistoUsart2, USART_PACKET_LENGTH);
+
   printf("System Running\r\n");
   /* USER CODE END 2 */
 
@@ -443,6 +458,8 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_THREADS */
   comTaskHandle = osThreadNew(COMTask, NULL, &comTask_attributes);
+
+  dataTaskHandle = osThreadNew(ProcessDataTask,NULL,&dataTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -1167,8 +1184,8 @@ static void MX_USART2_Init(void)
   husart2.Init.StopBits = USART_STOPBITS_1;
   husart2.Init.Parity = USART_PARITY_NONE;
   husart2.Init.Mode = USART_MODE_TX_RX;
-  husart2.Init.CLKPolarity = USART_POLARITY_HIGH;
-  husart2.Init.CLKPhase = USART_PHASE_2EDGE;
+  husart2.Init.CLKPolarity = USART_POLARITY_LOW;
+  husart2.Init.CLKPhase = USART_PHASE_1EDGE;
   husart2.Init.CLKLastBit = USART_LASTBIT_DISABLE;
   husart2.Init.ClockPrescaler = USART_PRESCALER_DIV1;
   husart2.SlaveMode = USART_SLAVEMODE_ENABLE;
@@ -1321,6 +1338,9 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream2_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream2_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream2_IRQn);
+  /* DMA1_Stream3_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream3_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream3_IRQn);
 
 }
 
@@ -1454,8 +1474,9 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
     telem.id = 0; // Arbitrarily deciding that all telem packets have id 0
     telem.packet_type = OW_DATA;
     telem.command = OW_HISTO;
-    telem.data_len = SPI_PACKET_LENGTH; // Use appropriate packet length for USART
+    telem.data_len = USART_PACKET_LENGTH; // Use appropriate packet length for USART
     telem.addr = 0;
+
 	if (husart->Instance == USART1) { // Check if the interrupt is for USART2
         telem.data = pRecieveHistoUsart1;
         UART_INTERFACE_SendDMA(&telem);
@@ -1466,13 +1487,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
         }
     }
 	else if (husart->Instance == USART2) { // Check if the interrupt is for USART2
-        telem.data = pRecieveHistoUsart2;
-        UART_INTERFACE_SendDMA(&telem);
-
-        pRecieveHistoUsart2 = (pRecieveHistoUsart2 == usart2RxBufferA) ? usart2RxBufferB : usart2RxBufferA;
-        if (HAL_USART_Receive_IT(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH) != HAL_OK) {
-            Error_Handler();  // Handle any error during re-enabling
-        }
+		dataTransferComplete = true;
     }
 	else if (husart->Instance == USART3) { // Check if the interrupt is for USART2
         telem.data = pRecieveHistoUsart3;
@@ -1660,6 +1675,42 @@ void COMTask(void *argument)
 {
 	  printf("Starting COM Task\r\n");
 	  comms_start_task();
+}
+
+void ProcessDataTask(void *argument) {
+	for (;;) {
+		if(dataTransferComplete) {
+			dataTransferComplete = false;
+
+			UartPacket telem;
+		    telem.id = 0; // Arbitrarily deciding that all telem packets have id 0
+		    telem.packet_type = OW_DATA;
+		    telem.command = OW_HISTO;
+		    telem.data_len = SPI_PACKET_LENGTH; // Use appropriate packet length for USART
+		    telem.addr = 0;
+		    telem.data = pRecieveHistoUsart2;
+		    UART_INTERFACE_SendDMA(&telem);
+
+		    pRecieveHistoUsart2 = (pRecieveHistoUsart2 == usart2RxBufferA) ? usart2RxBufferB : usart2RxBufferA;
+
+	        bool timeout = false;
+	        uint8_t timeout_time = 8;
+	        uint8_t ticks = 0;
+	        while(!timeout){
+	        	HAL_StatusTypeDef status = HAL_USART_Receive_DMA(&husart2, pRecieveHistoUsart2, USART_PACKET_LENGTH);
+	        	if (status == HAL_OK) timeout = true;
+	        	else if (status == HAL_BUSY && ticks>timeout_time) {
+	        		ticks++;
+	        	    vTaskDelay(1);
+	        	}
+	        	else {
+	        		printf("UART HANDLER TIMED OUT\r\n");
+	        		timeout = true;
+	        	}
+	        }
+		}
+		vTaskDelay(1);
+	}
 }
 
 void init_camera(CameraDevice *cam){
