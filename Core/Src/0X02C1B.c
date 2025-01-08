@@ -156,3 +156,31 @@ int X02C1B_fsin_off()
    	  printf("COMPLETED\r\n");
       return 0;
 }
+
+float X02C1B_read_temp(CameraDevice *cam)
+{
+	// Read temperature bytes
+    uint8_t upper_byte;
+    int ret = X02C1B_read(cam->pI2c, X02C1B_TEMP_UPPER, &upper_byte);
+    if (ret < 0) {
+        printf("Failed to read X02C1B_TEMP_UPPER, got %02X\r\n", upper_byte);
+        return ret;
+    }
+    uint8_t lower_byte;
+    ret = X02C1B_read(cam->pI2c, X02C1B_TEMP_LOWER, &lower_byte);
+    if (ret < 0) {
+        printf("Failed to read X02C1B_TEMP_LOWER, got %02X\r\n", lower_byte);
+        return ret;
+    }
+
+    uint16_t bytes = (upper_byte << 8) + lower_byte;
+    float temperature;
+    if(bytes < 0xC000)  //temperature is positive
+    	temperature = upper_byte + (0.001f * lower_byte);
+	else
+		temperature = (0xC0 - upper_byte) + (0.001f * lower_byte);
+
+    printf("Camera %i Temperature: %f degC (0x%X)\r\n",cam->id+1,temperature,bytes);
+
+    return temperature;
+}

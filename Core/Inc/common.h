@@ -86,6 +86,8 @@ typedef enum {
 	OW_CAMERA_FSIN_ON = 0x26,
 	OW_CAMERA_FSIN_OFF = 0x27,
 	OW_CAMERA_SWITCH = 0x28,
+	OW_CAMERA_READ_TEMP = 0x24,
+
 } MotionCAMERACommands;
 
 typedef struct  {

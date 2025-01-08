@@ -22,6 +22,9 @@
 
 #define X02C1B_EC_A_REG03		0x3503
 
+#define X02C1B_TEMP_UPPER 		0x4d2a
+#define X02C1B_TEMP_LOWER 		0x4d2b
+
 
 #define ARRAY_SIZE(array) \
     (sizeof(array) / sizeof(*array))
@@ -38,5 +41,5 @@ int X02C1B_configure_sensor(CameraDevice *cam);
 int X02C1B_detect(CameraDevice *cam);
 int X02C1B_fsin_on();
 int X02C1B_fsin_off();
-
+float X02C1B_read_temp(CameraDevice *cam);
 #endif /* INC_0X02C1B_H_ */

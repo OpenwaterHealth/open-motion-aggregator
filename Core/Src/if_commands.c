@@ -19,6 +19,7 @@
 
 extern uint8_t FIRMWARE_VERSION_DATA[3];
 static uint32_t id_words[3] = {0};
+static float temp;
 
 static void process_basic_command(UartPacket *uartResp, UartPacket cmd)
 {
@@ -212,6 +213,13 @@ static void process_camera_commands(UartPacket *uartResp, UartPacket cmd)
 		printf("Switching to camera %d\r\n",channel+1);
         TCA9548A_SelectChannel(cam.pI2c, 0x70, channel);
 		cam = cam_array[channel];
+		break;
+	case OW_CAMERA_READ_TEMP:
+		temp = X02C1B_read_temp(&cam);
+		uartResp->command = OW_CAMERA_READ_TEMP;
+		uartResp->data_len = 4;
+		uartResp->data = &temp;
+		break;
 
 
 	default:
