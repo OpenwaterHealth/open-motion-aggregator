@@ -10,7 +10,6 @@
 #include "uart_comms.h"
 #include "utils.h"
 #include <string.h>
-#include "usbd_cdc_if.h"
 
 // Private variables
 extern uint8_t rxBuffer[COMMAND_MAX_SIZE];
@@ -46,7 +45,7 @@ void UART_INTERFACE_SendDMA(UartPacket* pResp)
 
 	txBuffer[bufferIndex++] = OW_END_BYTE;
 
-	CDC_Transmit_HS(txBuffer, bufferIndex);
+	//CDC_Transmit_HS(txBuffer, bufferIndex);
 
 	// HAL_UART_Transmit_DMA(&huart1, txBuffer, bufferIndex);
 	while(!tx_flag);
@@ -58,7 +57,7 @@ void comms_start_task() {
 	memset(rxBuffer, 0, sizeof(rxBuffer));
 	ptrReceive = 0;
 
-	CDC_FlushRxBuffer_HS();
+	//CDC_FlushRxBuffer_HS();
 
 	UartPacket cmd;
 	UartPacket resp;
@@ -66,7 +65,7 @@ void comms_start_task() {
     rx_flag = 0;
     tx_flag = 0;
     while(1) {
-    	CDC_ReceiveToIdle(rxBuffer, COMMAND_MAX_SIZE);
+    	//CDC_ReceiveToIdle(rxBuffer, COMMAND_MAX_SIZE);
 		while(!rx_flag);
 
         int bufferIndex = 0;

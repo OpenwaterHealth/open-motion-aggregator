@@ -55,7 +55,6 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern PCD_HandleTypeDef hpcd_USB_OTG_HS;
 extern I2C_HandleTypeDef hi2c1;
 extern DMA_HandleTypeDef hdma_spi2_rx;
 extern DMA_HandleTypeDef hdma_spi3_rx;
@@ -78,6 +77,7 @@ extern USART_HandleTypeDef husart1;
 extern USART_HandleTypeDef husart2;
 extern USART_HandleTypeDef husart3;
 extern USART_HandleTypeDef husart6;
+extern PCD_HandleTypeDef hpcd_USB_OTG_HS;
 extern TIM_HandleTypeDef htim17;
 
 /* USER CODE BEGIN EV */

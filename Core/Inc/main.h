@@ -31,8 +31,8 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "tx_api.h"
 #include "common.h"
-#include "cmsis_os.h"
 
 /* USER CODE END Includes */
 
@@ -50,8 +50,6 @@ extern "C" {
 /* USER CODE BEGIN EM */
 
 /* USER CODE END EM */
-
-void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 
 /* Exported functions prototypes ---------------------------------------------*/
 void Error_Handler(void);
@@ -141,7 +139,7 @@ extern CameraDevice cam_array[];
 #define BIT_6    ( 1 << 6 )
 #define BIT_7    ( 1 << 7 )
 void vTaskWaitForAllBits(void *pvParameters);
-extern osEventFlagsId_t event_flags_id;
+extern TX_EVENT_FLAGS_GROUP event_flags_id;
 
 /* USER CODE END Private defines */
 
