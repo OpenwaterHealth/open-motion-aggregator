@@ -67,7 +67,6 @@ SPI_HandleTypeDef hspi6;
 DMA_HandleTypeDef hdma_spi2_rx;
 DMA_HandleTypeDef hdma_spi3_rx;
 DMA_HandleTypeDef hdma_spi4_rx;
-DMA_HandleTypeDef hdma_spi6_rx;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim4;
@@ -170,7 +169,6 @@ void PeriphCommonClock_Config(void);
 static void MPU_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
-static void MX_BDMA_Init(void);
 static void MX_CRC_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_RNG_Init(void);
@@ -253,7 +251,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_BDMA_Init();
   MX_CRC_Init();
   MX_I2C1_Init();
   MX_RNG_Init();
@@ -297,10 +294,10 @@ int main(void)
 
   for(int i = 0;i<8;i++){
 	  TCA9548A_SelectChannel(&hi2c1, 0x70, i);
-	  HAL_Delay(10);
+	  HAL_Delay(300);
 	  printf("I2C Scanning bus %d\r\n",i);
 	  I2C_scan(&hi2c1, NULL, 0, true);
-	  HAL_Delay(10);
+	  HAL_Delay(100);
   }
 
   HAL_Delay(100);
@@ -421,6 +418,10 @@ int main(void)
 	cam = cam6;
     TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
 
+
+//    printf("RX DMA Destination Address: 0x%08lX\n", (unsigned long)hspi6.hdmarx->Instance->M0AR);
+//    printf("TX DMA Destination Address: 0x%08lX\n", (unsigned long)hspi6.hdmatx->Instance->M0AR);
+
 //    HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
 //    HAL_USART_Receive_IT(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH);
 //    HAL_USART_Receive_IT(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
@@ -492,7 +493,7 @@ int main(void)
   HAL_SPI_Receive_DMA(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
   HAL_SPI_Receive_DMA(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
   HAL_SPI_Receive_DMA(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH);
-  HAL_SPI_Receive_DMA(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
+  HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
 
   HAL_USART_Receive_DMA(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH);
   HAL_USART_Receive_DMA(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
@@ -1359,22 +1360,6 @@ static void MX_USART6_Init(void)
 /**
   * Enable DMA controller clock
   */
-static void MX_BDMA_Init(void)
-{
-
-  /* DMA controller clock enable */
-  __HAL_RCC_BDMA_CLK_ENABLE();
-
-  /* DMA interrupt init */
-  /* BDMA_Channel0_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(BDMA_Channel0_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(BDMA_Channel0_IRQn);
-
-}
-
-/**
-  * Enable DMA controller clock
-  */
 static void MX_DMA_Init(void)
 {
 
@@ -1672,13 +1657,16 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 		pRecieveHistoSpi6 = (pRecieveHistoSpi6 == spi6RxBufferA) ? spi6RxBufferB : spi6RxBufferA;
 		xBitToSet = BIT_1;
-		if (HAL_SPI_Receive_DMA(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH) != HAL_OK) {
-			Error_Handler();  // Handle any error during re-enabling
-		}
+//		if (HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH) != HAL_OK) {
+//			Error_Handler();  // Handle any error during re-enabling
+//		}
 	}
-
-	if (osKernelGetState() != osKernelRunning || event_flags_id == NULL) {
-	    printf("Error with posting event flags \r\n");
+  osKernelState_t state = osKernelGetState();
+	if (state != osKernelRunning) {
+	    printf("Kernel not running, state is %i \r\n", state);
+	}
+	else if(event_flags_id == NULL){
+		printf("Event flags nullified \r\n");
 	}
 	else {
 		uint32_t flags = osEventFlagsSet(event_flags_id, xBitToSet);
@@ -1711,7 +1699,26 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
 		printf("Frame error ");
 	}
 	if (hspi->ErrorCode & HAL_SPI_ERROR_DMA) {
-		printf("DMA transfer error ");
+		if(hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_TE)
+					printf("TE - HAL_DMA_ERROR_TE");
+		if(hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_FE)
+					printf("HAL_DMA_ERROR_FE ");
+		if(hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_DME)
+					printf("HAL_DMA_ERROR_DME");
+		if(hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_TIMEOUT)
+			  printf("HAL_DMA_ERROR_TIMEOUT");
+		if(hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_PARAM)
+			  printf("HAL_DMA_ERROR_PARAM");
+		if(hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_NO_XFER)
+			  printf("HAL_DMA_ERROR_NO_XFER");
+		if(hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_NOT_SUPPORTED)
+			  printf("HAL_DMA_ERROR_NOT_SUPPORTED");
+		if(hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_SYNC)
+			  printf("HAL_DMA_ERROR_SYNC");
+		if(hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_REQGEN)
+			  printf("HAL_DMA_ERROR_REQGEN");
+		if(hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_BUSY)
+			  printf("HAL_DMA_ERROR_BUSY");
 	}
 	printf("\r\n");
 
@@ -1821,11 +1828,13 @@ void vTaskWaitForAllBits(void *pvParameters)
     uint32_t flags;
     for (;;)
     {
-        flags = osEventFlagsWait(event_flags_id, ( BIT_5 | BIT_6 | BIT_7 ), osFlagsWaitAll, osWaitForever);
+        flags = osEventFlagsWait(event_flags_id, ( BIT_1 | BIT_5 | BIT_6 | BIT_7 ), osFlagsWaitAll, osWaitForever);
 
         printf("All bits are set! Task unblocked.\r\n");
 
-
+        if (HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH) != HAL_OK) {
+        			Error_Handler();  // Handle any error during re-enabling
+        		}
 //        // Wait for all bits (BIT_0 | BIT_1 | BIT_2) to be set
 //        uxBits = xEventGroupWaitBits(
 //            xHistoRxEventGroup,
