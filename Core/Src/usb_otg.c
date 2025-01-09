@@ -131,8 +131,6 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* pcdHandle)
     HAL_NVIC_EnableIRQ(OTG_HS_EP1_OUT_IRQn);
     HAL_NVIC_SetPriority(OTG_HS_EP1_IN_IRQn, 0, 0);
     HAL_NVIC_EnableIRQ(OTG_HS_EP1_IN_IRQn);
-    HAL_NVIC_SetPriority(OTG_HS_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(OTG_HS_IRQn);
   /* USER CODE BEGIN USB_OTG_HS_MspInit 1 */
 
   /* USER CODE END USB_OTG_HS_MspInit 1 */
@@ -175,7 +173,6 @@ void HAL_PCD_MspDeInit(PCD_HandleTypeDef* pcdHandle)
     /* USB_OTG_HS interrupt Deinit */
     HAL_NVIC_DisableIRQ(OTG_HS_EP1_OUT_IRQn);
     HAL_NVIC_DisableIRQ(OTG_HS_EP1_IN_IRQn);
-    HAL_NVIC_DisableIRQ(OTG_HS_IRQn);
   /* USER CODE BEGIN USB_OTG_HS_MspDeInit 1 */
 
   /* USER CODE END USB_OTG_HS_MspDeInit 1 */

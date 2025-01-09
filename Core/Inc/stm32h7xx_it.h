@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2024 STMicroelectronics.
+  * Copyright (c) 2025 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -73,7 +73,6 @@ void DMA2_Stream0_IRQHandler(void);
 void USART6_IRQHandler(void);
 void OTG_HS_EP1_OUT_IRQHandler(void);
 void OTG_HS_EP1_IN_IRQHandler(void);
-void OTG_HS_IRQHandler(void);
 void SPI4_IRQHandler(void);
 void SPI6_IRQHandler(void);
 void DMAMUX1_OVR_IRQHandler(void);

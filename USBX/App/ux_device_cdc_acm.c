@@ -125,9 +125,11 @@ VOID usbx_cdc_read_thread_entry(ULONG thread_input)
                                         switch(UserRxBuffer[i])
                                         {
                                                    case '1':
+
                                                              break;
                                                    case '0':
-                                                             break;
+
+                                                	   	   	 break;
                                         }
                               }
                     }

@@ -235,18 +235,22 @@ UINT MX_USBX_Device_Init(VOID *memory_ptr)
   /* USER CODE BEGIN MX_USBX_Device_Init1 */
 	if(tx_byte_allocate(byte_pool, (VOID **)&pointer, 1024, TX_NO_WAIT) != TX_SUCCESS)
 	{
+
 			  return TX_POOL_ERROR;
 	}
 	if(tx_thread_create(&ux_cdc_acm_read_thread, "CDC Read Thread", usbx_cdc_read_thread_entry, 1, pointer, 1024, 20, 20, 1, TX_AUTO_START) != TX_SUCCESS)
 	{
+
 			  return TX_THREAD_ERROR;
 	}
 	if(tx_byte_allocate(byte_pool, (VOID **)&pointer, 1024, TX_NO_WAIT) != TX_SUCCESS)
 	{
+
 			  return TX_POOL_ERROR;
 	}
 	if(tx_thread_create(&ux_cdc_acm_write_thread, "CDC Write Thread", usbx_cdc_write_thread_entry, 1, pointer, 1024, 20, 20, 1, TX_AUTO_START) != TX_SUCCESS)
 	{
+
 			  return TX_THREAD_ERROR;
 }
   /* USER CODE END MX_USBX_Device_Init1 */
@@ -279,7 +283,7 @@ VOID USBX_APP_Device_Init(VOID)
 
   /* USER CODE END USB_Device_Init_PreTreatment_0 */
 
-  /* USB_OTG_FS init function */
+  /* USB_OTG_HS init function */
   MX_USB_OTG_HS_PCD_Init();
 
   /* USER CODE BEGIN USB_Device_Init_PreTreatment_1 */

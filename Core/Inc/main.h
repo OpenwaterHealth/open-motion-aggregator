@@ -7,7 +7,7 @@
   ******************************************************************************
   * @attention
   *
-  * Copyright (c) 2024 STMicroelectronics.
+  * Copyright (c) 2025 STMicroelectronics.
   * All rights reserved.
   *
   * This software is licensed under terms that can be found in the LICENSE file
@@ -31,8 +31,6 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "tx_api.h"
-#include "common.h"
 
 /* USER CODE END Includes */
 
@@ -109,37 +107,6 @@ void Error_Handler(void);
 #define FS_OUT_EN_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
-
-extern TIM_HandleTypeDef htim12;
-extern TIM_HandleTypeDef htim8;
-extern CRC_HandleTypeDef   hcrc;
-extern UART_HandleTypeDef huart4;
-extern TIM_HandleTypeDef htim4;
-
-extern CameraDevice cam;
-extern CameraDevice cam1;
-extern CameraDevice cam2;
-extern CameraDevice cam3;
-extern CameraDevice cam4;
-extern CameraDevice cam5;
-extern CameraDevice cam6;
-extern CameraDevice cam7;
-extern CameraDevice cam8;
-extern CameraDevice cam_array[];
-//extern EventGroupHandle_t xHistoRxEventGroup;
-
-#define DEBUG_UART huart4
-
-#define BIT_0    ( 1 << 0 )
-#define BIT_1    ( 1 << 1 )
-#define BIT_2    ( 1 << 2 )
-#define BIT_3    ( 1 << 3 )
-#define BIT_4    ( 1 << 4 )
-#define BIT_5    ( 1 << 5 )
-#define BIT_6    ( 1 << 6 )
-#define BIT_7    ( 1 << 7 )
-void vTaskWaitForAllBits(void *pvParameters);
-extern TX_EVENT_FLAGS_GROUP event_flags_id;
 
 /* USER CODE END Private defines */
 
