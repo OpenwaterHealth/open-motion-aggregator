@@ -352,10 +352,11 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
     __HAL_LINKDMA(hspi,hdmarx,hdma_spi2_rx);
 
     /* SPI2 interrupt Init */
-    HAL_NVIC_SetPriority(SPI2_IRQn, 6, 0);
+    HAL_NVIC_SetPriority(SPI2_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(SPI2_IRQn);
   /* USER CODE BEGIN SPI2_MspInit 1 */
-
+    HAL_NVIC_SetPriority(SPI3_IRQn, 6, 0);
+    HAL_NVIC_EnableIRQ(SPI3_IRQn);
   /* USER CODE END SPI2_MspInit 1 */
   }
   else if(hspi->Instance==SPI3)
@@ -408,10 +409,11 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
     __HAL_LINKDMA(hspi,hdmarx,hdma_spi3_rx);
 
     /* SPI3 interrupt Init */
-    HAL_NVIC_SetPriority(SPI3_IRQn, 6, 0);
+    HAL_NVIC_SetPriority(SPI3_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(SPI3_IRQn);
   /* USER CODE BEGIN SPI3_MspInit 1 */
-
+    HAL_NVIC_SetPriority(SPI3_IRQn, 6, 0);
+    HAL_NVIC_EnableIRQ(SPI3_IRQn);
   /* USER CODE END SPI3_MspInit 1 */
   }
   else if(hspi->Instance==SPI4)
@@ -465,10 +467,11 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
     __HAL_LINKDMA(hspi,hdmarx,hdma_spi4_rx);
 
     /* SPI4 interrupt Init */
-    HAL_NVIC_SetPriority(SPI4_IRQn, 6, 0);
+    HAL_NVIC_SetPriority(SPI4_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(SPI4_IRQn);
   /* USER CODE BEGIN SPI4_MspInit 1 */
-
+    HAL_NVIC_SetPriority(SPI4_IRQn, 6, 0);
+    HAL_NVIC_EnableIRQ(SPI4_IRQn);
   /* USER CODE END SPI4_MspInit 1 */
   }
   else if(hspi->Instance==SPI6)
@@ -518,10 +521,11 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
     HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
     /* SPI6 interrupt Init */
-    HAL_NVIC_SetPriority(SPI6_IRQn, 4, 0);
+    HAL_NVIC_SetPriority(SPI6_IRQn, 5, 0);
     HAL_NVIC_EnableIRQ(SPI6_IRQn);
   /* USER CODE BEGIN SPI6_MspInit 1 */
-
+    HAL_NVIC_SetPriority(SPI6_IRQn, 4, 0);
+    HAL_NVIC_EnableIRQ(SPI6_IRQn);
   /* USER CODE END SPI6_MspInit 1 */
   }
 
