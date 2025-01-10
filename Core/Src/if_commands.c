@@ -160,6 +160,14 @@ static void process_fpga_commands(UartPacket *uartResp, UartPacket cmd)
 	case OW_FPGA_SOFT_RESET:
 		uartResp->command = OW_FPGA_SOFT_RESET;
 		fpga_soft_reset(&cam);
+		if(cam.useUsart){
+			// method 1: clear the rxfifo
+//			cam.pUart->Instance->RQR |= USART_RQR_RXFRQ;
+			// method 2: diable and reenable the usart
+			cam.pUart->Instance->CR1 &= ~USART_CR1_UE; // Disable USART
+			cam.pUart->Instance->CR1 |= USART_CR1_UE;
+			printf("Usart buffer reset\r\n");
+		}
 		break;
 	case OW_FPGA_SCAN:
 	default:
