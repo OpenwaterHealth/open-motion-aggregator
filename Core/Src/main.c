@@ -465,7 +465,7 @@ int main(void)
 	}
   */
   
-//  histoTaskHandle = osThreadNew(vTaskWaitForAllBits, NULL, &histoTask_attributes);
+  histoTaskHandle = osThreadNew(vTaskWaitForAllBits, NULL, &histoTask_attributes);
 
   HAL_SPI_Receive_DMA(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
   HAL_SPI_Receive_DMA(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH);
@@ -1704,10 +1704,12 @@ void init_camera(CameraDevice *cam){
 // Task to wait for all bits
 void vTaskWaitForAllBits(void *pvParameters)
 {
-    uint32_t flags;
     for (;;)
     {
-        if(event_bits == ( BIT_1 | BIT_5 | BIT_6 | BIT_7 )){
+    	uint8_t spi_bits = ( BIT_1 | BIT_5 | BIT_6 | BIT_7 );
+    	uint8_t usart_bits = ( BIT_0 | BIT_2 | BIT_3 | BIT_4 );
+
+        if(event_bits == ( BIT_3 )){
             printf("All bits are set! Task unblocked.\r\n");
             event_bits = 0x00;
         }
