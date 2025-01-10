@@ -144,17 +144,21 @@ int X02C1B_detect(CameraDevice *cam)
 int X02C1B_fsin_on()
 {
 	   HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_2);
-	   HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_RESET);
+	   HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_RESET); //D12
 	  printf("COMPLETED\r\n");
 
       return 0;
 }
 int X02C1B_fsin_off()
 {
-	   HAL_TIM_PWM_Stop(&htim4, TIM_CHANNEL_2);
-	   HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_SET);
-   	  printf("COMPLETED\r\n");
-      return 0;
+    while (HAL_GPIO_ReadPin(FSIN_GPIO_Port, FSIN_Pin) == GPIO_PIN_SET)
+    {
+        osDelay(1); // wait until the frame sync is done to keep a partial cycle from spitting out
+    }
+    HAL_TIM_PWM_Stop(&htim4, TIM_CHANNEL_2);
+    HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_SET); //D12
+    printf("COMPLETED\r\n");
+    return 0;
 }
 
 float X02C1B_read_temp(CameraDevice *cam)

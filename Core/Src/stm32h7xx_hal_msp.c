@@ -342,7 +342,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
     hdma_spi2_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     hdma_spi2_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
     hdma_spi2_rx.Init.Mode = DMA_NORMAL;
-    hdma_spi2_rx.Init.Priority = DMA_PRIORITY_VERY_HIGH;
+    hdma_spi2_rx.Init.Priority = DMA_PRIORITY_MEDIUM;
     hdma_spi2_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_spi2_rx) != HAL_OK)
     {
@@ -455,7 +455,7 @@ void HAL_SPI_MspInit(SPI_HandleTypeDef* hspi)
     hdma_spi4_rx.Init.PeriphDataAlignment = DMA_PDATAALIGN_BYTE;
     hdma_spi4_rx.Init.MemDataAlignment = DMA_MDATAALIGN_BYTE;
     hdma_spi4_rx.Init.Mode = DMA_NORMAL;
-    hdma_spi4_rx.Init.Priority = DMA_PRIORITY_VERY_HIGH;
+    hdma_spi4_rx.Init.Priority = DMA_PRIORITY_MEDIUM;
     hdma_spi4_rx.Init.FIFOMode = DMA_FIFOMODE_DISABLE;
     if (HAL_DMA_Init(&hdma_spi4_rx) != HAL_OK)
     {

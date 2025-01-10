@@ -18,6 +18,7 @@
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
+#include "cmsis_os.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
@@ -89,7 +90,7 @@ DMA_HandleTypeDef hdma_usart6_rx;
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 256 * 4,
+  .stack_size = 128 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
@@ -223,6 +224,7 @@ static void PrintI2CSpeed(I2C_HandleTypeDef* hi2c) {
   */
 int main(void)
 {
+
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -427,12 +429,8 @@ int main(void)
   /* USER CODE END 2 */
 
   /* Init scheduler */
-  osStatus_t status;
+  osKernelInitialize();
 
-  status = osKernelInitialize();
-  if (status != osOK) {
-      printf("Kernel initialization failed!\n");
-  }
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
@@ -494,10 +492,8 @@ int main(void)
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
-  status = osKernelStart();
-  if (status != osOK) {
-      printf("Kernel start failed!\n");
-  }
+  osKernelStart();
+
   /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
@@ -1387,7 +1383,7 @@ static void MX_DMA_Init(void)
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
   /* DMAMUX1_OVR_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMAMUX1_OVR_IRQn, 0, 0);
+  HAL_NVIC_SetPriority(DMAMUX1_OVR_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMAMUX1_OVR_IRQn);
 
 }
