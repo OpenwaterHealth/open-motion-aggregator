@@ -1375,7 +1375,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
     telem.id = 0; // Arbitrarily deciding that all telem packets have id 0
     telem.packet_type = OW_DATA;
     telem.command = OW_HISTO;
-    telem.data_len = USART_PACKET_LENGTH; // Use appropriate packet length for USART
+    telem.data_len = SPI_PACKET_LENGTH; // Use appropriate packet length for USART
     telem.addr = 0;
 
 	uint8_t xBitToSet = 0x00;
