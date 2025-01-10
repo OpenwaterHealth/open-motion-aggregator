@@ -158,8 +158,10 @@ CameraDevice cam7;
 CameraDevice cam8;
 
 CameraDevice cam_array[8];
-EventGroupHandle_t xHistoRxEventGroup;
-osEventFlagsId_t event_flags_id;
+// EventGroupHandle_t xHistoRxEventGroup;
+// osEventFlagsId_t event_flags_id;
+
+volatile uint8_t event_bits;
 
 /* USER CODE END PV */
 
@@ -221,7 +223,6 @@ static void PrintI2CSpeed(I2C_HandleTypeDef* hi2c) {
   */
 int main(void)
 {
-
   /* USER CODE BEGIN 1 */
 
   /* USER CODE END 1 */
@@ -287,6 +288,7 @@ int main(void)
 
   // test i2c
   PrintI2CSpeed(&hi2c1);
+  HAL_Delay(100);
 
   if(ICM20948_IsAlive(&hi2c1,0) == HAL_OK)
 	  printf("IMU detected\r\n");
@@ -457,8 +459,9 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_EVENTS */
 
-
-  event_flags_id = osEventFlagsNew(NULL); // Default attributes
+  event_bits = 0x00;
+  
+  /*event_flags_id = osEventFlagsNew(NULL); // Default attributes
   if (event_flags_id == NULL) {
       // Handle creation error
       printf("Failed to create Event Flags\n");
@@ -474,7 +477,8 @@ int main(void)
 	else if (flags == (uint32_t)osFlagsErrorResource) {
 		printf("osFlagsErrorResource!\r\n");
 	}
-
+  */
+  
   histoTaskHandle = osThreadNew(vTaskWaitForAllBits, NULL, &histoTask_attributes);
 
   HAL_SPI_Receive_DMA(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH);
@@ -1521,7 +1525,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
     telem.data_len = SPI_PACKET_LENGTH; // Use appropriate packet length for USART
     telem.addr = 0;
 
-	uint32_t xBitToSet = 0x00;
+	uint8_t xBitToSet = 0x00;
 
 	if (husart->Instance == USART1) { // Check if the interrupt is for USART2
         telem.data = pRecieveHistoUsart1;
@@ -1554,16 +1558,19 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
         }
     }
 	else if (husart->Instance == USART6) { // Check if the interrupt is for USART2
-        telem.data = pRecieveHistoUsart6;
-        UART_INTERFACE_SendDMA(&telem);
+    telem.data = pRecieveHistoUsart6;
+    UART_INTERFACE_SendDMA(&telem);
 		xBitToSet = BIT_3;
 
-        pRecieveHistoUsart6 = (pRecieveHistoUsart6 == usart6RxBufferA) ? usart6RxBufferB : usart6RxBufferA;
-        if (HAL_USART_Receive_DMA(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH) != HAL_OK) {
-            Error_Handler();  // Handle any error during re-enabling
-        }
+    pRecieveHistoUsart6 = (pRecieveHistoUsart6 == usart6RxBufferA) ? usart6RxBufferB : usart6RxBufferA;
+    if (HAL_USART_Receive_DMA(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH) != HAL_OK) {
+        Error_Handler();  // Handle any error during re-enabling
     }
+  }
 
+  event_bits = event_bits | xBitToSet;
+
+/*
 	osKernelState_t state = osKernelGetState();
 	if (state != osKernelRunning) {
 		printf("Kernel not running, state is %i \r\n", state);
@@ -1583,6 +1590,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 			printf("osFlagsErrorResource!\r\n");
 		}
 	}
+  */
 }
 
 // Error handling callback for USART
@@ -1633,7 +1641,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 	telem.data_len = SPI_PACKET_LENGTH;
 	telem.addr = 0;
 
-	uint32_t xBitToSet = 0x00;
+	uint8_t xBitToSet = 0x00;
 	if(hspi->Instance == SPI2){
 		telem.data = pRecieveHistoSpi2;
 		telem.id = 6; // cam7
@@ -1671,11 +1679,13 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 		pRecieveHistoSpi6 = (pRecieveHistoSpi6 == spi6RxBufferA) ? spi6RxBufferB : spi6RxBufferA;
 		xBitToSet = BIT_1;
-//		if (HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH) != HAL_OK) {
-//			Error_Handler();  // Handle any error during re-enabling
-//		}
+		if (HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH) != HAL_OK) {
+			Error_Handler();  // Handle any error during re-enabling
+		}
 	}
 
+  event_bits = event_bits | xBitToSet;
+/*
 	osKernelState_t state = osKernelGetState();
 	if (state != osKernelRunning) {
 	    printf("Kernel not running, state is %i \r\n", state);
@@ -1694,7 +1704,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 		else if (flags == (uint32_t)osFlagsErrorResource) {
 			printf("osFlagsErrorResource!\r\n");
 		}
-	}
+	}*/
 }
 
 // Error handling callback for SPI
@@ -1738,7 +1748,7 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
 	printf("\r\n");
 
 	// Reset SPI and buffer state
-	HAL_SPI_DeInit(hspi);             // Deinitialize SPI
+//	HAL_SPI_DeInit(hspi);             // Deinitialize SPI
 	Error_Handler();  // Handle any error during re-enabling
 
 /*	HAL_SPI_Init(hspi);               // Reinitialize SPI
@@ -1843,13 +1853,22 @@ void vTaskWaitForAllBits(void *pvParameters)
     uint32_t flags;
     for (;;)
     {
-        flags = osEventFlagsWait(event_flags_id, ( BIT_1 | BIT_5 | BIT_6 | BIT_7 ), osFlagsWaitAll, osWaitForever);
+        if(event_bits == ( BIT_1 | BIT_5 | BIT_6 | BIT_7 )){
+            printf("All bits are set! Task unblocked.\r\n");
+            event_bits = 0x00;
+        }
+        osDelay(1);
+        
+        
+        /*flags = osEventFlagsWait(event_flags_id, ( BIT_1 | BIT_5 | BIT_6 | BIT_7 ), osFlagsWaitAll, osWaitForever);
 
         printf("All bits are set! Task unblocked.\r\n");
 
         if (HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH) != HAL_OK) {
         			Error_Handler();  // Handle any error during re-enabling
         		}
+
+            */
 //        // Wait for all bits (BIT_0 | BIT_1 | BIT_2) to be set
 //        uxBits = xEventGroupWaitBits(
 //            xHistoRxEventGroup,
