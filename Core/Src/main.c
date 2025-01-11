@@ -289,7 +289,7 @@ int main(void)
   for(int i = 0;i<8;i++){
 	  TCA9548A_SelectChannel(&hi2c1, 0x70, i);
 	  HAL_Delay(300);
-	  printf("I2C Scanning bus %d\r\n",i);
+	  printf("I2C Scanning bus %d\r\n",i+1);
 	  I2C_scan(&hi2c1, NULL, 0, true);
 	  HAL_Delay(100);
   }
@@ -1497,68 +1497,52 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 	uint8_t xBitToSet = 0x00;
 	if(hspi->Instance == SPI2){
+		xBitToSet = BIT_6;
+
 		telem.data = pRecieveHistoSpi2;
 		telem.id = 6; // cam7
-//		UART_INTERFACE_SendDMA(&telem);
 
 		pRecieveHistoSpi2 = (pRecieveHistoSpi2 == spi2RxBufferA) ? spi2RxBufferB : spi2RxBufferA;
-		xBitToSet = BIT_6;
 		if (HAL_SPI_Receive_DMA(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
 	}	else if(hspi->Instance == SPI3){
+		xBitToSet = BIT_5;
+
 		telem.data = pRecieveHistoSpi3;
 		telem.id = 5;
-//		UART_INTERFACE_SendDMA(&telem);
+
 		pRecieveHistoSpi3 = (pRecieveHistoSpi3 == spi3RxBufferA) ? spi3RxBufferB : spi3RxBufferA;
-		xBitToSet = BIT_5;
 		if (HAL_SPI_Receive_DMA(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
 	} else if(hspi->Instance == SPI4){
-		telem.data = pRecieveHistoSpi4;
-		telem.id = 7;
-//		UART_INTERFACE_SendDMA(&telem);
-
-		pRecieveHistoSpi4 = (pRecieveHistoSpi4 == spi4RxBufferA) ? spi4RxBufferB : spi4RxBufferA;
 		xBitToSet = BIT_7;
 
+		telem.data = pRecieveHistoSpi4;
+		telem.id = 7;
+
+		pRecieveHistoSpi4 = (pRecieveHistoSpi4 == spi4RxBufferA) ? spi4RxBufferB : spi4RxBufferA;
 		if (HAL_SPI_Receive_DMA(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
 	} else if(hspi->Instance == SPI6){
+		xBitToSet = BIT_1;
+
 		telem.data = pRecieveHistoSpi6;
 		telem.id = 1;
-//		UART_INTERFACE_SendDMA(&telem);
 
 		pRecieveHistoSpi6 = (pRecieveHistoSpi6 == spi6RxBufferA) ? spi6RxBufferB : spi6RxBufferA;
-		xBitToSet = BIT_1;
 		if (HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
 	}
 
-  event_bits = event_bits | xBitToSet;
-/*
-	osKernelState_t state = osKernelGetState();
-	if (state != osKernelRunning) {
-	    printf("Kernel not running, state is %i \r\n", state);
-	}
-	else if(event_flags_id == NULL){
-		printf("Event flags nullified \r\n");
-	}
-	else {
-		uint32_t flags = osEventFlagsSet(event_flags_id, xBitToSet);
-		if (flags == (uint32_t)osFlagsErrorUnknown) {
-			printf("osFlagsErrorUnknown!\r\n");
-		}
-		else if (flags == (uint32_t)osFlagsErrorParameter) {
-			printf("osFlagsErrorParameter!\r\n");
-		}
-		else if (flags == (uint32_t)osFlagsErrorResource) {
-			printf("osFlagsErrorResource!\r\n");
-		}
-	}*/
+  event_bits = event_bits | xBitToSet; // Set event bits to indicate that a packet has been recieved here
+
+  if(cam.pSpi == hspi){				   // if the selected camera is the one that has data coming, send the telemetry
+		UART_INTERFACE_SendDMA(&telem);
+  }
 }
 
 // Error handling callback for SPI
@@ -1709,7 +1693,7 @@ void vTaskWaitForAllBits(void *pvParameters)
     	uint8_t spi_bits = ( BIT_1 | BIT_5 | BIT_6 | BIT_7 );
     	uint8_t usart_bits = ( BIT_0 | BIT_2 | BIT_3 | BIT_4 );
 
-        if(event_bits == ( BIT_3 )){
+        if(event_bits == ( BIT_1 )){
             printf("All bits are set! Task unblocked.\r\n");
             event_bits = 0x00;
         }
