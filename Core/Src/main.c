@@ -76,6 +76,7 @@ TIM_HandleTypeDef htim8;
 TIM_HandleTypeDef htim12;
 
 UART_HandleTypeDef huart4;
+USART_HandleTypeDef husart1;
 USART_HandleTypeDef husart6;
 DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_uart4_tx;
@@ -179,6 +180,7 @@ static void MX_USART6_Init(void);
 static void MX_TIM8_Init(void);
 static void MX_TIM12_Init(void);
 static void MX_TIM4_Init(void);
+static void MX_USART1_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -258,6 +260,7 @@ int main(void)
   MX_TIM8_Init();
   MX_TIM12_Init();
   MX_TIM4_Init();
+  MX_USART1_Init();
   /* USER CODE BEGIN 2 */
   init_dma_logging();
 
@@ -365,7 +368,7 @@ int main(void)
 	cam5.useUsart = true;
 	cam5.pI2c = &hi2c1;
 	cam5.pSpi = NULL;
-//	cam5.pUart = &husart1;
+	cam5.pUart = &husart1;
 	cam5.i2c_target = 4;
 	cam_array[4] = cam5;
 	init_camera(&cam5);
@@ -473,10 +476,9 @@ int main(void)
   HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH);
 
   HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, USART_PACKET_LENGTH);
-//  HAL_USART_Receive_DMA(&husart2, pRecieveHistoUsart2, SPI_PACKET_LENGTH);
-//  HAL_USART_Receive_DMA(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH);
-//  HAL_USART_Receive_DMA(&husart6, pRecieveHistoUsart6, SPI_PACKET_LENGTH);
-//  HAL_USART_Receive_DMA(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH);
+//  HAL_USART_Receive_DMA(&husart2, pRecieveHistoUsart2, USART_PACKET_LENGTH);
+//  HAL_USART_Receive_DMA(&husart3, pRecieveHistoUsart3, USART_PACKET_LENGTH);
+  HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, USART_PACKET_LENGTH);
 
   /* USER CODE END RTOS_EVENTS */
 
@@ -1126,6 +1128,58 @@ static void MX_UART4_Init(void)
 }
 
 /**
+  * @brief USART1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_USART1_Init(void)
+{
+
+  /* USER CODE BEGIN USART1_Init 0 */
+
+  /* USER CODE END USART1_Init 0 */
+
+  /* USER CODE BEGIN USART1_Init 1 */
+
+  /* USER CODE END USART1_Init 1 */
+  husart1.Instance = USART1;
+  husart1.Init.BaudRate = 115200;
+  husart1.Init.WordLength = USART_WORDLENGTH_8B;
+  husart1.Init.StopBits = USART_STOPBITS_1;
+  husart1.Init.Parity = USART_PARITY_NONE;
+  husart1.Init.Mode = USART_MODE_RX;
+  husart1.Init.CLKPolarity = USART_POLARITY_HIGH;
+  husart1.Init.CLKPhase = USART_PHASE_2EDGE;
+  husart1.Init.CLKLastBit = USART_LASTBIT_DISABLE;
+  husart1.Init.ClockPrescaler = USART_PRESCALER_DIV1;
+  husart1.SlaveMode = USART_SLAVEMODE_ENABLE;
+  if (HAL_USART_Init(&husart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_USARTEx_SetTxFifoThreshold(&husart1, USART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_USARTEx_SetRxFifoThreshold(&husart1, USART_RXFIFO_THRESHOLD_8_8) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_USARTEx_EnableFifoMode(&husart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_USARTEx_EnableSlaveMode(&husart1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN USART1_Init 2 */
+
+  /* USER CODE END USART1_Init 2 */
+
+}
+
+/**
   * @brief USART6 Initialization Function
   * @param None
   * @retval None
@@ -1290,14 +1344,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
-  /*Configure GPIO pins : PA9 PA8 */
-  GPIO_InitStruct.Pin = GPIO_PIN_9|GPIO_PIN_8;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF7_USART1;
-  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
   /*Configure GPIO pins : PA10 GPIO0_1_Pin */
   GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO0_1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
@@ -1319,14 +1365,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   GPIO_InitStruct.Alternate = GPIO_AF7_USART2;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : PB15 */
-  GPIO_InitStruct.Pin = GPIO_PIN_15;
-  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
-  GPIO_InitStruct.Alternate = GPIO_AF4_USART1;
-  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /*Configure GPIO pin : FSIN_EN_Pin */
   GPIO_InitStruct.Pin = FSIN_EN_Pin;
@@ -1380,17 +1418,19 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 
 	uint8_t xBitToSet = 0x00;
 
-/*	if (husart->Instance == USART1) { // Check if the interrupt is for USART2
-        telem.data = pRecieveHistoUsart1;
-        UART_INTERFACE_SendDMA(&telem);
+	if (husart->Instance == USART1) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_4;
 
+		telem.id = 5;
+		telem.data = pRecieveHistoUsart1;
+		if(cam.pUart == husart) UART_INTERFACE_SendDMA(&telem);
+
         pRecieveHistoUsart1 = (pRecieveHistoUsart1 == usart1RxBufferA) ? usart1RxBufferB : usart1RxBufferA;
-        if (HAL_USART_Receive_DMA(&husart1, pRecieveHistoUsart1, SPI_PACKET_LENGTH) != HAL_OK) {
+        if (HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, USART_PACKET_LENGTH) != HAL_OK) {
             Error_Handler();  // Handle any error during re-enabling
         }
     }
-	else if (husart->Instance == USART2) { // Check if the interrupt is for USART2
+	/*	else if (husart->Instance == USART2) { // Check if the interrupt is for USART2
         telem.data = pRecieveHistoUsart2;
         UART_INTERFACE_SendDMA(&telem);
 		xBitToSet = BIT_0;
@@ -1409,20 +1449,22 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
         if (HAL_USART_Receive_DMA(&husart3, pRecieveHistoUsart3, SPI_PACKET_LENGTH) != HAL_OK) {
             Error_Handler();  // Handle any error during re-enabling
         }
-    }
-	else */
+    }*/
+	else
 	if (husart->Instance == USART6) { // Check if the interrupt is for USART2
-    telem.data = pRecieveHistoUsart6;
-    UART_INTERFACE_SendDMA(&telem);
 		xBitToSet = BIT_3;
 
-    pRecieveHistoUsart6 = (pRecieveHistoUsart6 == usart6RxBufferA) ? usart6RxBufferB : usart6RxBufferA;
-    if (HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, USART_PACKET_LENGTH) != HAL_OK) {
-        Error_Handler();  // Handle any error during re-enabling
-    }
-  }
+		telem.data = pRecieveHistoUsart6;
+		telem.id = 4;
+		if(cam.pUart == husart) UART_INTERFACE_SendDMA(&telem);
 
-  event_bits = event_bits | xBitToSet;
+		pRecieveHistoUsart6 = (pRecieveHistoUsart6 == usart6RxBufferA) ? usart6RxBufferB : usart6RxBufferA;
+		if (HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, USART_PACKET_LENGTH) != HAL_OK) {
+			Error_Handler();  // Handle any error during re-enabling
+		}
+	}
+
+	event_bits = event_bits | xBitToSet;
 
 /*
 	osKernelState_t state = osKernelGetState();
