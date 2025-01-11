@@ -71,6 +71,7 @@ extern DMA_HandleTypeDef hdma_uart4_tx;
 extern UART_HandleTypeDef huart4;
 extern USART_HandleTypeDef husart1;
 extern USART_HandleTypeDef husart2;
+extern USART_HandleTypeDef husart3;
 extern USART_HandleTypeDef husart6;
 extern TIM_HandleTypeDef htim17;
 
@@ -314,6 +315,20 @@ void USART2_IRQHandler(void)
   /* USER CODE BEGIN USART2_IRQn 1 */
 
   /* USER CODE END USART2_IRQn 1 */
+}
+
+/**
+  * @brief This function handles USART3 global interrupt.
+  */
+void USART3_IRQHandler(void)
+{
+  /* USER CODE BEGIN USART3_IRQn 0 */
+
+  /* USER CODE END USART3_IRQn 0 */
+  HAL_USART_IRQHandler(&husart3);
+  /* USER CODE BEGIN USART3_IRQn 1 */
+
+  /* USER CODE END USART3_IRQn 1 */
 }
 
 /**
