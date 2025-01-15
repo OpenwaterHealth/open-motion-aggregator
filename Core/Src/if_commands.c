@@ -76,6 +76,27 @@ extern uint8_t bitstream_buffer[];
 uint8_t* ptrBitstream;
 uint32_t Bitstream_Length;
 
+void I2C_DisableEnableReset(I2C_HandleTypeDef *hi2c)
+{
+    // Step 1: Disable the I2C peripheral
+    __HAL_RCC_I2C1_CLK_DISABLE(); // Replace I2C1 with your I2C instance
+    HAL_I2C_DeInit(hi2c);         // De-initialize the I2C to reset its state
+
+    // Step 2: Add a small delay for safety
+    HAL_Delay(10);
+
+    // Step 3: Re-enable the I2C peripheral
+    __HAL_RCC_I2C1_CLK_ENABLE(); // Re-enable the I2C clock
+    HAL_I2C_Init(hi2c);          // Reinitialize the I2C
+
+    // Optional: Verify the I2C is ready
+    if (HAL_I2C_GetState(hi2c) != HAL_I2C_STATE_READY)
+    {
+        // Handle error, e.g., log a message or reset the microcontroller
+        // printf("I2C Reset Failed\n");
+    }
+}
+
 static void process_fpga_commands(UartPacket *uartResp, UartPacket cmd)
 {
 	switch (cmd.command)
@@ -155,6 +176,9 @@ static void process_fpga_commands(UartPacket *uartResp, UartPacket cmd)
 	case OW_FPGA_RESET:
 		uartResp->command = OW_FPGA_RESET;
 		fpga_reset(&cam);
+		osDelay(1);
+
+		I2C_DisableEnableReset(cam.pI2c);
 		break;
 	case OW_FPGA_SOFT_RESET:
 		uartResp->command = OW_FPGA_SOFT_RESET;
