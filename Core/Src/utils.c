@@ -10,10 +10,6 @@
 #include "utils.h"
 #include <stdio.h>
 // testing crc calculations
-#define BUFFER_SIZE  9
-static const uint8_t CRC16_DATA8[BUFFER_SIZE] = {0x4D, 0x3C, 0x2B, 0x1A,
-											   0xBE, 0x71, 0xC9, 0x8A,
-											   0x5E};
 uint32_t startTime = 0, endTime = 0, duration = 0;
 
 // CRC16-ccitt lookup table

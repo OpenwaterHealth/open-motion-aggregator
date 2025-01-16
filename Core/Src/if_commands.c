@@ -57,9 +57,8 @@ static void process_basic_command(UartPacket *uartResp, UartPacket cmd)
 		break;
 	case OW_CMD_TOGGLE_LED:
 		uartResp->id = cmd.id;
-		uartResp->packet_type = cmd.packet_type;
 		uartResp->command = cmd.command;
-//		HAL_GPIO_TogglePin(LED_YELLOW_GPIO_Port, LED_YELLOW_Pin);
+		HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
 		break;
 	case OW_CMD_I2C_BROADCAST:
 		printf("Broadcasting I2C on all channels\r\n");
@@ -184,37 +183,72 @@ static void process_camera_commands(UartPacket *uartResp, UartPacket cmd)
 	switch (cmd.command)
 	{
 	case OW_CAMERA_SCAN:
+		printf("Reading Camera %d ID\r\n", cam.id+1);
 		uartResp->command = OW_CAMERA_SCAN;
-		printf("Reading Camera ID\r\n");
-		X02C1B_detect(&cam);
+		uartResp->packet_type = OW_RESP;
+		if(X02C1B_detect(&cam)){
+			// error
+			uartResp->packet_type = OW_ERROR;
+		}
 		break;
 	case OW_CAMERA_ON:
-		printf("Setting Camera Stream on\r\n");
-		X02C1B_stream_on(&cam);
+		printf("Setting Camera %d Stream on\r\n", cam.id+1);
+		uartResp->command = OW_CAMERA_ON;
+		uartResp->packet_type = OW_RESP;
+		if(X02C1B_stream_on(&cam)){
+			// error
+			uartResp->packet_type = OW_ERROR;
+		}
 		break;
 	case OW_CAMERA_SET_CONFIG:
+		printf("Setting Camera %d config\r\n", cam.id+1);
 		uartResp->command = OW_CAMERA_SET_CONFIG;
-		printf("Configuring sensor for 1080P YUV\r\n");
-		X02C1B_configure_sensor(&cam);
+		uartResp->packet_type = OW_RESP;
+		if(X02C1B_configure_sensor(&cam)<0){
+			// error
+			uartResp->packet_type = OW_ERROR;
+		}
 		break;
 	case OW_CAMERA_OFF:
-		printf("Setting Camera Stream off\r\n");
-		X02C1B_stream_off(&cam);
+		printf("Setting Camera %d Stream off\r\n", cam.id+1);
+		uartResp->command = OW_CAMERA_OFF;
+		uartResp->packet_type = OW_RESP;
+		if(X02C1B_stream_off(&cam)<0){
+			// error
+			uartResp->packet_type = OW_ERROR;
+		}
 		break;
 	case OW_CAMERA_STATUS:
-		printf("Camera status not implemented\r\n");
+		printf("Camera %d status not implemented\r\n", cam.id+1);
+		uartResp->command = OW_CAMERA_STATUS;
+		uartResp->packet_type = OW_RESP;
 		break;
 	case OW_CAMERA_RESET:
-		printf("Camera Sensor Reset\r\n");
-		X02C1B_soft_reset(&cam);
+		printf("Camera %d Sensor Reset\r\n", cam.id+1);
+		uartResp->command = OW_CAMERA_RESET;
+		uartResp->packet_type = OW_RESP;
+		if(X02C1B_soft_reset(&cam)<0){
+			// error
+			uartResp->packet_type = OW_ERROR;
+		}
 		break;
 	case OW_CAMERA_FSIN_ON:
 		printf("Enabling FSIN...\r\n");
-		X02C1B_fsin_on();
+		uartResp->command = OW_CAMERA_FSIN_ON;
+		uartResp->packet_type = OW_RESP;
+		if(X02C1B_fsin_on()<0){
+			// error
+			uartResp->packet_type = OW_ERROR;
+		}
 		break;
 	case OW_CAMERA_FSIN_OFF:
 		printf("Disabling FSIN...\r\n");
-		X02C1B_fsin_off();
+		uartResp->command = OW_CAMERA_FSIN_OFF;
+		uartResp->packet_type = OW_RESP;
+		if(X02C1B_fsin_off()<0){
+			// error
+			uartResp->packet_type = OW_ERROR;
+		}
 		break;
 	case OW_CAMERA_SWITCH:
 		uint8_t channel = cmd.data[0];
@@ -223,17 +257,26 @@ static void process_camera_commands(UartPacket *uartResp, UartPacket cmd)
 		cam = cam_array[channel];
 		break;
 	case OW_CAMERA_READ_TEMP:
-		temp = X02C1B_read_temp(&cam);
+		printf("Reading Camera %d Temp\r\n", cam.id+1);
 		uartResp->command = OW_CAMERA_READ_TEMP;
-		uartResp->data_len = 4;
-		uartResp->data = &temp;
+		uartResp->packet_type = OW_RESP;
+		temp = X02C1B_read_temp(&cam);
+		if(temp<0){
+			// error
+			uartResp->packet_type = OW_ERROR;
+	        uartResp->data_len = 0;
+	        uartResp->data = NULL; // No valid data to send
+		}else{
+	        uartResp->data_len = sizeof(temp);
+	        uartResp->data = (uint8_t *)&temp; // Point to the static temp variable
+		}
 		break;
 
 
 	default:
 		uartResp->data_len = 0;
+		uartResp->command = cmd.command;
 		uartResp->packet_type = OW_UNKNOWN;
-		// uartResp.data = (uint8_t*)&cmd.tag;
 		break;
 	}
 
@@ -269,6 +312,7 @@ static void JSON_ProcessCommand(UartPacket *uartResp, UartPacket cmd)
 	}
 }
 
+static void print_uart_packet(const UartPacket* packet) __attribute__((unused));
 static void print_uart_packet(const UartPacket* packet) {
     printf("ID: 0x%04X\r\n", packet->id);
     printf("Packet Type: 0x%02X\r\n", packet->packet_type);

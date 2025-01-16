@@ -87,7 +87,7 @@ DMA_HandleTypeDef hdma_uart4_tx;
 osThreadId_t defaultTaskHandle;
 const osThreadAttr_t defaultTask_attributes = {
   .name = "defaultTask",
-  .stack_size = 128 * 4,
+  .stack_size = 256 * 4,
   .priority = (osPriority_t) osPriorityNormal,
 };
 /* USER CODE BEGIN PV */
@@ -418,7 +418,7 @@ int main(void)
 	cam_array[7] = cam8;
 	init_camera(&cam8);
 
-	cam = cam6;
+	cam = cam1;
     TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
 
 
@@ -1942,7 +1942,31 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
+
+  uint32_t *stack_ptr;
+  uint32_t *frame_ptr;
+
   HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+  printf(">>> HARD FAULT <<<\r\n");
+  fflush(stdout);  // Ensure the output is flushed immediately
+
+  // Get the current stack pointer
+  __ASM volatile ("MRS %0, MSP" : "=r" (stack_ptr));
+
+  // Print general-purpose registers
+  printf("Stack Pointer (MSP): 0x%08lX\r\n", (unsigned long)stack_ptr);
+  printf("Register dump:\r\n");
+  printf("R0 : 0x%08lX\r\n", stack_ptr[0]);
+  printf("R1 : 0x%08lX\r\n", stack_ptr[1]);
+  printf("R2 : 0x%08lX\r\n", stack_ptr[2]);
+  printf("R3 : 0x%08lX\r\n", stack_ptr[3]);
+  printf("R12: 0x%08lX\r\n", stack_ptr[4]);
+  printf("LR : 0x%08lX (Link Register)\r\n", stack_ptr[5]);
+  printf("PC : 0x%08lX (Program Counter)\r\n", stack_ptr[6]);
+  printf("xPSR: 0x%08lX\r\n", stack_ptr[7]);
+  fflush(stdout);
+
+  HAL_Delay(100);
   __disable_irq();
   while (1)
   {
