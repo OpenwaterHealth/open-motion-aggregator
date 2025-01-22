@@ -160,6 +160,7 @@ CameraDevice cam_array[8];
 // osEventFlagsId_t event_flags_id;
 
 volatile uint8_t event_bits;
+bool uart_stream = true;
 
 /* USER CODE END PV */
 
@@ -1509,7 +1510,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 
 		telem.id = 5;
 		telem.data = pRecieveHistoUsart1;
-		if(cam.pUart == husart) UART_INTERFACE_SendDMA(&telem);
+		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
         pRecieveHistoUsart1 = (pRecieveHistoUsart1 == usart1RxBufferA) ? usart1RxBufferB : usart1RxBufferA;
         if (HAL_USART_Receive_IT(&husart1, pRecieveHistoUsart1, USART_PACKET_LENGTH) != HAL_OK) {
@@ -1521,7 +1522,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 
 		telem.id = 1;
 		telem.data = pRecieveHistoUsart2;
-		if(cam.pUart == husart) UART_INTERFACE_SendDMA(&telem);
+		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
         pRecieveHistoUsart2 = (pRecieveHistoUsart2 == usart2RxBufferA) ? usart2RxBufferB : usart2RxBufferA;
         if (HAL_USART_Receive_IT(&husart2, pRecieveHistoUsart2, USART_PACKET_LENGTH) != HAL_OK) {
@@ -1533,7 +1534,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 
 		telem.id = 3;
 		telem.data = pRecieveHistoUsart3;
-		if(cam.pUart == husart) UART_INTERFACE_SendDMA(&telem);
+		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
         pRecieveHistoUsart3 = (pRecieveHistoUsart3 == usart3RxBufferA) ? usart3RxBufferB : usart3RxBufferA;
         if (HAL_USART_Receive_IT(&husart3, pRecieveHistoUsart3, USART_PACKET_LENGTH) != HAL_OK) {
@@ -1545,7 +1546,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 
 		telem.data = pRecieveHistoUsart6;
 		telem.id = 4;
-		if(cam.pUart == husart) UART_INTERFACE_SendDMA(&telem);
+		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
 		pRecieveHistoUsart6 = (pRecieveHistoUsart6 == usart6RxBufferA) ? usart6RxBufferB : usart6RxBufferA;
 		if (HAL_USART_Receive_IT(&husart6, pRecieveHistoUsart6, USART_PACKET_LENGTH) != HAL_OK) {
@@ -1632,7 +1633,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 		telem.data = pRecieveHistoSpi2;
 		telem.id = 6; // cam7
-		if(cam.pSpi == hspi) UART_INTERFACE_SendDMA(&telem);
+		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
 		pRecieveHistoSpi2 = (pRecieveHistoSpi2 == spi2RxBufferA) ? spi2RxBufferB : spi2RxBufferA;
 		if (HAL_SPI_Receive_DMA(&hspi2, pRecieveHistoSpi2, SPI_PACKET_LENGTH) != HAL_OK) {
@@ -1643,7 +1644,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 		telem.data = pRecieveHistoSpi3;
 		telem.id = 5;
-		if(cam.pSpi == hspi) UART_INTERFACE_SendDMA(&telem);
+		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
 		pRecieveHistoSpi3 = (pRecieveHistoSpi3 == spi3RxBufferA) ? spi3RxBufferB : spi3RxBufferA;
 		if (HAL_SPI_Receive_DMA(&hspi3, pRecieveHistoSpi3, SPI_PACKET_LENGTH) != HAL_OK) {
@@ -1654,7 +1655,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 		telem.data = pRecieveHistoSpi4;
 		telem.id = 7;
-		if(cam.pSpi == hspi) UART_INTERFACE_SendDMA(&telem);
+		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
 		pRecieveHistoSpi4 = (pRecieveHistoSpi4 == spi4RxBufferA) ? spi4RxBufferB : spi4RxBufferA;
 		if (HAL_SPI_Receive_DMA(&hspi4, pRecieveHistoSpi4, SPI_PACKET_LENGTH) != HAL_OK) {
@@ -1665,7 +1666,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 
 		telem.data = pRecieveHistoSpi6;
 		telem.id = 1;
-		if(cam.pSpi == hspi) UART_INTERFACE_SendDMA(&telem);
+		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
 		pRecieveHistoSpi6 = (pRecieveHistoSpi6 == spi6RxBufferA) ? spi6RxBufferB : spi6RxBufferA;
 		if (HAL_SPI_Receive_IT(&hspi6, pRecieveHistoSpi6, SPI_PACKET_LENGTH) != HAL_OK) {
@@ -1825,7 +1826,7 @@ void vTaskWaitForAllBits(void *pvParameters)
     	uint8_t spi_bits = ( BIT_1 | BIT_5 | BIT_6 | BIT_7 );
     	uint8_t usart_bits = ( BIT_0 | BIT_2 | BIT_3 | BIT_4 );
 
-        if(event_bits == ( spi_bits )){
+        if(event_bits == ( BIT_1 | BIT_5 | BIT_6 | BIT_7 | BIT_0 )){
             printf("All bits are set! Task unblocked.\r\n");
             event_bits = 0x00;
         }
