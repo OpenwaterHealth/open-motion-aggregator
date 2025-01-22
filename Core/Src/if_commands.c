@@ -295,7 +295,18 @@ static void process_camera_commands(UartPacket *uartResp, UartPacket cmd)
 	        uartResp->data = (uint8_t *)&temp; // Point to the static temp variable
 		}
 		break;
-
+	case OW_CAMERA_FSIN_EX_ENABLE:
+		printf("Enabling FSIN_EXT...\r\n");
+		uartResp->command = OW_CAMERA_FSIN_EX_ENABLE;
+		uartResp->packet_type = OW_RESP;
+		X02C1B_FSIN_EXT_enable();
+		break;
+	case OW_CAMERA_FSIN_EX_DISABLE:
+		printf("Disabling FSIN_EXT...\r\n");
+		uartResp->command = OW_CAMERA_FSIN_EX_DISABLE;
+		uartResp->packet_type = OW_RESP;
+		X02C1B_FSIN_EXT_disable();
+		break;
 
 	default:
 		uartResp->data_len = 0;

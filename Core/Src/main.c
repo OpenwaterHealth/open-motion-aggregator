@@ -311,7 +311,7 @@ int main(void)
   HAL_Delay(100);
   MX_USB_DEVICE_Init();
 
-
+  
   HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
 
    //Configure, initialize, and set default camera
@@ -419,9 +419,10 @@ int main(void)
 	cam_array[7] = cam8;
 	init_camera(&cam8);
 
+  // Select default camera
 	cam = cam1;
-    TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
-
+  TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
+  X02C1B_FSIN_EXT_disable();
 
   printf("System Running\r\n");
   /* USER CODE END 2 */
@@ -1396,7 +1397,7 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(FSIN_EN_GPIO_Port, FSIN_EN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(FSIN_EN_GPIO_Port, FSIN_EN_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_RESET);

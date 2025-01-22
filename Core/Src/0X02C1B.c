@@ -202,3 +202,34 @@ float X02C1B_read_temp(CameraDevice *cam)
 
     return temperature;
 }
+
+int X02C1B_FSIN_EXT_enable()
+{
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(FSIN_EN_GPIO_Port, FSIN_EN_Pin, GPIO_PIN_RESET);
+ 
+    /* Configure the FSIN pin (the internal frame sync generator) to be high impedance*/
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = FSIN_EN_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;     // Set to input mode
+    GPIO_InitStruct.Pull = GPIO_NOPULL;         // No pull-up or pull-down resistors
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Speed is irrelevant for input mode
+    HAL_GPIO_Init(FSIN_EN_GPIO_Port, &GPIO_InitStruct);
+    return HAL_OK;
+}
+
+int X02C1B_FSIN_EXT_disable()
+{
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(FSIN_EN_GPIO_Port, FSIN_EN_Pin, GPIO_PIN_SET);
+
+    /*Configure GPIO pin : FSIN_EN_Pin */
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+    GPIO_InitStruct.Pin = FSIN_EN_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(FSIN_EN_GPIO_Port, &GPIO_InitStruct);
+
+    return HAL_OK;
+}
