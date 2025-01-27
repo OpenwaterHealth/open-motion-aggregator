@@ -32,7 +32,6 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "common.h"
-#include "cmsis_os.h"
 
 /* USER CODE END Includes */
 
@@ -141,8 +140,6 @@ extern CameraDevice cam_array[];
 #define BIT_6    ( 1 << 6 )
 #define BIT_7    ( 1 << 7 )
 void vTaskWaitForAllBits(void *pvParameters);
-extern osEventFlagsId_t event_flags_id;
-
 /* USER CODE END Private defines */
 
 #ifdef __cplusplus
