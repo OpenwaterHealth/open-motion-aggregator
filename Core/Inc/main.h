@@ -128,6 +128,7 @@ extern CameraDevice cam6;
 extern CameraDevice cam7;
 extern CameraDevice cam8;
 extern CameraDevice cam_array[];
+extern volatile uint8_t event_bits_enabled;
 //extern EventGroupHandle_t xHistoRxEventGroup;
 
 #define DEBUG_UART huart4
@@ -140,8 +141,11 @@ extern CameraDevice cam_array[];
 #define BIT_5    ( 1 << 5 )
 #define BIT_6    ( 1 << 6 )
 #define BIT_7    ( 1 << 7 )
+
+#define SPI_PACKET_LENGTH 4096
+#define USART_PACKET_LENGTH 4100
+
 void vTaskWaitForAllBits(void *pvParameters);
-extern osEventFlagsId_t event_flags_id;
 
 /* USER CODE END Private defines */
 

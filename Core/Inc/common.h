@@ -53,9 +53,10 @@ typedef enum {
 	OW_CMD_ECHO = 0x03,
 	OW_CMD_TOGGLE_LED = 0x04,
 	OW_CMD_HWID = 0x05,
+	OW_CMD_I2C_BROADCAST = 0x06,
 	OW_CMD_NOP = 0x0E,
 	OW_CMD_RESET = 0x0F,
-	OW_CMD_I2C_BROADCAST = 0x06,
+	OW_TOGGLE_CAMERA_STREAM = 0x07
 } UstxGlobalCommands;
 
 typedef enum {
@@ -111,11 +112,14 @@ typedef struct {
 	uint16_t  		gpio0_pin;
 	I2C_HandleTypeDef * pI2c;
 	bool 			useUsart; // use usart over spi
+	bool 			useDma;
 	SPI_HandleTypeDef * pSpi;
 	USART_HandleTypeDef * pUart;
 	uint16_t 		i2c_target;
 	uint8_t 		gain;
 	uint8_t 		exposure;
+	uint8_t *pRecieveHistoBuffer;
+
 } CameraDevice;
 
 

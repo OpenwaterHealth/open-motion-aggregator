@@ -64,6 +64,30 @@ static void process_basic_command(UartPacket *uartResp, UartPacket cmd)
 		printf("Broadcasting I2C on all channels\r\n");
 		TCA9548A_SelectBroadcast(cam.pI2c, 0x70);
 		break;
+	case OW_TOGGLE_CAMERA_STREAM:
+		uartResp->id = cmd.id;
+		uartResp->command = cmd.command;
+		if (cmd.data_len == 1)
+		{
+			uint8_t cam_id = cmd.data[0];
+			if (cam_id < 8)
+			{
+				toggle_camera_stream(cam_id);
+			    uartResp->packet_type = OW_ACK;
+			}
+			else
+			{
+				uartResp->packet_type = OW_ERROR;
+				printf("Invalid camera ID: %d\r\n", cam_id);
+			}
+		}
+		else
+		{
+			uartResp->packet_type = OW_ERROR;
+			printf("Invalid data length: %d\r\n", cmd.data_len);
+		}
+		break;
+
 	default:
 		uartResp->data_len = 0;
 		uartResp->packet_type = OW_UNKNOWN;
