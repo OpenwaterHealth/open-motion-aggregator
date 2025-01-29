@@ -128,7 +128,7 @@ int main(void)
   MX_USART3_Init();
   /* USER CODE BEGIN 2 */
   init_dma_logging();
-
+  HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
   // enable I2C MUX
   HAL_GPIO_WritePin(MUX_RESET_GPIO_Port, MUX_RESET_Pin, GPIO_PIN_RESET);
 
