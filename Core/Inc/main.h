@@ -107,6 +107,9 @@ void Error_Handler(void);
 #define FS_OUT_EN_GPIO_Port GPIOD
 
 /* USER CODE BEGIN Private defines */
+extern CRC_HandleTypeDef   hcrc;
+extern UART_HandleTypeDef huart4;
+#define DEBUG_UART huart4
 
 /* USER CODE END Private defines */
 

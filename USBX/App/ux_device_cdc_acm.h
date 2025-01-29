@@ -31,11 +31,15 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "main.h"
+#include "common.h"
 /* USER CODE END Includes */
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
+
+/* Define the callback function type */
+typedef void (*UartPacketCallback)(UartPacket *rPacket, UartPacket *sPacket);
 
 /* USER CODE END ET */
 
@@ -55,9 +59,10 @@ VOID USBD_CDC_ACM_Deactivate(VOID *cdc_acm_instance);
 VOID USBD_CDC_ACM_ParameterChange(VOID *cdc_acm_instance);
 
 /* USER CODE BEGIN EFP */
-VOID usbx_cdc_read_thread_entry(ULONG thread_input);
-VOID usbx_cdc_write_thread_entry(ULONG thread_input);
-
+void RegisterUartPacketCallback(UartPacketCallback callback);
+ULONG CDC_Transmit_HS(uint8_t* Buf, uint16_t Len);
+VOID usbx_cdc_acm_read_thread_entry(ULONG thread_input);
+void comms_start();
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

@@ -19,7 +19,6 @@
 /* Includes ------------------------------------------------------------------*/
 #include "app_threadx.h"
 #include "main.h"
-#include "bdma.h"
 #include "crc.h"
 #include "dma.h"
 #include "i2c.h"
@@ -32,6 +31,11 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "logging.h"
+#include "utils.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
 
 /* USER CODE END Includes */
 
@@ -53,6 +57,7 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* USER CODE BEGIN PV */
+uint8_t FIRMWARE_VERSION_DATA[3] = {1, 0, 3};
 
 /* USER CODE END PV */
 
@@ -105,7 +110,6 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
-  MX_BDMA_Init();
   MX_CRC_Init();
   MX_I2C1_Init();
   MX_RNG_Init();
@@ -115,14 +119,28 @@ int main(void)
   MX_SPI6_Init();
   MX_TIM2_Init();
   MX_UART4_Init();
-  MX_USART1_Init();
-  MX_USART3_Init();
   MX_USART6_Init();
   MX_TIM8_Init();
   MX_TIM12_Init();
   MX_TIM4_Init();
+  MX_USART1_Init();
   MX_USART2_Init();
+  MX_USART3_Init();
   /* USER CODE BEGIN 2 */
+  init_dma_logging();
+
+  // enable I2C MUX
+  HAL_GPIO_WritePin(MUX_RESET_GPIO_Port, MUX_RESET_Pin, GPIO_PIN_RESET);
+
+  // enable USB PHY
+  HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_RESET);
+
+  printf("\033c");
+  fflush(stdout);
+  HAL_Delay(500);
+  printf("Openwater open-MOTION Aggregator FW v%d.%d.%d\r\n\r\n",FIRMWARE_VERSION_DATA[0], FIRMWARE_VERSION_DATA[1], FIRMWARE_VERSION_DATA[2]);
+  printf("CPU Clock Frequency: %lu MHz\r\n", HAL_RCC_GetSysClockFreq() / 1000000);
+  printf("Initializing, please wait ...\r\n");
 
   /* USER CODE END 2 */
 
@@ -149,7 +167,6 @@ void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
-  RCC_CRSInitTypeDef RCC_CRSInitStruct = {0};
 
   /** Supply configuration update enable
   */
@@ -164,9 +181,8 @@ void SystemClock_Config(void)
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI48|RCC_OSCILLATORTYPE_HSE;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
-  RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 3;
@@ -201,21 +217,6 @@ void SystemClock_Config(void)
   }
   __HAL_RCC_PLL2CLKOUT_ENABLE(RCC_PLL2_DIVP);
   HAL_RCC_MCOConfig(RCC_MCO2, RCC_MCO2SOURCE_PLL2PCLK, RCC_MCODIV_5);
-
-  /** Enable the SYSCFG APB clock
-  */
-  __HAL_RCC_CRS_CLK_ENABLE();
-
-  /** Configures CRS
-  */
-  RCC_CRSInitStruct.Prescaler = RCC_CRS_SYNC_DIV1;
-  RCC_CRSInitStruct.Source = RCC_CRS_SYNC_SOURCE_USB1;
-  RCC_CRSInitStruct.Polarity = RCC_CRS_SYNC_POLARITY_RISING;
-  RCC_CRSInitStruct.ReloadValue = __HAL_RCC_CRS_RELOADVALUE_CALCULATE(48000000,1000);
-  RCC_CRSInitStruct.ErrorLimitValue = 34;
-  RCC_CRSInitStruct.HSI48CalibrationValue = 32;
-
-  HAL_RCCEx_CRSConfig(&RCC_CRSInitStruct);
 }
 
 /**
@@ -245,6 +246,18 @@ void PeriphCommonClock_Config(void)
 }
 
 /* USER CODE BEGIN 4 */
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
+
+}
+
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+	if(huart->Instance == UART4)
+	{
+		logging_UART_TxCpltCallback(huart);
+	}
+}
 
 /* USER CODE END 4 */
 
@@ -306,6 +319,28 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
+  uint32_t *stack_ptr;
+  HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+  printf(">>> HARD FAULT <<<\r\n");
+  fflush(stdout);  // Ensure the output is flushed immediately
+
+  // Get the current stack pointer
+  __ASM volatile ("MRS %0, MSP" : "=r" (stack_ptr));
+
+  // Print general-purpose registers
+  printf("Stack Pointer (MSP): 0x%08lX\r\n", (unsigned long)stack_ptr);
+  printf("Register dump:\r\n");
+  printf("R0 : 0x%08lX\r\n", stack_ptr[0]);
+  printf("R1 : 0x%08lX\r\n", stack_ptr[1]);
+  printf("R2 : 0x%08lX\r\n", stack_ptr[2]);
+  printf("R3 : 0x%08lX\r\n", stack_ptr[3]);
+  printf("R12: 0x%08lX\r\n", stack_ptr[4]);
+  printf("LR : 0x%08lX (Link Register)\r\n", stack_ptr[5]);
+  printf("PC : 0x%08lX (Program Counter)\r\n", stack_ptr[6]);
+  printf("xPSR: 0x%08lX\r\n", stack_ptr[7]);
+  fflush(stdout);
+
+	  HAL_Delay(100);
   __disable_irq();
   while (1)
   {

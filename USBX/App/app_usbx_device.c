@@ -53,8 +53,9 @@ static UX_DEVICE_CLASS_VIDEO_STREAM_PARAMETER video_stream_parameter[USBD_VIDEO_
 static TX_THREAD ux_device_app_thread;
 
 /* USER CODE BEGIN PV */
-static TX_THREAD ux_cdc_acm_read_thread;
-static TX_THREAD ux_cdc_acm_write_thread;
+
+static TX_THREAD ux_cdc_read_thread;
+TX_EVENT_FLAGS_GROUP EventFlag;
 
 /* USER CODE END PV */
 
@@ -233,26 +234,36 @@ UINT MX_USBX_Device_Init(VOID *memory_ptr)
   }
 
   /* USER CODE BEGIN MX_USBX_Device_Init1 */
-	if(tx_byte_allocate(byte_pool, (VOID **)&pointer, 1024, TX_NO_WAIT) != TX_SUCCESS)
-	{
 
-			  return TX_POOL_ERROR;
-	}
-	if(tx_thread_create(&ux_cdc_acm_read_thread, "CDC Read Thread", usbx_cdc_read_thread_entry, 1, pointer, 1024, 20, 20, 1, TX_AUTO_START) != TX_SUCCESS)
-	{
+  /* Allocate the stack for usbx cdc acm read thread */
+  if (tx_byte_allocate(byte_pool, (VOID **) &pointer, 1024, TX_NO_WAIT) != TX_SUCCESS)
+  {
+    return TX_POOL_ERROR;
+  }
 
-			  return TX_THREAD_ERROR;
-	}
-	if(tx_byte_allocate(byte_pool, (VOID **)&pointer, 1024, TX_NO_WAIT) != TX_SUCCESS)
-	{
+  /* Create the usbx cdc acm read thread */
+  if (tx_thread_create(&ux_cdc_read_thread, "cdc_acm_read_usbx_app_thread_entry",
+                       usbx_cdc_acm_read_thread_entry, 1, pointer,
+                       1024, 20, 20, TX_NO_TIME_SLICE,
+                       TX_AUTO_START) != TX_SUCCESS)
+  {
+    return TX_THREAD_ERROR;
+  }
 
-			  return TX_POOL_ERROR;
-	}
-	if(tx_thread_create(&ux_cdc_acm_write_thread, "CDC Write Thread", usbx_cdc_write_thread_entry, 1, pointer, 1024, 20, 20, 1, TX_AUTO_START) != TX_SUCCESS)
-	{
+  /* Allocate the stack for usbx cdc acm write thread */
+  if (tx_byte_allocate(byte_pool, (VOID **) &pointer, 1024, TX_NO_WAIT) != TX_SUCCESS)
+  {
+    return TX_POOL_ERROR;
+  }
 
-			  return TX_THREAD_ERROR;
-}
+  /* Create the event flags group */
+  if (tx_event_flags_create(&EventFlag, "Event Flag") != TX_SUCCESS)
+  {
+    return TX_GROUP_ERROR;
+  }
+
+  comms_start();
+
   /* USER CODE END MX_USBX_Device_Init1 */
 
   return ret;
@@ -288,7 +299,7 @@ VOID USBX_APP_Device_Init(VOID)
 
   /* USER CODE BEGIN USB_Device_Init_PreTreatment_1 */
 
-  HAL_PCDEx_SetRxFiFo(&hpcd_USB_OTG_HS, 0x80);
+  HAL_PCDEx_SetRxFiFo(&hpcd_USB_OTG_HS, 0x200);
   HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_HS, 0, 0x40);
   HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_HS, 1, 0x80);
   HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_HS, 2, 0x80);
