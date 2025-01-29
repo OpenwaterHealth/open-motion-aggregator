@@ -142,9 +142,6 @@ extern volatile uint8_t event_bits_enabled;
 #define BIT_6    ( 1 << 6 )
 #define BIT_7    ( 1 << 7 )
 
-#define SPI_PACKET_LENGTH 4096
-#define USART_PACKET_LENGTH 4100
-
 void vTaskWaitForAllBits(void *pvParameters);
 
 /* USER CODE END Private defines */

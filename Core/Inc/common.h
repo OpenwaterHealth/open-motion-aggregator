@@ -16,6 +16,9 @@
 #define MAX_BITSTREAM_SIZE 200 * 1024
 #define COMMAND_MAX_SIZE 2048
 
+#define SPI_PACKET_LENGTH 4096
+#define USART_PACKET_LENGTH 4100
+
 typedef enum {
 	OW_START_BYTE = 0xAA,
 	OW_END_BYTE = 0xDD,
@@ -121,6 +124,18 @@ typedef struct {
 	uint8_t *pRecieveHistoBuffer;
 
 } CameraDevice;
+
+typedef struct {
+	uint8_t cam0_buffer[USART_PACKET_LENGTH];
+	uint8_t cam1_buffer[SPI_PACKET_LENGTH];
+	uint8_t cam2_buffer[USART_PACKET_LENGTH];
+	uint8_t cam3_buffer[USART_PACKET_LENGTH];
+	uint8_t cam4_buffer[USART_PACKET_LENGTH];
+	uint8_t cam5_buffer[SPI_PACKET_LENGTH];
+	uint8_t cam6_buffer[SPI_PACKET_LENGTH];
+	uint8_t cam7_buffer[SPI_PACKET_LENGTH];
+
+} ScanPacket;
 
 
 #endif /* INC_COMMON_H_ */

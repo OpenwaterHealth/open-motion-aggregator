@@ -109,30 +109,8 @@ uint8_t rxBuffer[COMMAND_MAX_SIZE];
 uint8_t txBuffer[COMMAND_MAX_SIZE];
 __attribute__((section(".RAM_D1"))) uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE];  // 160KB buffer
 
-// Spi data buffers, 2 3 4 6
-uint8_t spi2RxBufferA[SPI_PACKET_LENGTH] = {0};
-uint8_t spi2RxBufferB[SPI_PACKET_LENGTH] = {0};
-
-uint8_t spi3RxBufferA[SPI_PACKET_LENGTH] = {0};
-uint8_t spi3RxBufferB[SPI_PACKET_LENGTH] = {0};
-
-uint8_t spi4RxBufferA[SPI_PACKET_LENGTH] = {0};
-uint8_t spi4RxBufferB[SPI_PACKET_LENGTH] = {0};
-
-uint8_t spi6RxBufferA[SPI_PACKET_LENGTH] = {0};
-uint8_t spi6RxBufferB[SPI_PACKET_LENGTH] = {0};
-
-uint8_t usart1RxBufferA[SPI_PACKET_LENGTH] = {0};
-uint8_t usart1RxBufferB[SPI_PACKET_LENGTH] = {0};
-
-uint8_t usart2RxBufferA[SPI_PACKET_LENGTH] = {0};
-uint8_t usart2RxBufferB[SPI_PACKET_LENGTH] = {0};
-
-uint8_t usart3RxBufferA[SPI_PACKET_LENGTH] = {0};
-uint8_t usart3RxBufferB[SPI_PACKET_LENGTH] = {0};
-
-uint8_t usart6RxBufferA[USART_PACKET_LENGTH] = {0};
-uint8_t usart6RxBufferB[USART_PACKET_LENGTH] = {0};
+ScanPacket scanPacketA;
+ScanPacket scanPacketB;
 
 CameraDevice cam;
 CameraDevice cam1;
@@ -302,8 +280,10 @@ int main(void)
   HAL_Delay(100);
   MX_USB_DEVICE_Init();
 
-  
   HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
+
+  scanPacketA = (ScanPacket) {0};
+  scanPacketB = (ScanPacket) {0};
 
    //Configure, initialize, and set default camera
 	cam1.id = 0;
@@ -317,7 +297,7 @@ int main(void)
 	cam1.pSpi = NULL;
 	cam1.pUart = &husart2;
 	cam1.i2c_target = 0;
-	cam1.pRecieveHistoBuffer = usart2RxBufferA;
+	cam1.pRecieveHistoBuffer = scanPacketA.cam0_buffer;
 	cam_array[0] = cam1;
 	init_camera(&cam1);
 
@@ -332,7 +312,7 @@ int main(void)
 	cam2.pSpi = &hspi6;
 	cam2.pUart = NULL;
 	cam2.i2c_target = 1;
-  cam2.pRecieveHistoBuffer = spi6RxBufferA;
+  cam2.pRecieveHistoBuffer = scanPacketA.cam1_buffer;
 	cam_array[1] = cam2;
 	init_camera(&cam2);
 
@@ -347,7 +327,7 @@ int main(void)
 	cam3.pSpi = NULL;
 	cam3.pUart = &husart3;
 	cam3.i2c_target = 2;
-  cam3.pRecieveHistoBuffer = usart3RxBufferA;
+  cam3.pRecieveHistoBuffer = scanPacketA.cam2_buffer;
 	cam_array[2] = cam3;
 	init_camera(&cam3);
 
@@ -362,7 +342,7 @@ int main(void)
 	cam4.pSpi = NULL;
 	cam4.pUart = &husart6;
 	cam4.i2c_target = 3;
-  cam4.pRecieveHistoBuffer = usart6RxBufferA;
+  cam4.pRecieveHistoBuffer = scanPacketA.cam3_buffer;
 	cam_array[3] = cam4;
 	init_camera(&cam4);
 
@@ -377,7 +357,7 @@ int main(void)
 	cam5.pSpi = NULL;
 	cam5.pUart = &husart1;
 	cam5.i2c_target = 4;
-  cam5.pRecieveHistoBuffer = usart1RxBufferA;
+  cam5.pRecieveHistoBuffer = scanPacketA.cam4_buffer;
 	cam_array[4] = cam5;
 	init_camera(&cam5);
 
@@ -392,7 +372,7 @@ int main(void)
 	cam6.pSpi = &hspi3;
 	cam6.pUart = NULL;
 	cam6.i2c_target = 5;
-  cam6.pRecieveHistoBuffer = spi3RxBufferA;
+  cam6.pRecieveHistoBuffer = scanPacketA.cam5_buffer;
 	cam_array[5] = cam6;
 	init_camera(&cam6);
 
@@ -407,7 +387,7 @@ int main(void)
 	cam7.pSpi = &hspi2;
 	cam7.pUart = NULL;
 	cam7.i2c_target = 6;
-  cam7.pRecieveHistoBuffer = spi2RxBufferA;
+  cam7.pRecieveHistoBuffer = scanPacketA.cam6_buffer;
 	cam_array[6] = cam7;
 	init_camera(&cam7);
 
@@ -422,7 +402,7 @@ int main(void)
 	cam8.pSpi = &hspi4;
 	cam8.pUart = NULL;
 	cam8.i2c_target = 7;
-  cam8.pRecieveHistoBuffer = spi4RxBufferA;
+  cam8.pRecieveHistoBuffer = scanPacketA.cam7_buffer;
 	cam_array[7] = cam8;
 	init_camera(&cam8);
 
@@ -1515,8 +1495,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 		telem.id = 5;
 		telem.data = cam6.pRecieveHistoBuffer;
 		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
-
-        cam6.pRecieveHistoBuffer = (cam6.pRecieveHistoBuffer == usart1RxBufferA) ? usart1RxBufferB : usart1RxBufferA;
+        cam5.pRecieveHistoBuffer = (cam5.pRecieveHistoBuffer == scanPacketA.cam4_buffer) ? scanPacketB.cam4_buffer : scanPacketA.cam4_buffer;
         if (HAL_USART_Receive_IT(&husart1, cam6.pRecieveHistoBuffer, USART_PACKET_LENGTH) != HAL_OK) {
             Error_Handler();  // Handle any error during re-enabling
         }
@@ -1528,7 +1507,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 		telem.data = cam1.pRecieveHistoBuffer;
 		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-        cam1.pRecieveHistoBuffer = (cam1.pRecieveHistoBuffer == usart2RxBufferA) ? usart2RxBufferB : usart2RxBufferA;
+        cam1.pRecieveHistoBuffer = (cam1.pRecieveHistoBuffer == scanPacketA.cam0_buffer) ? scanPacketB.cam0_buffer : scanPacketA.cam0_buffer;
         if (HAL_USART_Receive_IT(&husart2, cam1.pRecieveHistoBuffer, USART_PACKET_LENGTH) != HAL_OK) {
             Error_Handler();  // Handle any error during re-enabling
         }
@@ -1537,10 +1516,10 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 		xBitToSet = BIT_2;
 
 		telem.id = 3;
-		telem.data = cam4.pRecieveHistoBuffer;
+		telem.data = cam3.pRecieveHistoBuffer;
 		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-        cam4.pRecieveHistoBuffer = (cam4.pRecieveHistoBuffer == usart3RxBufferA) ? usart3RxBufferB : usart3RxBufferA;
+        cam3.pRecieveHistoBuffer = (cam3.pRecieveHistoBuffer == scanPacketA.cam2_buffer) ? scanPacketB.cam2_buffer : scanPacketA.cam2_buffer;
         if (HAL_USART_Receive_IT(&husart3, cam4.pRecieveHistoBuffer, USART_PACKET_LENGTH) != HAL_OK) {
             Error_Handler();  // Handle any error during re-enabling
         }
@@ -1552,35 +1531,13 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 		telem.data = cam4.pRecieveHistoBuffer;
 		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-		cam4.pRecieveHistoBuffer = (cam4.pRecieveHistoBuffer == usart6RxBufferA) ? usart6RxBufferB : usart6RxBufferA;
+		cam4.pRecieveHistoBuffer = (cam4.pRecieveHistoBuffer == scanPacketA.cam3_buffer) ? scanPacketB.cam3_buffer : scanPacketA.cam3_buffer;
 		if (HAL_USART_Receive_IT(&husart6, cam4.pRecieveHistoBuffer, USART_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
 	}
 
 	event_bits = event_bits | xBitToSet;
-
-/*
-	osKernelState_t state = osKernelGetState();
-	if (state != osKernelRunning) {
-		printf("Kernel not running, state is %i \r\n", state);
-	}
-	else if(event_flags_id == NULL){
-		printf("Event flags nullified \r\n");
-	}
-	else {
-		uint32_t flags = osEventFlagsSet(event_flags_id, xBitToSet);
-		if (flags == (uint32_t)osFlagsErrorUnknown) {
-			printf("osFlagsErrorUnknown!\r\n");
-		}
-		else if (flags == (uint32_t)osFlagsErrorParameter) {
-			printf("osFlagsErrorParameter!\r\n");
-		}
-		else if (flags == (uint32_t)osFlagsErrorResource) {
-			printf("osFlagsErrorResource!\r\n");
-		}
-	}
-  */
 }
 
 // Error handling callback for USART
@@ -1639,7 +1596,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 		telem.id = 6; // cam7
 		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-		cam7.pRecieveHistoBuffer = (cam7.pRecieveHistoBuffer == spi2RxBufferA) ? spi2RxBufferB : spi2RxBufferA;
+		cam7.pRecieveHistoBuffer = (cam7.pRecieveHistoBuffer == scanPacketA.cam6_buffer) ? scanPacketB.cam6_buffer : scanPacketA.cam6_buffer;
 		if (HAL_SPI_Receive_DMA(&hspi2, cam7.pRecieveHistoBuffer, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
@@ -1650,7 +1607,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 		telem.id = 5;
 		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-		cam6.pRecieveHistoBuffer = (cam6.pRecieveHistoBuffer == spi3RxBufferA) ? spi3RxBufferB : spi3RxBufferA;
+		cam6.pRecieveHistoBuffer = (cam6.pRecieveHistoBuffer == scanPacketA.cam5_buffer) ? scanPacketB.cam5_buffer : scanPacketA.cam5_buffer;
 		if (HAL_SPI_Receive_DMA(&hspi3, cam6.pRecieveHistoBuffer, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
@@ -1661,7 +1618,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 		telem.id = 7;
 		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-		cam8.pRecieveHistoBuffer = (cam8.pRecieveHistoBuffer == spi4RxBufferA) ? spi4RxBufferB : spi4RxBufferA;
+		cam8.pRecieveHistoBuffer = (cam8.pRecieveHistoBuffer == scanPacketA.cam7_buffer) ?  scanPacketB.cam7_buffer :  scanPacketA.cam7_buffer;
 		if (HAL_SPI_Receive_DMA(&hspi4, cam8.pRecieveHistoBuffer, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
@@ -1672,7 +1629,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 		telem.id = 1;
 		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-		cam2.pRecieveHistoBuffer = (cam2.pRecieveHistoBuffer == spi6RxBufferA) ? spi6RxBufferB : spi6RxBufferA;
+		cam2.pRecieveHistoBuffer = (cam2.pRecieveHistoBuffer ==  scanPacketA.cam1_buffer) ? scanPacketB.cam1_buffer : scanPacketA.cam1_buffer;
 		if (HAL_SPI_Receive_IT(&hspi6, cam2.pRecieveHistoBuffer, SPI_PACKET_LENGTH) != HAL_OK) {
 			Error_Handler();  // Handle any error during re-enabling
 		}
@@ -1834,6 +1791,17 @@ void vTaskWaitForAllBits(void *pvParameters)
             printf("All bits are set! Task unblocked. Frame ID: %d\r\n", frame_id);
             event_bits = 0x00;
             frame_id++;
+            
+
+            // TODO: move over calling all the spi reads and USART reads
+
+            // ship out the packets over UART
+            // UartPacket telem;
+            // telem.id = 0; // arbitrarily deciding that all telem packets have id 0
+            // telem.packet_type = OW_DATA;
+            // telem.command = OW_HISTO;
+            // telem.data_len = SPI_PACKET_LENGTH;
+            // telem.addr = 0;
         }
         osDelay(1);
     }
