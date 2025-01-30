@@ -81,7 +81,10 @@ USART_HandleTypeDef husart3;
 USART_HandleTypeDef husart6;
 DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_uart4_tx;
+DMA_HandleTypeDef hdma_usart1_rx;
 DMA_HandleTypeDef hdma_usart2_rx;
+DMA_HandleTypeDef hdma_usart3_rx;
+DMA_HandleTypeDef hdma_usart6_rx;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -269,14 +272,16 @@ int main(void)
 
   HAL_Delay(2000);
 
-  for(int i = 0;i<8;i++){
-	  TCA9548A_SelectChannel(&hi2c1, 0x70, i);
-	  HAL_Delay(300);
-	  printf("I2C Scanning bus %d\r\n",i+1);
-	  I2C_scan(&hi2c1, NULL, 0, true);
-	  HAL_Delay(100);
+  bool scanI2cAtStart = false;
+  if(scanI2cAtStart){
+	  for(int i = 0;i<8;i++){
+		  TCA9548A_SelectChannel(&hi2c1, 0x70, i);
+		  HAL_Delay(300);
+		  printf("I2C Scanning bus %d\r\n",i+1);
+		  I2C_scan(&hi2c1, NULL, 0, true);
+		  HAL_Delay(100);
+	  }
   }
-
   HAL_Delay(100);
 
 
@@ -1354,6 +1359,7 @@ static void MX_DMA_Init(void)
 
   /* DMA controller clock enable */
   __HAL_RCC_DMA1_CLK_ENABLE();
+  __HAL_RCC_DMA2_CLK_ENABLE();
 
   /* DMA interrupt init */
   /* DMA1_Stream0_IRQn interrupt configuration */
@@ -1374,9 +1380,15 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream5_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
-  /* DMAMUX1_OVR_IRQn interrupt configuration */
-  HAL_NVIC_SetPriority(DMAMUX1_OVR_IRQn, 5, 0);
-  HAL_NVIC_EnableIRQ(DMAMUX1_OVR_IRQn);
+  /* DMA1_Stream6_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream6_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream6_IRQn);
+  /* DMA1_Stream7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream7_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream7_IRQn);
+  /* DMA2_Stream0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
 
 }
 
@@ -1519,7 +1531,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 //	uint32_t error_code_dma = husart->hdmarx->State->ErrorCode;
 	uint32_t isrflags = READ_REG(husart->Instance->ISR);
 	uint32_t cr3its = READ_REG(husart->Instance->CR3);
-	printf("ISR: 0x%08X, CR3: 0x%08X\n", isrflags, cr3its);
+//	printf("ISR: 0x%08X, CR3: 0x%08X\n", isrflags, cr3its);
 	HAL_DMA_StateTypeDef state = husart->hdmarx->State;
 
 
