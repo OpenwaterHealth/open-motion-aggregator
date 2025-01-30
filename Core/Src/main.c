@@ -293,6 +293,8 @@ int main(void)
 
   scanPacketA = (ScanPacket) {0};
   scanPacketB = (ScanPacket) {0};
+  event_bits = 0x00;
+  event_bits_enabled = 0x00;
 
    //Configure, initialize, and set default camera
 	cam1.id = 0;
@@ -331,7 +333,7 @@ int main(void)
 	cam3.gpio0_port = GPIO0_3_GPIO_Port;
 	cam3.gpio0_pin = GPIO0_3_Pin;
 	cam3.useUsart = true;
-  cam3.useDma = false;
+  cam3.useDma = true;
 	cam3.pI2c = &hi2c1;
 	cam3.pSpi = NULL;
 	cam3.pUart = &husart3;
@@ -346,7 +348,7 @@ int main(void)
 	cam4.gpio0_port = GPIO0_4_GPIO_Port;
 	cam4.gpio0_pin = GPIO0_4_Pin;
 	cam4.useUsart = true;
-  cam4.useDma = false;
+  cam4.useDma = true;
 	cam4.pI2c = &hi2c1;
 	cam4.pSpi = NULL;
 	cam4.pUart = &husart6;
@@ -361,7 +363,7 @@ int main(void)
 	cam5.gpio0_port = GPIO0_5_GPIO_Port;
 	cam5.gpio0_pin = GPIO0_5_Pin;
 	cam5.useUsart = true;
-  cam5.useDma = false;
+  cam5.useDma = true;
 	cam5.pI2c = &hi2c1;
 	cam5.pSpi = NULL;
 	cam5.pUart = &husart1;
@@ -1526,47 +1528,6 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
     telem.addr = 0;
 
 	uint8_t xBitToSet = 0x00;
-	HAL_USART_StateTypeDef state4= husart->State;
-//	uint32_t error_code = husart->State->ErrorCode;
-//	uint32_t error_code_dma = husart->hdmarx->State->ErrorCode;
-	uint32_t isrflags = READ_REG(husart->Instance->ISR);
-	uint32_t cr3its = READ_REG(husart->Instance->CR3);
-//	printf("ISR: 0x%08X, CR3: 0x%08X\n", isrflags, cr3its);
-	HAL_DMA_StateTypeDef state = husart->hdmarx->State;
-
-
-/*	if(state4 != HAL_USART_STATE_READY && state == HAL_DMA_STATE_READY){
-//		printf("USART4 not ready: 0x%02X state\r\n", state4);
-//
-//		printf("USART4 not hdmarx: 0x%02X state\r\n", state);
-//
-//		if(state4 == HAL_USART_STATE_BUSY_TX){
-//		  printf("USART4 busy TX\r\n");
-//		}
-//		if(state4 == HAL_USART_STATE_BUSY_RX){
-//		  printf("USART4 busy RX\r\n");
-//		}
-//		if(state4 == HAL_USART_STATE_BUSY_TX_RX){
-//		  printf("USART4 busy TX RX\r\n");
-//		}
-//		if(state4 == HAL_USART_STATE_TIMEOUT){
-//		  printf("USART4 timeout\r\n");
-//		}
-//		if(state4 == HAL_USART_STATE_ERROR){
-//		  printf("USART4 error\r\n");
-//		}
-//		if(state4 == HAL_USART_STATE_RESET){
-//		  printf("USART4 reset\r\n");
-//		}
-//		if(state4 == HAL_USART_STATE_BUSY){
-//		  printf("USART4 busy\r\n");
-//		}
-//		return;
-	    husart->State = HAL_USART_STATE_READY;
-
-
-//		Error_Handler();
-	}*/
 
 	if (husart->Instance == USART1) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_4;
@@ -1574,10 +1535,8 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 		telem.id = 5;
 		telem.data = cam6.pRecieveHistoBuffer;
 		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
-        cam5.pRecieveHistoBuffer = (cam5.pRecieveHistoBuffer == scanPacketA.cam4_buffer) ? scanPacketB.cam4_buffer : scanPacketA.cam4_buffer;
-        if (HAL_USART_Receive_IT(&husart1, cam6.pRecieveHistoBuffer, USART_PACKET_LENGTH) != HAL_OK) {
-            Error_Handler();  // Handle any error during re-enabling
-        }
+
+		cam5.pRecieveHistoBuffer = (cam5.pRecieveHistoBuffer == scanPacketA.cam4_buffer) ? scanPacketB.cam4_buffer : scanPacketA.cam4_buffer;
     }
 	else if (husart->Instance == USART2) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_0;
@@ -1588,12 +1547,6 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 
         cam1.pRecieveHistoBuffer = (cam1.pRecieveHistoBuffer == scanPacketA.cam0_buffer) ? scanPacketB.cam0_buffer : scanPacketA.cam0_buffer;
 
-//        HAL_DMA_StateTypeDef state = husart->hdmarx->State;
-//        __HAL_DMA_CLEAR_FLAG(husart->hdmarx, DMA_FLAG_TCIF1_5);
-//        HAL_DMA_StateTypeDef state2 = husart->hdmarx->State;
-
-//        status = HAL_USART_Abort(husart);
-
     }
 	else if (husart->Instance == USART3) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_2;
@@ -1603,9 +1556,6 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
         cam3.pRecieveHistoBuffer = (cam3.pRecieveHistoBuffer == scanPacketA.cam2_buffer) ? scanPacketB.cam2_buffer : scanPacketA.cam2_buffer;
-        if (HAL_USART_Receive_IT(&husart3, cam4.pRecieveHistoBuffer, USART_PACKET_LENGTH) != HAL_OK) {
-            Error_Handler();  // Handle any error during re-enabling
-        }
     }
 	else if (husart->Instance == USART6) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_3;
@@ -1615,9 +1565,6 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
 		cam4.pRecieveHistoBuffer = (cam4.pRecieveHistoBuffer == scanPacketA.cam3_buffer) ? scanPacketB.cam3_buffer : scanPacketA.cam3_buffer;
-		if (HAL_USART_Receive_IT(&husart6, cam4.pRecieveHistoBuffer, USART_PACKET_LENGTH) != HAL_OK) {
-			Error_Handler();  // Handle any error during re-enabling
-		}
 	}
 
 	event_bits = event_bits | xBitToSet;
@@ -1861,6 +1808,8 @@ void init_camera(CameraDevice *cam){
 		HAL_GPIO_Init(cam->cresetb_port, &GPIO_InitStruct);
 	}
 	*/
+
+	cam->streaming_enabled = false;
 }
 // Task to wait for all bits
 void vTaskWaitForAllBits(void *pvParameters)
@@ -1874,18 +1823,28 @@ void vTaskWaitForAllBits(void *pvParameters)
             printf("All bits are set! Task unblocked. Frame ID: %d\r\n", frame_id);
             event_bits = 0x00;
             frame_id++;
-            
-            HAL_StatusTypeDef status;
-            if(cam1.useDma){
-            	status = HAL_USART_Receive_DMA(&husart2, cam1.pRecieveHistoBuffer, USART_PACKET_LENGTH);
-                HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+			HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+
+            for(int i = 0; i<8;i++){
+            	CameraDevice cam = cam_array[i];
+            	HAL_StatusTypeDef status;
+
+            	if (cam.streaming_enabled){
+            		if(cam.useUsart){
+						if(cam1.useDma){
+							status = HAL_USART_Receive_DMA(cam.pUart, cam.pRecieveHistoBuffer, USART_PACKET_LENGTH);
+						}
+						else {
+							status = HAL_USART_Receive_IT(cam.pUart, cam.pRecieveHistoBuffer, USART_PACKET_LENGTH);
+						}
+            		}
+					if (status != HAL_OK) {
+						Error_Handler();  // Handle any error during re-enabling
+					}
+            	}
+
             }
-    		else {
-            	status = HAL_USART_Receive_IT(&husart2, cam1.pRecieveHistoBuffer, USART_PACKET_LENGTH);
-    		}
-            if (status != HAL_OK) {
-                Error_Handler();  // Handle any error during re-enabling
-            }
+
             // TODO: move over calling all the spi reads and USART reads
 
             // ship out the packets over UART

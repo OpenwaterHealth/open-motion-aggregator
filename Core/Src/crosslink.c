@@ -42,6 +42,8 @@ unsigned char write_buf[4];
 unsigned char read_buf[4];
 unsigned char activation_key[5] = {0xFF, 0xA4, 0xC6, 0xF4, 0x8A};
 
+bool crosslink_verbose = false;
+
 HAL_StatusTypeDef i2c_write_and_read(CameraDevice *cam, uint8_t *pData, uint16_t WriteSize, uint8_t *pReadData, uint16_t ReadSize)
 {
     txComplete = 0;
@@ -50,7 +52,7 @@ HAL_StatusTypeDef i2c_write_and_read(CameraDevice *cam, uint8_t *pData, uint16_t
 
     // Check if the I2C peripheral is ready
     while (HAL_I2C_GetState(cam->pI2c) != HAL_I2C_STATE_READY) {
-        printf("I2C busy, waiting...\r\n");
+        if(crosslink_verbose) printf("I2C busy, waiting...\r\n");
         HAL_Delay(1);  // Add a small delay to avoid busy looping
     }
 
@@ -59,7 +61,7 @@ HAL_StatusTypeDef i2c_write_and_read(CameraDevice *cam, uint8_t *pData, uint16_t
     if (ret != HAL_OK)
     {
     	uint32_t hal_error = HAL_I2C_GetError(cam->pI2c);
-    	printf("++++> i2c_write_and_read HAL TX ERROR 0x%04lX\r\n", hal_error);
+    	if(crosslink_verbose) printf("++++> i2c_write_and_read HAL TX ERROR 0x%04lX\r\n", hal_error);
         return ret; // Return if the write operation fails
     }
 
@@ -73,7 +75,7 @@ HAL_StatusTypeDef i2c_write_and_read(CameraDevice *cam, uint8_t *pData, uint16_t
 
     // Check if the I2C peripheral is ready
     while (HAL_I2C_GetState(cam->pI2c) != HAL_I2C_STATE_READY) {
-        printf("I2C busy, waiting...\r\n");
+        if(crosslink_verbose) printf("I2C busy, waiting...\r\n");
         HAL_Delay(1);  // Add a small delay to avoid busy looping
     }
 
@@ -82,7 +84,7 @@ HAL_StatusTypeDef i2c_write_and_read(CameraDevice *cam, uint8_t *pData, uint16_t
     if (ret != HAL_OK)
     {
     	uint32_t hal_error = HAL_I2C_GetError(cam->pI2c);
-    	printf("++++> i2c_write_and_read HAL REC ERROR 0x%04lX\r\n", hal_error);
+    	if(crosslink_verbose) printf("++++> i2c_write_and_read HAL REC ERROR 0x%04lX\r\n", hal_error);
         return ret; // Return if the read operation fails
     }
 
@@ -113,8 +115,8 @@ HAL_StatusTypeDef i2c_write_long(CameraDevice *cam, uint8_t *write_command, uint
     memcpy(bitstream_buffer, write_command, num_bytes_command);  // Copy command data
     memcpy(bitstream_buffer + num_bytes_command, write_data, num_bytes_data);  // Copy data
 
-    printf("Bitstream CRC: 0x%04X Length: %ld\r\n", util_crc16(write_data, writedata_len), writedata_len);
-    printf("FULL CRC: 0x%04X Length: %d\r\n", util_crc16(bitstream_buffer, total_len_bytes), total_len_bytes);
+    if(crosslink_verbose) printf("Bitstream CRC: 0x%04X Length: %ld\r\n", util_crc16(write_data, writedata_len), writedata_len);
+    if(crosslink_verbose) printf("FULL CRC: 0x%04X Length: %d\r\n", util_crc16(bitstream_buffer, total_len_bytes), total_len_bytes);
 
     HAL_StatusTypeDef ret;
     uint16_t offset = 0;
@@ -140,11 +142,11 @@ HAL_StatusTypeDef i2c_write_long(CameraDevice *cam, uint8_t *write_command, uint
             frame_flag = I2C_NEXT_FRAME;
         }
 
-        // printf("Count: %d Chunk Size: %d\r\n", i, current_chunk_size);
+        // if(crosslink_verbose) printf("Count: %d Chunk Size: %d\r\n", i, current_chunk_size);
 
         // Check if the I2C peripheral is ready
         while (HAL_I2C_GetState(cam->pI2c) != HAL_I2C_STATE_READY) {
-            //printf("I2C busy, waiting...\r\n");
+            //if(crosslink_verbose) printf("I2C busy, waiting...\r\n");
             HAL_Delay(1);  // Add a small delay to avoid busy looping
         }
         pData = (uint8_t*)&bitstream_buffer[i * chunk_size];
@@ -153,7 +155,7 @@ HAL_StatusTypeDef i2c_write_long(CameraDevice *cam, uint8_t *write_command, uint
         // Transmit the current chunk
         ret = HAL_I2C_Master_Seq_Transmit_IT(cam->pI2c, I2C_ADDRESS << 1, pData, datalen, frame_flag);
         if (ret != HAL_OK) {
-        	printf("++++> i2c_write_long HAL TX HAL_StatusTypeDef: 0%04X I2C_ERROR: 0%04lX\r\n", ret, cam->pI2c->ErrorCode);
+        	if(crosslink_verbose) printf("++++> i2c_write_long HAL TX HAL_StatusTypeDef: 0%04X I2C_ERROR: 0%04lX\r\n", ret, cam->pI2c->ErrorCode);
             return ret; // Return if any transmission fails
         }
 
@@ -167,7 +169,7 @@ HAL_StatusTypeDef i2c_write_long(CameraDevice *cam, uint8_t *write_command, uint
 
     }
 
-    printf("Programmed Successfully\r\n");
+    if(crosslink_verbose) printf("Programmed Successfully\r\n");
     HAL_Delay(100);
     return HAL_OK;
 }
@@ -183,8 +185,8 @@ HAL_StatusTypeDef i2c_write_bitstream(CameraDevice *cam, uint8_t *write_bitstrea
     uint16_t offset = 0;
     uint32_t frame_flag;
 
-    printf("Bitstream CRC: 0x%04X Length: %ld\r\n", util_crc16((uint8_t*)(write_bitstream+4), bitstream_len-4), bitstream_len-4);
-    printf("FULL CRC: 0x%04X Length: %ld\r\n", util_crc16(write_bitstream, bitstream_len), bitstream_len);
+    if(crosslink_verbose) printf("Bitstream CRC: 0x%04X Length: %ld\r\n", util_crc16((uint8_t*)(write_bitstream+4), bitstream_len-4), bitstream_len-4);
+    if(crosslink_verbose) printf("FULL CRC: 0x%04X Length: %ld\r\n", util_crc16(write_bitstream, bitstream_len), bitstream_len);
 
     // Split into chunks and send them sequentially
     for (int i = 0; i < num_chunks; i++) {
@@ -206,11 +208,11 @@ HAL_StatusTypeDef i2c_write_bitstream(CameraDevice *cam, uint8_t *write_bitstrea
             frame_flag = I2C_NEXT_FRAME;
         }
 
-        // printf("Count: %d Chunk Size: %d\r\n", i, current_chunk_size);
+        // if(crosslink_verbose) printf("Count: %d Chunk Size: %d\r\n", i, current_chunk_size);
 
         // Check if the I2C peripheral is ready
         while (HAL_I2C_GetState(cam->pI2c) != HAL_I2C_STATE_READY) {
-            //printf("I2C busy, waiting...\r\n");
+            //if(crosslink_verbose) printf("I2C busy, waiting...\r\n");
             HAL_Delay(1);  // Add a small delay to avoid busy looping
         }
         pData = (uint8_t*)&write_bitstream[i * chunk_size];
@@ -219,7 +221,7 @@ HAL_StatusTypeDef i2c_write_bitstream(CameraDevice *cam, uint8_t *write_bitstrea
         // Transmit the current chunk
         ret = HAL_I2C_Master_Seq_Transmit_IT(cam->pI2c, I2C_ADDRESS << 1, pData, datalen, frame_flag);
         if (ret != HAL_OK) {
-        	printf("++++> i2c_write_long HAL TX HAL_StatusTypeDef: 0%04X I2C_ERROR: 0%04lX\r\n", ret, cam->pI2c->ErrorCode);
+        	if(crosslink_verbose) printf("++++> i2c_write_long HAL TX HAL_StatusTypeDef: 0%04X I2C_ERROR: 0%04lX\r\n", ret, cam->pI2c->ErrorCode);
             return ret; // Return if any transmission fails
         }
 
@@ -233,7 +235,7 @@ HAL_StatusTypeDef i2c_write_bitstream(CameraDevice *cam, uint8_t *write_bitstrea
 
     }
 
-    printf("Programmed Successfully\r\n");
+    if(crosslink_verbose) printf("Programmed Successfully\r\n");
     HAL_Delay(100);
 
     return HAL_OK;
@@ -247,31 +249,31 @@ HAL_StatusTypeDef i2c_write_byte( CameraDevice *cam, uint16_t size, uint8_t *pDa
 void fpga_reset(CameraDevice *cam)
 {
 
-    printf("Resetting FPGA....");
+    if(crosslink_verbose) printf("Resetting FPGA....");
     HAL_GPIO_WritePin(cam->cresetb_port, cam->cresetb_pin, GPIO_PIN_SET);
     HAL_Delay(250);
 
     HAL_GPIO_WritePin(cam->cresetb_port, cam->cresetb_pin, GPIO_PIN_RESET);
     HAL_Delay(1000);
-    printf("COMPLETED\r\n");
+    if(crosslink_verbose) printf("COMPLETED\r\n");
 }
 
 void fpga_soft_reset(CameraDevice *cam)
 {
-	  printf("Soft resetting FPGA....");
+	  if(crosslink_verbose) printf("Soft resetting FPGA....");
 
 	  HAL_GPIO_WritePin(cam->gpio0_port, cam->gpio0_pin, GPIO_PIN_RESET);
 	  HAL_Delay(200);
 	  HAL_GPIO_WritePin(cam->gpio0_port, cam->gpio0_pin, GPIO_PIN_SET);
-   	  printf("COMPLETED\r\n");
+   	  if(crosslink_verbose) printf("COMPLETED\r\n");
 }
 
 int fpga_send_activation(CameraDevice *cam)
 {
 	// Step 1: Initialize
-	printf("Step 1: Send Activation Key\r\n");
+	if(crosslink_verbose) printf("Step 1: Send Activation Key\r\n");
 	if (i2c_write_byte(cam, 5, activation_key) < 0) {
-		printf("failed to send activation key\r\n");
+		if(crosslink_verbose) printf("failed to send activation key\r\n");
 	    return 1;  // Exit if writing activation key fails
 	}
 
@@ -280,14 +282,14 @@ int fpga_send_activation(CameraDevice *cam)
 
 void fpga_on(CameraDevice *cam)
 {
-    printf("Turning on FPGA\r\n");
+    if(crosslink_verbose) printf("Turning on FPGA\r\n");
     HAL_GPIO_WritePin(cam->cresetb_port, cam->cresetb_pin, GPIO_PIN_SET);
     HAL_Delay(10);
 }
 
 void fpga_off(CameraDevice *cam)
 {
-    printf("Turning off FPGA\r\n");
+    if(crosslink_verbose) printf("Turning off FPGA\r\n");
     HAL_GPIO_WritePin(cam->cresetb_port, cam->cresetb_pin, GPIO_PIN_RESET);
     HAL_Delay(10);
 }
@@ -295,28 +297,28 @@ void fpga_off(CameraDevice *cam)
 int fpga_checkid(CameraDevice *cam)
 {
     // Step 2: Check IDCODE (Optional)
-    printf("Step 2: Check IDCODE (Optional)\r\n");
+    if(crosslink_verbose) printf("Step 2: Check IDCODE (Optional)\r\n");
     write_buf[0] = 0xE0; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
     if (i2c_write_and_read(cam, write_buf, 4, read_buf, 4) < 0) {
-        printf("failed to send IDCODE Command\r\n");
+        if(crosslink_verbose) printf("failed to send IDCODE Command\r\n");
         return 1;  // Exit if write/read fails
     }
 
-    printf("Device ID read: ");
+    if(crosslink_verbose) printf("Device ID read: ");
     for (int i = 0; i < 4; i++) {
-        printf("%02X ", read_buf[i]);
+        if(crosslink_verbose) printf("%02X ", read_buf[i]);
     }
-    printf("\r\n");
+    if(crosslink_verbose) printf("\r\n");
 	return 0;
 }
 
 int fpga_bitstream_burst(CameraDevice *cam)
 {
     // Bitstream Burst
-    printf("Bitstream Burst\r\n");
+    if(crosslink_verbose) printf("Bitstream Burst\r\n");
     write_buf[0] = 0x7A; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
     if (i2c_write_and_read(cam, write_buf, 4, read_buf, 4) < 0) {
-        printf("failed to send IDCODE Command\r\n");
+        if(crosslink_verbose) printf("failed to send IDCODE Command\r\n");
         return 1;  // Exit if write/read fails
     }
 
@@ -326,10 +328,10 @@ int fpga_bitstream_burst(CameraDevice *cam)
 int fpga_enter_sram_prog_mode(CameraDevice *cam)
 {
     // Step 3: Enable SRAM Programming Mode
-    printf("Step 3: Enable SRAM Programming Mode\r\n");
+    if(crosslink_verbose) printf("Step 3: Enable SRAM Programming Mode\r\n");
     write_buf[0] = 0xC6; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
     if (i2c_write_byte(cam, 4, write_buf) < 0) {
-        printf("failed to send SRAM Command\r\n");
+        if(crosslink_verbose) printf("failed to send SRAM Command\r\n");
         return 1;  // Exit if writing fails
     }
     HAL_Delay(1);
@@ -339,33 +341,33 @@ int fpga_enter_sram_prog_mode(CameraDevice *cam)
 int fpga_erase_sram(CameraDevice *cam)
 {
     // Step 4: Erase SRAM
-    printf("Step 4: Erase SRAM...");
+    if(crosslink_verbose) printf("Step 4: Erase SRAM...");
     write_buf[0] = 0x0E; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
     if (i2c_write_byte(cam, 4, write_buf) < 0) {
-        printf("\r\nFAILED to send SRAM Erase Command\r\n");
+        if(crosslink_verbose) printf("\r\nFAILED to send SRAM Erase Command\r\n");
         return 1;  // Exit if writing fails
     }
     HAL_Delay(5000);  // Wait for erase to complete
-    printf("COMPLETED\r\n");
+    if(crosslink_verbose) printf("COMPLETED\r\n");
     return 0;
 }
 
 int fpga_read_status(CameraDevice *cam)
 {
     // Step 5: Read Status Register
-    printf("Read Status Register\r\n");
+    if(crosslink_verbose) printf("Read Status Register\r\n");
     write_buf[0] = 0x3C; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
     if (i2c_write_and_read(cam, write_buf, 4, read_buf, 4) < 0) {
-        printf("failed to send READ Status Command\r\n");
+        if(crosslink_verbose) printf("failed to send READ Status Command\r\n");
         return 1;  // Exit if write/read fails
     }
 
     // Check status register bits according to the guide (e.g., Bit-12 Busy = 0, Bit-13 Fail = 0)
-    printf("Status Register: ");
+    if(crosslink_verbose) printf("Status Register: ");
     for (int i = 0; i < 4; i++) {
-        printf("%02X ", read_buf[i]);
+        if(crosslink_verbose) printf("%02X ", read_buf[i]);
     }
-    printf("\r\n");
+    if(crosslink_verbose) printf("\r\n");
     return 0;
 
 }
@@ -373,28 +375,28 @@ int fpga_read_status(CameraDevice *cam)
 int fpga_read_usercode(CameraDevice *cam)
 {
     // Step 9: Read USERCODE (Optional)
-    printf("Step 9: Verify USERCODE (Optional)\r\n");
+    if(crosslink_verbose) printf("Step 9: Verify USERCODE (Optional)\r\n");
     write_buf[0] = 0xC0; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
     if (i2c_write_and_read(cam, write_buf, 4, read_buf, 4) < 0) {
-        printf("failed to send USERCODE Command\r\n");
+        if(crosslink_verbose) printf("failed to send USERCODE Command\r\n");
         return 1;  // Exit if write/read fails
     }
     // Compare read_buf with expected USERCODE if necessary
 
-    printf("USERCODE: ");
+    if(crosslink_verbose) printf("USERCODE: ");
     for (int i = 0; i < 4; i++) {
-        printf("%02X ", read_buf[i]);
+        if(crosslink_verbose) printf("%02X ", read_buf[i]);
     }
-    printf("\r\n");
+    if(crosslink_verbose) printf("\r\n");
     return 0;
 }
 
 int fpga_program_sram(CameraDevice *cam, bool rom_bitstream, uint8_t* pData, uint32_t Data_Len)
 {
-    printf("Program SRAM\r\n");
+    if(crosslink_verbose) printf("Program SRAM\r\n");
     write_buf[0] = 0x46; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
     if (i2c_write_byte(cam, 4, write_buf) < 0) {
-        printf("failed to send Exit Command\r\n");
+        if(crosslink_verbose) printf("failed to send Exit Command\r\n");
         return 1;  // Exit if writing fails
     }
 
@@ -415,10 +417,10 @@ int fpga_exit_prog_mode(CameraDevice *cam)
 {
 
     // Step 11: Exit Programming Mode
-    printf("Step 10: Exit Programming Mode\r\n");
+    if(crosslink_verbose) printf("Step 10: Exit Programming Mode\r\n");
     write_buf[0] = 0x26; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
     if (i2c_write_byte(cam, 4, write_buf) < 0) {
-        printf("failed to send Exit Command\r\n");
+        if(crosslink_verbose) printf("failed to send Exit Command\r\n");
         return 1;  // Exit if writing fails
     }
 
@@ -427,7 +429,7 @@ int fpga_exit_prog_mode(CameraDevice *cam)
 
 int program_bitstream(CameraDevice *cam) {
 
-    printf("Starting FPGA Configuration\r\n");
+    if(crosslink_verbose) printf("Starting FPGA Configuration\r\n");
 
     fpga_reset(cam);
 
@@ -463,34 +465,34 @@ void HAL_I2C_ErrorCallback(I2C_HandleTypeDef *hi2c)
 {
     i2cError = 1;
 
-	printf("++++> HAL_I2C_ErrorCallback 0x%04lX\r\n", hi2c->ErrorCode);
+	if(crosslink_verbose) printf("++++> HAL_I2C_ErrorCallback 0x%04lX\r\n", hi2c->ErrorCode);
     // Check for the specific error code
     if (hi2c->ErrorCode == HAL_I2C_ERROR_BERR)
     {
-        printf("Bus Error occurred\r\n");
+        if(crosslink_verbose) printf("Bus Error occurred\r\n");
     }
     else if (hi2c->ErrorCode == HAL_I2C_ERROR_ARLO)
     {
-        printf("Arbitration Lost occurred\r\n");
+        if(crosslink_verbose) printf("Arbitration Lost occurred\r\n");
     }
     else if (hi2c->ErrorCode == HAL_I2C_ERROR_AF)
     {
-        printf("Acknowledge Failure occurred\r\n");
+        if(crosslink_verbose) printf("Acknowledge Failure occurred\r\n");
     }
     else if (hi2c->ErrorCode == HAL_I2C_ERROR_OVR)
     {
-        printf("Overrun/Underrun Error occurred\r\n");
+        if(crosslink_verbose) printf("Overrun/Underrun Error occurred\r\n");
     }
     else if (hi2c->ErrorCode == HAL_I2C_ERROR_DMA)
     {
-        printf("DMA Transfer Error occurred\r\n");
+        if(crosslink_verbose) printf("DMA Transfer Error occurred\r\n");
     }
     else if (hi2c->ErrorCode == HAL_I2C_ERROR_TIMEOUT)
     {
-        printf("Timeout Error occurred\r\n");
+        if(crosslink_verbose) printf("Timeout Error occurred\r\n");
     }
     else
     {
-        printf("Unknown I2C error: 0x%lX\r\n", hi2c->ErrorCode);
+        if(crosslink_verbose) printf("Unknown I2C error: 0x%lX\r\n", hi2c->ErrorCode);
     }
 }

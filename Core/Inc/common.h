@@ -119,6 +119,7 @@ typedef struct {
 	SPI_HandleTypeDef * pSpi;
 	USART_HandleTypeDef * pUart;
 	uint16_t 		i2c_target;
+	bool 			streaming_enabled;
 	uint8_t 		gain;
 	uint8_t 		exposure;
 	uint8_t *pRecieveHistoBuffer;

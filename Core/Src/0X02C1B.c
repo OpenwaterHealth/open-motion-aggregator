@@ -236,39 +236,46 @@ int X02C1B_FSIN_EXT_disable()
 
 int toggle_camera_stream(uint8_t cam_id){
     // add to the event bits
-    printf("Toggle camera stream %d\r\n", cam_id +1);
-    printf("Event bits enabled: %02X\r\n", event_bits_enabled);
+    printf("Event bits before toggling: %02X\r\n", event_bits_enabled);
 
     event_bits_enabled ^= (1 << cam_id);
-    printf("Event bits enabled: %02X\r\n", event_bits_enabled);
+    printf("Event bits after toggling: %02X\r\n", event_bits_enabled);
 
     bool enabled = (event_bits_enabled & (1 << cam_id)) != 0;
+    cam_array[cam_id].streaming_enabled = enabled;
+    HAL_StatusTypeDef status;
     if(enabled){
         printf("Enabled camera stream %d\r\n", cam_id +1);
 
         // kick off the reception
         if(cam_array[cam_id].useUsart) {
             if(cam_array[cam_id].useDma)
-                HAL_USART_Receive_DMA(cam_array[cam_id].pUart, cam_array[cam_id].pRecieveHistoBuffer, USART_PACKET_LENGTH);
+            	status = HAL_USART_Receive_DMA(cam_array[cam_id].pUart, cam_array[cam_id].pRecieveHistoBuffer, USART_PACKET_LENGTH);
             else
-                HAL_USART_Receive_IT(cam_array[cam_id].pUart, cam_array[cam_id].pRecieveHistoBuffer, USART_PACKET_LENGTH);
+            	status = HAL_USART_Receive_IT(cam_array[cam_id].pUart, cam_array[cam_id].pRecieveHistoBuffer, USART_PACKET_LENGTH);
         }
         else{
             if(cam_array[cam_id].useDma)
-                HAL_SPI_Receive_DMA(cam_array[cam_id].pSpi, cam_array[cam_id].pRecieveHistoBuffer, SPI_PACKET_LENGTH);
+            	status = HAL_SPI_Receive_DMA(cam_array[cam_id].pSpi, cam_array[cam_id].pRecieveHistoBuffer, SPI_PACKET_LENGTH);
             else
-                HAL_SPI_Receive_IT(cam_array[cam_id].pSpi, cam_array[cam_id].pRecieveHistoBuffer, SPI_PACKET_LENGTH);
-    }    }
+            	status = HAL_SPI_Receive_IT(cam_array[cam_id].pSpi, cam_array[cam_id].pRecieveHistoBuffer, SPI_PACKET_LENGTH);
+        }
+    }
     else{
         printf("Disabled camera stream %d\r\n", cam_id +1);
         // disable the reception
-        //TODO: implement this
-//        if(cam_array[cam_id].useUsart) {
-//            HAL_USART_AbortReceive(cam_array[cam_id].pUart);
-//        }
-//        else{
-//            HAL_SPI_AbortReceive(cam_array[cam_id].pSpi);
-//        }
+		if(cam_array[cam_id].useUsart) {
+			if(cam_array[cam_id].useDma)
+				status = HAL_USART_Abort(cam_array[cam_id].pUart);
+			else
+				status = HAL_USART_Abort_IT(cam_array[cam_id].pUart);
+		}
+		else{
+			if(cam_array[cam_id].useDma)
+				status = HAL_SPI_Abort(cam_array[cam_id].pSpi);
+			else
+				status = HAL_SPI_Abort_IT(cam_array[cam_id].pSpi);
+		}
     }
-    // send acknowledge
+    return status;
 }
