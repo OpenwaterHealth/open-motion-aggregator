@@ -1523,7 +1523,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 	HAL_DMA_StateTypeDef state = husart->hdmarx->State;
 
 
-	if(state4 != HAL_USART_STATE_READY && state == HAL_DMA_STATE_READY){
+/*	if(state4 != HAL_USART_STATE_READY && state == HAL_DMA_STATE_READY){
 //		printf("USART4 not ready: 0x%02X state\r\n", state4);
 //
 //		printf("USART4 not hdmarx: 0x%02X state\r\n", state);
@@ -1554,7 +1554,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 
 
 //		Error_Handler();
-	}
+	}*/
 
 	if (husart->Instance == USART1) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_4;
@@ -1581,17 +1581,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 //        HAL_DMA_StateTypeDef state2 = husart->hdmarx->State;
 
 //        status = HAL_USART_Abort(husart);
-        HAL_StatusTypeDef status;
-        if(cam1.useDma){
-        	status = HAL_USART_Receive_DMA(&husart2, cam1.pRecieveHistoBuffer, USART_PACKET_LENGTH);
-            HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
-        }
-		else {
-        	status = HAL_USART_Receive_IT(&husart2, cam1.pRecieveHistoBuffer, USART_PACKET_LENGTH);
-		}
-        if (status != HAL_OK) {
-            Error_Handler();  // Handle any error during re-enabling
-        }
+
     }
 	else if (husart->Instance == USART3) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_2;
@@ -1873,7 +1863,17 @@ void vTaskWaitForAllBits(void *pvParameters)
             event_bits = 0x00;
             frame_id++;
             
-
+            HAL_StatusTypeDef status;
+            if(cam1.useDma){
+            	status = HAL_USART_Receive_DMA(&husart2, cam1.pRecieveHistoBuffer, USART_PACKET_LENGTH);
+                HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+            }
+    		else {
+            	status = HAL_USART_Receive_IT(&husart2, cam1.pRecieveHistoBuffer, USART_PACKET_LENGTH);
+    		}
+            if (status != HAL_OK) {
+                Error_Handler();  // Handle any error during re-enabling
+            }
             // TODO: move over calling all the spi reads and USART reads
 
             // ship out the packets over UART
