@@ -67,6 +67,7 @@ SPI_HandleTypeDef hspi6;
 DMA_HandleTypeDef hdma_spi2_rx;
 DMA_HandleTypeDef hdma_spi3_rx;
 DMA_HandleTypeDef hdma_spi4_rx;
+DMA_HandleTypeDef hdma_spi6_rx;
 
 TIM_HandleTypeDef htim2;
 TIM_HandleTypeDef htim4;
@@ -80,6 +81,7 @@ USART_HandleTypeDef husart3;
 USART_HandleTypeDef husart6;
 DMA_HandleTypeDef hdma_uart4_rx;
 DMA_HandleTypeDef hdma_uart4_tx;
+DMA_HandleTypeDef hdma_usart2_rx;
 
 /* Definitions for defaultTask */
 osThreadId_t defaultTaskHandle;
@@ -139,6 +141,7 @@ void PeriphCommonClock_Config(void);
 static void MPU_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_DMA_Init(void);
+static void MX_BDMA_Init(void);
 static void MX_CRC_Init(void);
 static void MX_I2C1_Init(void);
 static void MX_RNG_Init(void);
@@ -153,8 +156,8 @@ static void MX_TIM8_Init(void);
 static void MX_TIM12_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_USART1_Init(void);
-static void MX_USART2_Init(void);
 static void MX_USART3_Init(void);
+static void MX_USART2_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -221,6 +224,7 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_DMA_Init();
+  MX_BDMA_Init();
   MX_CRC_Init();
   MX_I2C1_Init();
   MX_RNG_Init();
@@ -235,8 +239,8 @@ int main(void)
   MX_TIM12_Init();
   MX_TIM4_Init();
   MX_USART1_Init();
-  MX_USART2_Init();
   MX_USART3_Init();
+  MX_USART2_Init();
   /* USER CODE BEGIN 2 */
   init_dma_logging();
 
@@ -292,7 +296,7 @@ int main(void)
 	cam1.gpio0_port = GPIO0_1_GPIO_Port;
 	cam1.gpio0_pin = GPIO0_1_Pin;
 	cam1.useUsart = true;
-  cam1.useDma = false;
+  cam1.useDma = true;
 	cam1.pI2c = &hi2c1;
 	cam1.pSpi = NULL;
 	cam1.pUart = &husart2;
@@ -307,7 +311,7 @@ int main(void)
 	cam2.gpio0_port = GPIO0_2_GPIO_Port;
 	cam2.gpio0_pin = GPIO0_2_Pin;
 	cam2.useUsart = false;
-  cam2.useDma = false;
+	cam2.useDma = false;
 	cam2.pI2c = &hi2c1;
 	cam2.pSpi = &hspi6;
 	cam2.pUart = NULL;
@@ -841,7 +845,7 @@ static void MX_SPI6_Init(void)
   /* SPI6 parameter configuration*/
   hspi6.Instance = SPI6;
   hspi6.Init.Mode = SPI_MODE_SLAVE;
-  hspi6.Init.Direction = SPI_DIRECTION_2LINES_RXONLY;
+  hspi6.Init.Direction = SPI_DIRECTION_2LINES;
   hspi6.Init.DataSize = SPI_DATASIZE_8BIT;
   hspi6.Init.CLKPolarity = SPI_POLARITY_HIGH;
   hspi6.Init.CLKPhase = SPI_PHASE_2EDGE;
@@ -1329,6 +1333,22 @@ static void MX_USART6_Init(void)
 /**
   * Enable DMA controller clock
   */
+static void MX_BDMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_BDMA_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* BDMA_Channel0_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(BDMA_Channel0_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(BDMA_Channel0_IRQn);
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
 static void MX_DMA_Init(void)
 {
 
@@ -1351,6 +1371,12 @@ static void MX_DMA_Init(void)
   /* DMA1_Stream4_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA1_Stream4_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA1_Stream4_IRQn);
+  /* DMA1_Stream5_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Stream5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Stream5_IRQn);
+  /* DMAMUX1_OVR_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMAMUX1_OVR_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(DMAMUX1_OVR_IRQn);
 
 }
 
@@ -1488,6 +1514,47 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
     telem.addr = 0;
 
 	uint8_t xBitToSet = 0x00;
+	HAL_USART_StateTypeDef state4= husart->State;
+//	uint32_t error_code = husart->State->ErrorCode;
+//	uint32_t error_code_dma = husart->hdmarx->State->ErrorCode;
+	uint32_t isrflags = READ_REG(husart->Instance->ISR);
+	uint32_t cr3its = READ_REG(husart->Instance->CR3);
+	printf("ISR: 0x%08X, CR3: 0x%08X\n", isrflags, cr3its);
+	HAL_DMA_StateTypeDef state = husart->hdmarx->State;
+
+
+	if(state4 != HAL_USART_STATE_READY && state == HAL_DMA_STATE_READY){
+//		printf("USART4 not ready: 0x%02X state\r\n", state4);
+//
+//		printf("USART4 not hdmarx: 0x%02X state\r\n", state);
+//
+//		if(state4 == HAL_USART_STATE_BUSY_TX){
+//		  printf("USART4 busy TX\r\n");
+//		}
+//		if(state4 == HAL_USART_STATE_BUSY_RX){
+//		  printf("USART4 busy RX\r\n");
+//		}
+//		if(state4 == HAL_USART_STATE_BUSY_TX_RX){
+//		  printf("USART4 busy TX RX\r\n");
+//		}
+//		if(state4 == HAL_USART_STATE_TIMEOUT){
+//		  printf("USART4 timeout\r\n");
+//		}
+//		if(state4 == HAL_USART_STATE_ERROR){
+//		  printf("USART4 error\r\n");
+//		}
+//		if(state4 == HAL_USART_STATE_RESET){
+//		  printf("USART4 reset\r\n");
+//		}
+//		if(state4 == HAL_USART_STATE_BUSY){
+//		  printf("USART4 busy\r\n");
+//		}
+//		return;
+	    husart->State = HAL_USART_STATE_READY;
+
+
+//		Error_Handler();
+	}
 
 	if (husart->Instance == USART1) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_4;
@@ -1508,7 +1575,21 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
         cam1.pRecieveHistoBuffer = (cam1.pRecieveHistoBuffer == scanPacketA.cam0_buffer) ? scanPacketB.cam0_buffer : scanPacketA.cam0_buffer;
-        if (HAL_USART_Receive_IT(&husart2, cam1.pRecieveHistoBuffer, USART_PACKET_LENGTH) != HAL_OK) {
+
+//        HAL_DMA_StateTypeDef state = husart->hdmarx->State;
+//        __HAL_DMA_CLEAR_FLAG(husart->hdmarx, DMA_FLAG_TCIF1_5);
+//        HAL_DMA_StateTypeDef state2 = husart->hdmarx->State;
+
+//        status = HAL_USART_Abort(husart);
+        HAL_StatusTypeDef status;
+        if(cam1.useDma){
+        	status = HAL_USART_Receive_DMA(&husart2, cam1.pRecieveHistoBuffer, USART_PACKET_LENGTH);
+            HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+        }
+		else {
+        	status = HAL_USART_Receive_IT(&husart2, cam1.pRecieveHistoBuffer, USART_PACKET_LENGTH);
+		}
+        if (status != HAL_OK) {
             Error_Handler();  // Handle any error during re-enabling
         }
     }

@@ -237,6 +237,8 @@ int X02C1B_FSIN_EXT_disable()
 int toggle_camera_stream(uint8_t cam_id){
     // add to the event bits
     printf("Toggle camera stream %d\r\n", cam_id +1);
+    printf("Event bits enabled: %02X\r\n", event_bits_enabled);
+
     event_bits_enabled ^= (1 << cam_id);
     printf("Event bits enabled: %02X\r\n", event_bits_enabled);
 
