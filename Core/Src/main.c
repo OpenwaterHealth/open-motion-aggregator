@@ -159,8 +159,8 @@ static void MX_TIM8_Init(void);
 static void MX_TIM12_Init(void);
 static void MX_TIM4_Init(void);
 static void MX_USART1_Init(void);
-static void MX_USART3_Init(void);
 static void MX_USART2_Init(void);
+static void MX_USART3_Init(void);
 void StartDefaultTask(void *argument);
 
 /* USER CODE BEGIN PFP */
@@ -242,8 +242,8 @@ int main(void)
   MX_TIM12_Init();
   MX_TIM4_Init();
   MX_USART1_Init();
-  MX_USART3_Init();
   MX_USART2_Init();
+  MX_USART3_Init();
   /* USER CODE BEGIN 2 */
   init_dma_logging();
 
