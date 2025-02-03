@@ -1838,6 +1838,9 @@ void vTaskWaitForAllBits(void *pvParameters)
 							status = HAL_USART_Receive_IT(cam.pUart, cam.pRecieveHistoBuffer, USART_PACKET_LENGTH);
 						}
             		}
+            		else {
+            			status = HAL_OK;
+            		}
 					if (status != HAL_OK) {
 						Error_Handler();  // Handle any error during re-enabling
 					}
