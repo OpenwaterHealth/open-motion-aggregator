@@ -117,19 +117,8 @@ __attribute__((section(".RAM_D1"))) uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE]
 ScanPacket scanPacketA;
 ScanPacket scanPacketB;
 
-CameraDevice cam;
-CameraDevice cam1;
-CameraDevice cam2;
-CameraDevice cam3;
-CameraDevice cam4;
-CameraDevice cam5;
-CameraDevice cam6;
-CameraDevice cam7;
-CameraDevice cam8;
-
-CameraDevice cam_array[8];
-// EventGroupHandle_t xHistoRxEventGroup;
-// osEventFlagsId_t event_flags_id;
+CameraDevice cam; 			// selected camera device
+CameraDevice cam_array[8];	// array of all the cameras
 
 volatile uint8_t event_bits = 0x00;		 // holds the event bits to be flipped
 volatile uint8_t event_bits_enabled = 0x00; // holds the event bits for the cameras to be enabled
@@ -297,130 +286,122 @@ int main(void)
   event_bits_enabled = 0x00;
 
    //Configure, initialize, and set default camera
-	cam1.id = 0;
-	cam1.cresetb_port = CRESET_1_GPIO_Port;
-	cam1.cresetb_pin = CRESET_1_Pin;
-	cam1.gpio0_port = GPIO0_1_GPIO_Port;
-	cam1.gpio0_pin = GPIO0_1_Pin;
-	cam1.useUsart = true;
-  cam1.useDma = true;
-	cam1.pI2c = &hi2c1;
-	cam1.pSpi = NULL;
-	cam1.pUart = &husart2;
-	cam1.i2c_target = 0;
-	cam1.pRecieveHistoBuffer = scanPacketA.cam0_buffer;
-	cam_array[0] = cam1;
-	init_camera(&cam1);
+	cam_array[0].id = 0;
+	cam_array[0].cresetb_port = CRESET_1_GPIO_Port;
+	cam_array[0].cresetb_pin = CRESET_1_Pin;
+	cam_array[0].gpio0_port = GPIO0_1_GPIO_Port;
+	cam_array[0].gpio0_pin = GPIO0_1_Pin;
+	cam_array[0].useUsart = true;
+	cam_array[0].useDma = true;
+	cam_array[0].pI2c = &hi2c1;
+	cam_array[0].pSpi = NULL;
+	cam_array[0].pUart = &husart2;
+	cam_array[0].i2c_target = 0;
+	cam_array[0].pRecieveHistoBuffer = scanPacketA.cam0_buffer;
+	init_camera(&cam_array[0]);
 
-	cam2.id = 1;
-	cam2.cresetb_port = CRESET_2_GPIO_Port;
-	cam2.cresetb_pin = CRESET_2_Pin;
-	cam2.gpio0_port = GPIO0_2_GPIO_Port;
-	cam2.gpio0_pin = GPIO0_2_Pin;
-	cam2.useUsart = false;
-	cam2.useDma = false;
-	cam2.pI2c = &hi2c1;
-	cam2.pSpi = &hspi6;
-	cam2.pUart = NULL;
-	cam2.i2c_target = 1;
-  cam2.pRecieveHistoBuffer = scanPacketA.cam1_buffer;
-	cam_array[1] = cam2;
-	init_camera(&cam2);
+	cam_array[1].id = 1;
+	cam_array[1].cresetb_port = CRESET_2_GPIO_Port;
+	cam_array[1].cresetb_pin = CRESET_2_Pin;
+	cam_array[1].gpio0_port = GPIO0_2_GPIO_Port;
+	cam_array[1].gpio0_pin = GPIO0_2_Pin;
+	cam_array[1].useUsart = false;
+	cam_array[1].useDma = false;
+	cam_array[1].pI2c = &hi2c1;
+	cam_array[1].pSpi = &hspi6;
+	cam_array[1].pUart = NULL;
+	cam_array[1].i2c_target = 1;
+	cam_array[1].pRecieveHistoBuffer = scanPacketA.cam1_buffer;
+	init_camera(&cam_array[1]);
 
-	cam3.id = 2;
-	cam3.cresetb_port = CRESET_3_GPIO_Port;
-	cam3.cresetb_pin = CRESET_3_Pin;
-	cam3.gpio0_port = GPIO0_3_GPIO_Port;
-	cam3.gpio0_pin = GPIO0_3_Pin;
-	cam3.useUsart = true;
-  cam3.useDma = true;
-	cam3.pI2c = &hi2c1;
-	cam3.pSpi = NULL;
-	cam3.pUart = &husart3;
-	cam3.i2c_target = 2;
-  cam3.pRecieveHistoBuffer = scanPacketA.cam2_buffer;
-	cam_array[2] = cam3;
-	init_camera(&cam3);
+	cam_array[2].id = 2;
+	cam_array[2].cresetb_port = CRESET_3_GPIO_Port;
+	cam_array[2].cresetb_pin = CRESET_3_Pin;
+	cam_array[2].gpio0_port = GPIO0_3_GPIO_Port;
+	cam_array[2].gpio0_pin = GPIO0_3_Pin;
+	cam_array[2].useUsart = true;
+	cam_array[2].useDma = true;
+	cam_array[2].pI2c = &hi2c1;
+	cam_array[2].pSpi = NULL;
+	cam_array[2].pUart = &husart3;
+	cam_array[2].i2c_target = 2;
+	cam_array[2].pRecieveHistoBuffer = scanPacketA.cam2_buffer;
+	init_camera(&cam_array[2]);
 
-	cam4.id = 3;
-	cam4.cresetb_port = CRESET_4_GPIO_Port;
-	cam4.cresetb_pin = CRESET_4_Pin;
-	cam4.gpio0_port = GPIO0_4_GPIO_Port;
-	cam4.gpio0_pin = GPIO0_4_Pin;
-	cam4.useUsart = true;
-  cam4.useDma = true;
-	cam4.pI2c = &hi2c1;
-	cam4.pSpi = NULL;
-	cam4.pUart = &husart6;
-	cam4.i2c_target = 3;
-  cam4.pRecieveHistoBuffer = scanPacketA.cam3_buffer;
-	cam_array[3] = cam4;
-	init_camera(&cam4);
+	cam_array[3].id = 3;
+	cam_array[3].cresetb_port = CRESET_4_GPIO_Port;
+	cam_array[3].cresetb_pin = CRESET_4_Pin;
+	cam_array[3].gpio0_port = GPIO0_4_GPIO_Port;
+	cam_array[3].gpio0_pin = GPIO0_4_Pin;
+	cam_array[3].useUsart = true;
+	cam_array[3].useDma = true;
+	cam_array[3].pI2c = &hi2c1;
+	cam_array[3].pSpi = NULL;
+	cam_array[3].pUart = &husart6;
+	cam_array[3].i2c_target = 3;
+	cam_array[3].pRecieveHistoBuffer = scanPacketA.cam3_buffer;
+	init_camera(&cam_array[3]);
 
-	cam5.id = 4;
-	cam5.cresetb_port = CRESET_5_GPIO_Port;
-	cam5.cresetb_pin = CRESET_5_Pin;
-	cam5.gpio0_port = GPIO0_5_GPIO_Port;
-	cam5.gpio0_pin = GPIO0_5_Pin;
-	cam5.useUsart = true;
-  cam5.useDma = true;
-	cam5.pI2c = &hi2c1;
-	cam5.pSpi = NULL;
-	cam5.pUart = &husart1;
-	cam5.i2c_target = 4;
-  cam5.pRecieveHistoBuffer = scanPacketA.cam4_buffer;
-	cam_array[4] = cam5;
-	init_camera(&cam5);
+	cam_array[4].id = 4;
+	cam_array[4].cresetb_port = CRESET_5_GPIO_Port;
+	cam_array[4].cresetb_pin = CRESET_5_Pin;
+	cam_array[4].gpio0_port = GPIO0_5_GPIO_Port;
+	cam_array[4].gpio0_pin = GPIO0_5_Pin;
+	cam_array[4].useUsart = true;
+	cam_array[4].useDma = true;
+	cam_array[4].pI2c = &hi2c1;
+	cam_array[4].pSpi = NULL;
+	cam_array[4].pUart = &husart1;
+	cam_array[4].i2c_target = 4;
+	cam_array[4].pRecieveHistoBuffer = scanPacketA.cam4_buffer;
+	init_camera(&cam_array[4]);
 
-	cam6.id = 5;
-	cam6.cresetb_port = CRESET_6_GPIO_Port;
-	cam6.cresetb_pin = CRESET_6_Pin;
-	cam6.gpio0_port = GPIO0_6_GPIO_Port;
-	cam6.gpio0_pin = GPIO0_6_Pin;
-	cam6.useUsart = false;
-  cam6.useDma = true;
-	cam6.pI2c = &hi2c1;
-	cam6.pSpi = &hspi3;
-	cam6.pUart = NULL;
-	cam6.i2c_target = 5;
-  cam6.pRecieveHistoBuffer = scanPacketA.cam5_buffer;
-	cam_array[5] = cam6;
-	init_camera(&cam6);
+	cam_array[5].id = 5;
+	cam_array[5].cresetb_port = CRESET_6_GPIO_Port;
+	cam_array[5].cresetb_pin = CRESET_6_Pin;
+	cam_array[5].gpio0_port = GPIO0_6_GPIO_Port;
+	cam_array[5].gpio0_pin = GPIO0_6_Pin;
+	cam_array[5].useUsart = false;
+	cam_array[5].useDma = true;
+	cam_array[5].pI2c = &hi2c1;
+	cam_array[5].pSpi = &hspi3;
+	cam_array[5].pUart = NULL;
+	cam_array[5].i2c_target = 5;
+	cam_array[5].pRecieveHistoBuffer = scanPacketA.cam5_buffer;
+	init_camera(&cam_array[5]);
 
-	cam7.id = 6;
-	cam7.cresetb_port = CRESET_7_GPIO_Port;
-	cam7.cresetb_pin = CRESET_7_Pin;
-	cam7.gpio0_port = GPIO0_7_GPIO_Port;
-	cam7.gpio0_pin = GPIO0_7_Pin;
-	cam7.useUsart = false;
-  cam7.useDma = true;
-	cam7.pI2c = &hi2c1;
-	cam7.pSpi = &hspi2;
-	cam7.pUart = NULL;
-	cam7.i2c_target = 6;
-  cam7.pRecieveHistoBuffer = scanPacketA.cam6_buffer;
-	cam_array[6] = cam7;
-	init_camera(&cam7);
+	cam_array[6].id = 6;
+	cam_array[6].cresetb_port = CRESET_7_GPIO_Port;
+	cam_array[6].cresetb_pin = CRESET_7_Pin;
+	cam_array[6].gpio0_port = GPIO0_7_GPIO_Port;
+	cam_array[6].gpio0_pin = GPIO0_7_Pin;
+	cam_array[6].useUsart = false;
+	cam_array[6].useDma = true;
+	cam_array[6].pI2c = &hi2c1;
+	cam_array[6].pSpi = &hspi2;
+	cam_array[6].pUart = NULL;
+	cam_array[6].i2c_target = 6;
+	cam_array[6].pRecieveHistoBuffer = scanPacketA.cam6_buffer;
+	init_camera(&cam_array[6]);
 
-	cam8.id = 7;
-	cam8.cresetb_port = CRESET_8_GPIO_Port;
-	cam8.cresetb_pin = CRESET_8_Pin;
-	cam8.gpio0_port = GPIO0_8_GPIO_Port;
-	cam8.gpio0_pin = GPIO0_8_Pin;
-	cam8.useUsart = false;
-  cam8.useDma = true;
-	cam8.pI2c = &hi2c1;
-	cam8.pSpi = &hspi4;
-	cam8.pUart = NULL;
-	cam8.i2c_target = 7;
-  cam8.pRecieveHistoBuffer = scanPacketA.cam7_buffer;
-	cam_array[7] = cam8;
-	init_camera(&cam8);
+	cam_array[7].id = 7;
+	cam_array[7].cresetb_port = CRESET_8_GPIO_Port;
+	cam_array[7].cresetb_pin = CRESET_8_Pin;
+	cam_array[7].gpio0_port = GPIO0_8_GPIO_Port;
+	cam_array[7].gpio0_pin = GPIO0_8_Pin;
+	cam_array[7].useUsart = false;
+	cam_array[7].useDma = true;
+	cam_array[7].pI2c = &hi2c1;
+	cam_array[7].pSpi = &hspi4;
+	cam_array[7].pUart = NULL;
+	cam_array[7].i2c_target = 7;
+	cam_array[7].pRecieveHistoBuffer = scanPacketA.cam7_buffer;
+	init_camera(&cam_array[7]);
 
-  // Select default camera
-	cam = cam1;
-  TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
-  X02C1B_FSIN_EXT_disable();
+	// Select default camera
+	cam = cam_array[0];
+	TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
+	X02C1B_FSIN_EXT_disable();
 
   // enable all the cameras 
   // for(int i = 0; i<8;i++){
@@ -1533,38 +1514,38 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 		xBitToSet = BIT_4;
 
 		telem.id = 5;
-		telem.data = cam6.pRecieveHistoBuffer;
+		telem.data = cam_array[5].pRecieveHistoBuffer;
 		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-		cam5.pRecieveHistoBuffer = (cam5.pRecieveHistoBuffer == scanPacketA.cam4_buffer) ? scanPacketB.cam4_buffer : scanPacketA.cam4_buffer;
+		cam_array[4].pRecieveHistoBuffer = (cam_array[4].pRecieveHistoBuffer == scanPacketA.cam4_buffer) ? scanPacketB.cam4_buffer : scanPacketA.cam4_buffer;
     }
 	else if (husart->Instance == USART2) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_0;
 
 		telem.id = 0;
-		telem.data = cam1.pRecieveHistoBuffer;
+		telem.data = cam_array[0].pRecieveHistoBuffer;
 		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-        cam1.pRecieveHistoBuffer = (cam1.pRecieveHistoBuffer == scanPacketA.cam0_buffer) ? scanPacketB.cam0_buffer : scanPacketA.cam0_buffer;
+        cam_array[0].pRecieveHistoBuffer = (cam_array[0].pRecieveHistoBuffer == scanPacketA.cam0_buffer) ? scanPacketB.cam0_buffer : scanPacketA.cam0_buffer;
 
     }
 	else if (husart->Instance == USART3) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_2;
 
 		telem.id = 3;
-		telem.data = cam3.pRecieveHistoBuffer;
+		telem.data = cam_array[2].pRecieveHistoBuffer;
 		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-        cam3.pRecieveHistoBuffer = (cam3.pRecieveHistoBuffer == scanPacketA.cam2_buffer) ? scanPacketB.cam2_buffer : scanPacketA.cam2_buffer;
+        cam_array[2].pRecieveHistoBuffer = (cam_array[2].pRecieveHistoBuffer == scanPacketA.cam2_buffer) ? scanPacketB.cam2_buffer : scanPacketA.cam2_buffer;
     }
 	else if (husart->Instance == USART6) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_3;
     
 		telem.id = 5;
-		telem.data = cam4.pRecieveHistoBuffer;
+		telem.data = cam_array[3].pRecieveHistoBuffer;
 		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-		cam4.pRecieveHistoBuffer = (cam4.pRecieveHistoBuffer == scanPacketA.cam3_buffer) ? scanPacketB.cam3_buffer : scanPacketA.cam3_buffer;
+		cam_array[3].pRecieveHistoBuffer = (cam_array[3].pRecieveHistoBuffer == scanPacketA.cam3_buffer) ? scanPacketB.cam3_buffer : scanPacketA.cam3_buffer;
 	}
 
 	event_bits = event_bits | xBitToSet;
@@ -1622,37 +1603,37 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 	if(hspi->Instance == SPI2){
 		xBitToSet = BIT_6;
 
-		telem.data = cam7.pRecieveHistoBuffer;
-		telem.id = 6; // cam7
+		telem.data = cam_array[6].pRecieveHistoBuffer;
+		telem.id = 6; // cam_array[6]
 		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-		cam7.pRecieveHistoBuffer = (cam7.pRecieveHistoBuffer == scanPacketA.cam6_buffer) ? scanPacketB.cam6_buffer : scanPacketA.cam6_buffer;
+		cam_array[6].pRecieveHistoBuffer = (cam_array[6].pRecieveHistoBuffer == scanPacketA.cam6_buffer) ? scanPacketB.cam6_buffer : scanPacketA.cam6_buffer;
 
 	}	else if(hspi->Instance == SPI3){
 		xBitToSet = BIT_5;
 
-		telem.data = cam6.pRecieveHistoBuffer;
+		telem.data = cam_array[5].pRecieveHistoBuffer;
 		telem.id = 5;
 		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-		cam6.pRecieveHistoBuffer = (cam6.pRecieveHistoBuffer == scanPacketA.cam5_buffer) ? scanPacketB.cam5_buffer : scanPacketA.cam5_buffer;
+		cam_array[5].pRecieveHistoBuffer = (cam_array[5].pRecieveHistoBuffer == scanPacketA.cam5_buffer) ? scanPacketB.cam5_buffer : scanPacketA.cam5_buffer;
 
 	} else if(hspi->Instance == SPI4){
 		xBitToSet = BIT_7;
 
-		telem.data = cam8.pRecieveHistoBuffer;
+		telem.data = cam_array[7].pRecieveHistoBuffer;
 		telem.id = 7;
 		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-		cam8.pRecieveHistoBuffer = (cam8.pRecieveHistoBuffer == scanPacketA.cam7_buffer) ?  scanPacketB.cam7_buffer :  scanPacketA.cam7_buffer;
+		cam_array[7].pRecieveHistoBuffer = (cam_array[7].pRecieveHistoBuffer == scanPacketA.cam7_buffer) ?  scanPacketB.cam7_buffer :  scanPacketA.cam7_buffer;
 	} else if(hspi->Instance == SPI6){
 		xBitToSet = BIT_1;
 
-		telem.data = cam2.pRecieveHistoBuffer;
+		telem.data = cam_array[1].pRecieveHistoBuffer;
 		telem.id = 1;
 		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
-		cam2.pRecieveHistoBuffer = (cam2.pRecieveHistoBuffer ==  scanPacketA.cam1_buffer) ? scanPacketB.cam1_buffer : scanPacketA.cam1_buffer;
+		cam_array[1].pRecieveHistoBuffer = (cam_array[1].pRecieveHistoBuffer ==  scanPacketA.cam1_buffer) ? scanPacketB.cam1_buffer : scanPacketA.cam1_buffer;
 	}
 
 	event_bits = event_bits | xBitToSet;
