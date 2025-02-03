@@ -1627,9 +1627,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
 		cam7.pRecieveHistoBuffer = (cam7.pRecieveHistoBuffer == scanPacketA.cam6_buffer) ? scanPacketB.cam6_buffer : scanPacketA.cam6_buffer;
-		if (HAL_SPI_Receive_DMA(&hspi2, cam7.pRecieveHistoBuffer, SPI_PACKET_LENGTH) != HAL_OK) {
-			Error_Handler();  // Handle any error during re-enabling
-		}
+
 	}	else if(hspi->Instance == SPI3){
 		xBitToSet = BIT_5;
 
@@ -1638,9 +1636,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
 		cam6.pRecieveHistoBuffer = (cam6.pRecieveHistoBuffer == scanPacketA.cam5_buffer) ? scanPacketB.cam5_buffer : scanPacketA.cam5_buffer;
-		if (HAL_SPI_Receive_DMA(&hspi3, cam6.pRecieveHistoBuffer, SPI_PACKET_LENGTH) != HAL_OK) {
-			Error_Handler();  // Handle any error during re-enabling
-		}
+
 	} else if(hspi->Instance == SPI4){
 		xBitToSet = BIT_7;
 
@@ -1649,9 +1645,6 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
 		cam8.pRecieveHistoBuffer = (cam8.pRecieveHistoBuffer == scanPacketA.cam7_buffer) ?  scanPacketB.cam7_buffer :  scanPacketA.cam7_buffer;
-		if (HAL_SPI_Receive_DMA(&hspi4, cam8.pRecieveHistoBuffer, SPI_PACKET_LENGTH) != HAL_OK) {
-			Error_Handler();  // Handle any error during re-enabling
-		}
 	} else if(hspi->Instance == SPI6){
 		xBitToSet = BIT_1;
 
@@ -1660,9 +1653,6 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
 
 		cam2.pRecieveHistoBuffer = (cam2.pRecieveHistoBuffer ==  scanPacketA.cam1_buffer) ? scanPacketB.cam1_buffer : scanPacketA.cam1_buffer;
-		if (HAL_SPI_Receive_IT(&hspi6, cam2.pRecieveHistoBuffer, SPI_PACKET_LENGTH) != HAL_OK) {
-			Error_Handler();  // Handle any error during re-enabling
-		}
 	}
 
 	event_bits = event_bits | xBitToSet;
@@ -1816,8 +1806,8 @@ void vTaskWaitForAllBits(void *pvParameters)
 {
     for (;;)
     {
-    	uint8_t spi_bits = ( BIT_1 | BIT_5 | BIT_6 | BIT_7 );
-    	uint8_t usart_bits = ( BIT_0 | BIT_2 | BIT_3 | BIT_4 );
+//    	uint8_t spi_bits = ( BIT_1 | BIT_5 | BIT_6 | BIT_7 );
+//    	uint8_t usart_bits = ( BIT_0 | BIT_2 | BIT_3 | BIT_4 );
 
         if(event_bits == event_bits_enabled && event_bits_enabled>0){
             printf("All bits are set! Task unblocked. Frame ID: %d\r\n", frame_id);
@@ -1831,7 +1821,7 @@ void vTaskWaitForAllBits(void *pvParameters)
 
             	if (cam.streaming_enabled){
             		if(cam.useUsart){
-						if(cam1.useDma){
+						if(cam.useDma){
 							status = HAL_USART_Receive_DMA(cam.pUart, cam.pRecieveHistoBuffer, USART_PACKET_LENGTH);
 						}
 						else {
@@ -1839,16 +1829,19 @@ void vTaskWaitForAllBits(void *pvParameters)
 						}
             		}
             		else {
-            			status = HAL_OK;
+            			if(cam.useDma){
+							status = HAL_SPI_Receive_DMA(cam.pSpi, cam.pRecieveHistoBuffer, SPI_PACKET_LENGTH);
+						}
+						else {
+							status = HAL_SPI_Receive_IT(cam.pSpi, cam.pRecieveHistoBuffer, SPI_PACKET_LENGTH);
+						}
             		}
 					if (status != HAL_OK) {
-						Error_Handler();  // Handle any error during re-enabling
+						Error_Handler();
 					}
             	}
-
             }
 
-            // TODO: move over calling all the spi reads and USART reads
 
             // ship out the packets over UART
             // UartPacket telem;
