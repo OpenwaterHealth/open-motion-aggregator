@@ -1504,7 +1504,7 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
   UartPacket telem;
   telem.id = 0; // Arbitrarily deciding that all telem packets have id 0
   telem.packet_type = OW_DATA;
-  telem.command = OW_HISTO;
+  telem.command = OW_HISTO_PACKET;
   telem.data_len = SPI_PACKET_LENGTH; // Use appropriate packet length for USART
   telem.addr = 0;
 
@@ -1581,7 +1581,7 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 	UartPacket telem;
 	telem.id = 0; // arbitrarily deciding that all telem packets have id 0
 	telem.packet_type = OW_DATA;
-	telem.command = OW_HISTO;
+	telem.command = OW_HISTO_PACKET;
 	telem.data_len = SPI_PACKET_LENGTH;
 	telem.addr = 0;
 
@@ -1800,13 +1800,30 @@ void vTaskWaitForAllBits(void *pvParameters)
             }
 
 
-            // ship out the packets over UART
-            // UartPacket telem;
-            // telem.id = 0; // arbitrarily deciding that all telem packets have id 0
-            // telem.packet_type = OW_DATA;
-            // telem.command = OW_HISTO;
-            // telem.data_len = SPI_PACKET_LENGTH;
-            // telem.addr = 0;
+             // Ship out the packets over UART
+             UartPacket telem;
+             telem.id = 0; 						// arbitrarily deciding that all telem packets have id 0
+             telem.packet_type = OW_DATA;
+             telem.command = OW_SCAN_PACKET;	// arbitrarily deciding that the telemtype goes in command
+             telem.data_len = sizeof(ScanPacket);
+             telem.addr = 0xFF & frame_id;					// arbitrarily deciding that the counter goes in addr
+
+             if(cam_array[0].pRecieveHistoBuffer == scanPacketA.cam0_buffer &&
+				 cam_array[1].pRecieveHistoBuffer == scanPacketA.cam1_buffer &&
+				 cam_array[2].pRecieveHistoBuffer == scanPacketA.cam2_buffer &&
+				 cam_array[3].pRecieveHistoBuffer == scanPacketA.cam3_buffer &&
+				 cam_array[4].pRecieveHistoBuffer == scanPacketA.cam4_buffer &&
+				 cam_array[5].pRecieveHistoBuffer == scanPacketA.cam5_buffer &&
+				 cam_array[6].pRecieveHistoBuffer == scanPacketA.cam6_buffer &&
+				 cam_array[7].pRecieveHistoBuffer == scanPacketA.cam7_buffer){
+            	 printf("A");
+            	 telem.data = (uint8_t *) &scanPacketA;
+             } else {
+            	 printf("B");
+				 telem.data = (uint8_t *) &scanPacketB;
+             }
+//             UART_INTERFACE_SendDMA(&telem);
+
         }
         osDelay(1);
     }

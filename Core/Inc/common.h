@@ -77,8 +77,6 @@ typedef enum {
 	OW_FPGA_STATUS = 0x1E,
 	OW_FPGA_RESET = 0x1F,
 	OW_FPGA_SOFT_RESET = 0x1A,
-	OW_HISTO = 0x1B,
-	OW_SCAN = 0x1C
 } MotionFPGACommands;
 
 typedef enum {
@@ -96,6 +94,12 @@ typedef enum {
 	OW_CAMERA_RESET = 0x2F,
 
 } MotionCAMERACommands;
+
+typedef enum {
+	OW_HISTO_PACKET = 0x01,
+	OW_SCAN_PACKET = 0x02,
+	OW_IMAGE_PACKET = 0x03
+} MotionTelemTypes;
 
 typedef struct  {
 	uint16_t id;
