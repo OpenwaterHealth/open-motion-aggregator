@@ -78,6 +78,7 @@ typedef enum {
 	OW_FPGA_RESET = 0x1F,
 	OW_FPGA_SOFT_RESET = 0x1A,
 	OW_HISTO = 0x1B,
+	OW_SCAN = 0x1C
 } MotionFPGACommands;
 
 typedef enum {

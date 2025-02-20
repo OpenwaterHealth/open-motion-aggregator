@@ -23,6 +23,10 @@ volatile uint8_t tx_flag = 0;
 void UART_INTERFACE_SendDMA(UartPacket* pResp)
 {
 	// while (HAL_UART_GetState(&huart1) == HAL_UART_STATE_BUSY_TX);
+	if((pResp->data_len + 12) > COMMAND_MAX_SIZE){
+		printf("Data packet too long, not sending \r\n");
+		return;
+	}
 	memset(txBuffer, 0, sizeof(txBuffer));
 	uint16_t bufferIndex = 0;
 
@@ -68,7 +72,6 @@ void comms_start_task() {
     while(1) {
     	CDC_ReceiveToIdle(rxBuffer, COMMAND_MAX_SIZE);
 		while(!rx_flag);
-
         int bufferIndex = 0;
 
         if(rxBuffer[bufferIndex++] != OW_START_BYTE) {
@@ -76,6 +79,7 @@ void comms_start_task() {
         	resp.id = cmd.id;
             resp.data_len = 0;
             resp.packet_type = OW_NAK;
+            printf("Incorrect start byte\r\n");
             goto NextDataPacket;
         }
 
@@ -100,6 +104,7 @@ void comms_start_task() {
         	resp.reserved = 0;
             resp.data_len = 0;
             resp.packet_type = OW_NAK;
+            printf("Packet too long, NACKing");
             goto NextDataPacket;
         }
 
@@ -135,6 +140,8 @@ void comms_start_task() {
         	resp.reserved = 0;
             resp.data_len = 0;
             resp.packet_type = OW_BAD_CRC;
+            printf("Bad CRC Packet detected, length %i\r\n", cmd.data_len);
+            printf("CRC in packet: 0x%04X, Calculated CRC: 0x%04X\r\n", cmd.crc, calculated_crc); // Output: 0xABCD
             goto NextDataPacket;
         }
 
