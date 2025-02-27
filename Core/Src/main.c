@@ -403,10 +403,10 @@ int main(void)
 	TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
 	X02C1B_FSIN_EXT_disable();
 
-  // enable all the cameras 
-  // for(int i = 0; i<8;i++){
-  //   toggle_camera_stream(i);
-  // }
+//   enable all the cameras
+   for(int i = 0; i<8;i++){
+     toggle_camera_stream(i);
+   }
 
   
   printf("System Running\r\n");
@@ -1772,6 +1772,15 @@ void vTaskWaitForAllBits(void *pvParameters)
             frame_id++;
 			HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
 
+
+			UartPacket telem;
+			telem.id = 0; // arbitrarily deciding that all telem packets have id 0
+			telem.packet_type = OW_DATA;
+			telem.command = OW_HISTO;
+			telem.data_len = SPI_PACKET_LENGTH;
+			telem.addr = 0;
+
+
             for(int i = 0; i<8;i++){
             	CameraDevice cam = cam_array[i];
             	HAL_StatusTypeDef status;
@@ -1796,6 +1805,16 @@ void vTaskWaitForAllBits(void *pvParameters)
 					if (status != HAL_OK) {
 						Error_Handler();
 					}
+
+					// just send out each histo over the buffer
+					// this is vile but if it works i'm going to be upset
+					HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+					telem.data = cam_array[i].pRecieveHistoBuffer;
+					telem.id = 0;
+					telem.addr = i;
+					if(i<4) UART_INTERFACE_SendDMA(&telem);
+				    HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+
             	}
             }
 

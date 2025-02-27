@@ -23,10 +23,10 @@ volatile uint8_t tx_flag = 0;
 void UART_INTERFACE_SendDMA(UartPacket* pResp)
 {
 	// while (HAL_UART_GetState(&huart1) == HAL_UART_STATE_BUSY_TX);
-	if((pResp->data_len + 12) > COMMAND_MAX_SIZE){
-		printf("Data packet too long, not sending \r\n");
-		return;
-	}
+//	if((pResp->data_len + 12) > COMMAND_MAX_SIZE){
+//		printf("Data packet too long, not sending \r\n");
+//		return;
+//	}
 	memset(txBuffer, 0, sizeof(txBuffer));
 	uint16_t bufferIndex = 0;
 
