@@ -1500,51 +1500,18 @@ void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 }
 
 void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
-
-  UartPacket telem;
-  telem.id = 0; // Arbitrarily deciding that all telem packets have id 0
-  telem.packet_type = OW_DATA;
-  telem.command = OW_HISTO;
-  telem.data_len = SPI_PACKET_LENGTH; // Use appropriate packet length for USART
-  telem.addr = 0;
-
 	uint8_t xBitToSet = 0x00;
-
 	if (husart->Instance == USART1) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_4;
-
-		telem.id = 5;
-		telem.data = cam_array[5].pRecieveHistoBuffer;
-		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
-
-		cam_array[4].pRecieveHistoBuffer = (cam_array[4].pRecieveHistoBuffer == scanPacketA.cam4_buffer) ? scanPacketB.cam4_buffer : scanPacketA.cam4_buffer;
   }
 	else if (husart->Instance == USART2) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_0;
-
-		telem.id = 0;
-		telem.data = cam_array[0].pRecieveHistoBuffer;
-		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
-
-    cam_array[0].pRecieveHistoBuffer = (cam_array[0].pRecieveHistoBuffer == scanPacketA.cam0_buffer) ? scanPacketB.cam0_buffer : scanPacketA.cam0_buffer; 
   }
 	else if (husart->Instance == USART3) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_2;
-
-		telem.id = 3;
-		telem.data = cam_array[2].pRecieveHistoBuffer;
-		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
-
-    cam_array[2].pRecieveHistoBuffer = (cam_array[2].pRecieveHistoBuffer == scanPacketA.cam2_buffer) ? scanPacketB.cam2_buffer : scanPacketA.cam2_buffer;
   }
 	else if (husart->Instance == USART6) { // Check if the interrupt is for USART2
 		xBitToSet = BIT_3;
-    
-		telem.id = 5;
-		telem.data = cam_array[3].pRecieveHistoBuffer;
-		if(cam.pUart == husart && uart_stream) UART_INTERFACE_SendDMA(&telem);
-
-		cam_array[3].pRecieveHistoBuffer = (cam_array[3].pRecieveHistoBuffer == scanPacketA.cam3_buffer) ? scanPacketB.cam3_buffer : scanPacketA.cam3_buffer;
 	}
 
 	event_bits = event_bits | xBitToSet;
@@ -1577,50 +1544,18 @@ void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart) {
 
 // Interrupt handler for SPI reception
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
-
-	UartPacket telem;
-	telem.id = 0; // arbitrarily deciding that all telem packets have id 0
-	telem.packet_type = OW_DATA;
-	telem.command = OW_HISTO;
-	telem.data_len = SPI_PACKET_LENGTH;
-	telem.addr = 0;
-
 	uint8_t xBitToSet = 0x00;
 	if(hspi->Instance == SPI2){
 		xBitToSet = BIT_6;
-
-		telem.data = cam_array[6].pRecieveHistoBuffer;
-		telem.id = 6; // cam_array[6]
-		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
-
-		cam_array[6].pRecieveHistoBuffer = (cam_array[6].pRecieveHistoBuffer == scanPacketA.cam6_buffer) ? scanPacketB.cam6_buffer : scanPacketA.cam6_buffer;
 	}	
   else if(hspi->Instance == SPI3){
 		xBitToSet = BIT_5;
-
-		telem.data = cam_array[5].pRecieveHistoBuffer;
-		telem.id = 5;
-		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
-
-		cam_array[5].pRecieveHistoBuffer = (cam_array[5].pRecieveHistoBuffer == scanPacketA.cam5_buffer) ? scanPacketB.cam5_buffer : scanPacketA.cam5_buffer;
-	} 
+  }
   else if(hspi->Instance == SPI4){
 		xBitToSet = BIT_7;
-
-		telem.data = cam_array[7].pRecieveHistoBuffer;
-		telem.id = 7;
-		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
-
-		cam_array[7].pRecieveHistoBuffer = (cam_array[7].pRecieveHistoBuffer == scanPacketA.cam7_buffer) ?  scanPacketB.cam7_buffer :  scanPacketA.cam7_buffer;
 	} 
   else if(hspi->Instance == SPI6){
 		xBitToSet = BIT_1;
-
-		telem.data = cam_array[1].pRecieveHistoBuffer;
-		telem.id = 1;
-		if(cam.pSpi == hspi && uart_stream) UART_INTERFACE_SendDMA(&telem);
-
-		cam_array[1].pRecieveHistoBuffer = (cam_array[1].pRecieveHistoBuffer ==  scanPacketA.cam1_buffer) ? scanPacketB.cam1_buffer : scanPacketA.cam1_buffer;
 	}
   
 	event_bits = event_bits | xBitToSet;
@@ -1780,12 +1715,34 @@ void vTaskWaitForAllBits(void *pvParameters)
 			telem.data_len = SPI_PACKET_LENGTH;
 			telem.addr = 0;
 
+//			cam_array[1].pRecieveHistoBuffer = (cam_array[1].pRecieveHistoBuffer ==  scanPacketA.cam1_buffer) ? scanPacketB.cam1_buffer : scanPacketA.cam1_buffer;
+//		    cam_array[2].pRecieveHistoBuffer = (cam_array[2].pRecieveHistoBuffer == scanPacketA.cam2_buffer) ? scanPacketB.cam2_buffer : scanPacketA.cam2_buffer;
+//			cam_array[3].pRecieveHistoBuffer = (cam_array[3].pRecieveHistoBuffer == scanPacketA.cam3_buffer) ? scanPacketB.cam3_buffer : scanPacketA.cam3_buffer;
+//			cam_array[4].pRecieveHistoBuffer = (cam_array[4].pRecieveHistoBuffer == scanPacketA.cam4_buffer) ? scanPacketB.cam4_buffer : scanPacketA.cam4_buffer;
+//			cam_array[5].pRecieveHistoBuffer = (cam_array[5].pRecieveHistoBuffer == scanPacketA.cam5_buffer) ? scanPacketB.cam5_buffer : scanPacketA.cam5_buffer;
+//			cam_array[6].pRecieveHistoBuffer = (cam_array[6].pRecieveHistoBuffer == scanPacketA.cam6_buffer) ? scanPacketB.cam6_buffer : scanPacketA.cam6_buffer;
+//			cam_array[7].pRecieveHistoBuffer = (cam_array[7].pRecieveHistoBuffer == scanPacketA.cam7_buffer) ?  scanPacketB.cam7_buffer :  scanPacketA.cam7_buffer;
 
             for(int i = 0; i<8;i++){
             	CameraDevice cam = cam_array[i];
             	HAL_StatusTypeDef status;
 
+
             	if (cam.streaming_enabled){
+                	// Step 1. send out the packet
+    				// just send out each histo over the buffer
+    				// this is vile but if it works i'm going to be upset
+    				HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+    				telem.data = cam_array[i].pRecieveHistoBuffer;
+    				telem.id = 0;
+    				telem.addr = i;
+    				if(i<4) UART_INTERFACE_SendDMA(&telem);
+    			    HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+
+                	// Step 2 Switch the buffer
+//        		    cam_array[i].pRecieveHistoBuffer = (cam_array[i].pRecieveHistoBuffer == scanPacketA.cam0_buffer) ? scanPacketB.cam0_buffer : scanPacketA.cam0_buffer;
+
+                	// Step 3 set up the next event
             		if(cam.useUsart){
 						if(cam.useDma){
 							status = HAL_USART_Receive_DMA(cam.pUart, cam.pRecieveHistoBuffer, USART_PACKET_LENGTH);
@@ -1805,15 +1762,6 @@ void vTaskWaitForAllBits(void *pvParameters)
 					if (status != HAL_OK) {
 						Error_Handler();
 					}
-
-					// just send out each histo over the buffer
-					// this is vile but if it works i'm going to be upset
-					HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
-					telem.data = cam_array[i].pRecieveHistoBuffer;
-					telem.id = 0;
-					telem.addr = i;
-					if(i<4) UART_INTERFACE_SendDMA(&telem);
-				    HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
 
             	}
             }
