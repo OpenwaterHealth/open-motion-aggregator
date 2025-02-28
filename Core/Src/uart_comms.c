@@ -14,7 +14,7 @@
 
 // Private variables
 extern uint8_t rxBuffer[COMMAND_MAX_SIZE];
-extern uint8_t txBuffer[COMMAND_MAX_SIZE];
+extern uint8_t txBuffer[COMMAND_MAX_SIZE*3];
 
 volatile uint32_t ptrReceive;
 volatile uint8_t rx_flag = 0;
@@ -27,7 +27,8 @@ void UART_INTERFACE_SendDMA(UartPacket* pResp)
 //		printf("Data packet too long, not sending \r\n");
 //		return;
 //	}
-	memset(txBuffer, 0, sizeof(txBuffer));
+	printf("Enter\r\n");
+//	memset(txBuffer, 0, sizeof(txBuffer));
 	uint16_t bufferIndex = 0;
 
 	txBuffer[bufferIndex++] = OW_START_BYTE;
@@ -50,10 +51,13 @@ void UART_INTERFACE_SendDMA(UartPacket* pResp)
 
 	txBuffer[bufferIndex++] = OW_END_BYTE;
 
-	CDC_Transmit_HS(txBuffer, bufferIndex);
-
+	uint8_t ret = CDC_Transmit_HS(txBuffer, bufferIndex);
+	if(ret != USBD_OK){
+		printf("CDC_Transmit_HS %i", ret);
+	}
 	// HAL_UART_Transmit_DMA(&huart1, txBuffer, bufferIndex);
 	while(!tx_flag);
+	printf("Exit\r\n");
 }
 
 // This is the FreeRTOS task

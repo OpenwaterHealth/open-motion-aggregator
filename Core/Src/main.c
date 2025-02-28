@@ -111,7 +111,7 @@ const osThreadAttr_t histoTask_attributes = {
 };
 
 uint8_t rxBuffer[COMMAND_MAX_SIZE];
-uint8_t txBuffer[COMMAND_MAX_SIZE];
+uint8_t txBuffer[COMMAND_MAX_SIZE*3];
 __attribute__((section(".RAM_D1"))) uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE];  // 160KB buffer
 
 ScanPacket scanPacketA;
@@ -404,11 +404,13 @@ int main(void)
 	X02C1B_FSIN_EXT_disable();
 
 //   enable all the cameras
-   for(int i = 0; i<8;i++){
-     toggle_camera_stream(i);
-   }
+//   for(int i = 0; i<8;i++){
+//     toggle_camera_stream(i);
+//   }
+	toggle_camera_stream(0);
+//	toggle_camera_stream(1);
+	toggle_camera_stream(2);
 
-  
   printf("System Running\r\n");
   /* USER CODE END 2 */
 
