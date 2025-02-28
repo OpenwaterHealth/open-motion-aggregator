@@ -29,7 +29,7 @@ static void comms_interface_send(UartPacket* pResp)
 {
     tx_flag = 0;  // Clear the flag before starting transmission
 
-    memset(txBuffer, 0, sizeof(txBuffer));
+//    memset(txBuffer, 0, sizeof(txBuffer));
     int bufferIndex = 0;
 
     // Build the packet header
@@ -188,7 +188,7 @@ void comms_host_check_received(void)
 
 NextDataPacket:
 	comms_interface_send(&resp);
-	memset(rxBuffer, 0, sizeof(rxBuffer));
+//	memset(rxBuffer, 0, sizeof(rxBuffer));
 	ptrReceive=0;
 	rx_flag = 0;
 	CDC_ReceiveToIdle(rxBuffer, COMMAND_MAX_SIZE);
