@@ -116,6 +116,8 @@ __attribute__((section(".RAM_D1"))) uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE]
 
 ScanPacket scanPacketA;
 ScanPacket scanPacketB;
+uint8_t a_buffer[SPI_PACKET_LENGTH];
+uint8_t b_buffer[SPI_PACKET_LENGTH];
 
 CameraDevice cam; 			// selected camera device
 CameraDevice cam_array[8];	// array of all the cameras
@@ -273,6 +275,10 @@ int main(void)
   }
   HAL_Delay(100);
 
+  for(int i=0;i<SPI_PACKET_LENGTH;i++){
+	  a_buffer[i] = 'a';
+	  b_buffer[i] = 'b';
+  }
 
   HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
   HAL_Delay(100);
@@ -402,20 +408,20 @@ int main(void)
 	cam = cam_array[0];
 	TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
 	X02C1B_FSIN_EXT_disable();
-
+	comms_host_start();
 //   enable all the cameras
-//   for(int i = 0; i<8;i++){
-//     toggle_camera_stream(i);
-//   }
-	toggle_camera_stream(0);
+   for(int i = 0; i<8;i++){
+     toggle_camera_stream(i);
+   }
+//	toggle_camera_stream(0);
 //	toggle_camera_stream(1);
-	toggle_camera_stream(2);
+//	toggle_camera_stream(2);
 
   printf("System Running\r\n");
   /* USER CODE END 2 */
 
   /* Init scheduler */
-  osKernelInitialize();
+//  osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -435,10 +441,10 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+//  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
-  comTaskHandle = osThreadNew(COMTask, NULL, &comTask_attributes);
+//  comTaskHandle = osThreadNew(COMTask, NULL, &comTask_attributes);
   /* USER CODE END RTOS_THREADS */
 
   /* USER CODE BEGIN RTOS_EVENTS */
@@ -463,23 +469,26 @@ int main(void)
 	}
   */
   
-  histoTaskHandle = osThreadNew(vTaskWaitForAllBits, NULL, &histoTask_attributes);
+//  histoTaskHandle = osThreadNew(vTaskWaitForAllBits, NULL, &histoTask_attributes);
 
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
-  osKernelStart();
+//  osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  void *params;
   while (1)
   {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	HAL_Delay(500);
+	  COMTask(params);
+	  vTaskWaitForAllBits(params);
+
   }
   /* USER CODE END 3 */
 }
@@ -1550,16 +1559,15 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
 	if(hspi->Instance == SPI2){
 		xBitToSet = BIT_6;
 	}	
-  else if(hspi->Instance == SPI3){
+	else if(hspi->Instance == SPI3){
 		xBitToSet = BIT_5;
-  }
-  else if(hspi->Instance == SPI4){
+	}
+	else if(hspi->Instance == SPI4){
 		xBitToSet = BIT_7;
 	} 
-  else if(hspi->Instance == SPI6){
+	else if(hspi->Instance == SPI6){
 		xBitToSet = BIT_1;
 	}
-  
 	event_bits = event_bits | xBitToSet;
 }
 
@@ -1648,8 +1656,8 @@ for( ;; );
 
 void COMTask(void *argument)
 {
-	  printf("Starting COM Task\r\n");
-	  comms_start_task();
+//	  printf("Starting COM Task\r\n");
+	  comms_host_check_received();
 }
 
 void init_camera(CameraDevice *cam){
@@ -1698,17 +1706,11 @@ void init_camera(CameraDevice *cam){
 // Task to wait for all bits
 void vTaskWaitForAllBits(void *pvParameters)
 {
-    for (;;)
-    {
-//    	uint8_t spi_bits = ( BIT_1 | BIT_5 | BIT_6 | BIT_7 );
-//    	uint8_t usart_bits = ( BIT_0 | BIT_2 | BIT_3 | BIT_4 );
 
         if(event_bits == event_bits_enabled && event_bits_enabled>0){
-            printf("All bits are set! Task unblocked. Frame ID: %d\r\n", frame_id);
             event_bits = 0x00;
             frame_id++;
 			HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
-
 
 			UartPacket telem;
 			telem.id = 0; // arbitrarily deciding that all telem packets have id 0
@@ -1716,14 +1718,6 @@ void vTaskWaitForAllBits(void *pvParameters)
 			telem.command = OW_HISTO;
 			telem.data_len = SPI_PACKET_LENGTH;
 			telem.addr = 0;
-
-//			cam_array[1].pRecieveHistoBuffer = (cam_array[1].pRecieveHistoBuffer ==  scanPacketA.cam1_buffer) ? scanPacketB.cam1_buffer : scanPacketA.cam1_buffer;
-//		    cam_array[2].pRecieveHistoBuffer = (cam_array[2].pRecieveHistoBuffer == scanPacketA.cam2_buffer) ? scanPacketB.cam2_buffer : scanPacketA.cam2_buffer;
-//			cam_array[3].pRecieveHistoBuffer = (cam_array[3].pRecieveHistoBuffer == scanPacketA.cam3_buffer) ? scanPacketB.cam3_buffer : scanPacketA.cam3_buffer;
-//			cam_array[4].pRecieveHistoBuffer = (cam_array[4].pRecieveHistoBuffer == scanPacketA.cam4_buffer) ? scanPacketB.cam4_buffer : scanPacketA.cam4_buffer;
-//			cam_array[5].pRecieveHistoBuffer = (cam_array[5].pRecieveHistoBuffer == scanPacketA.cam5_buffer) ? scanPacketB.cam5_buffer : scanPacketA.cam5_buffer;
-//			cam_array[6].pRecieveHistoBuffer = (cam_array[6].pRecieveHistoBuffer == scanPacketA.cam6_buffer) ? scanPacketB.cam6_buffer : scanPacketA.cam6_buffer;
-//			cam_array[7].pRecieveHistoBuffer = (cam_array[7].pRecieveHistoBuffer == scanPacketA.cam7_buffer) ?  scanPacketB.cam7_buffer :  scanPacketA.cam7_buffer;
 
             for(int i = 0; i<8;i++){
             	CameraDevice cam = cam_array[i];
@@ -1741,7 +1735,7 @@ void vTaskWaitForAllBits(void *pvParameters)
     				if(i<4) UART_INTERFACE_SendDMA(&telem);
     			    HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
 
-                	// Step 2 Switch the buffer
+//                	Step 2 Switch the buffer
 //        		    cam_array[i].pRecieveHistoBuffer = (cam_array[i].pRecieveHistoBuffer == scanPacketA.cam0_buffer) ? scanPacketB.cam0_buffer : scanPacketA.cam0_buffer;
 
                 	// Step 3 set up the next event
@@ -1777,8 +1771,9 @@ void vTaskWaitForAllBits(void *pvParameters)
             // telem.data_len = SPI_PACKET_LENGTH;
             // telem.addr = 0;
         }
-        osDelay(1);
-    }
+
+//        osDelay(2);
+//    }
 }
 
 /* USER CODE END 4 */

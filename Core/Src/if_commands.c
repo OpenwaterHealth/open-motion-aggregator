@@ -200,7 +200,7 @@ static void process_fpga_commands(UartPacket *uartResp, UartPacket cmd)
 	case OW_FPGA_RESET:
 		uartResp->command = OW_FPGA_RESET;
 		fpga_reset(&cam);
-		osDelay(1);
+		HAL_Delay(1);
 
 		I2C_DisableEnableReset(cam.pI2c);
 		break;

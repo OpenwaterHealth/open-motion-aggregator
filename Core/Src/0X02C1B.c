@@ -161,7 +161,7 @@ int X02C1B_fsin_off()
 	HAL_StatusTypeDef status;
     while (HAL_GPIO_ReadPin(FSIN_GPIO_Port, FSIN_Pin) == GPIO_PIN_SET)
     {
-        osDelay(1); // wait until the frame sync is done to keep a partial cycle from spitting out
+        HAL_Delay(1); // wait until the frame sync is done to keep a partial cycle from spitting out
     }
     status = HAL_TIM_PWM_Stop(&htim4, TIM_CHANNEL_2);
     HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_SET); //D12
