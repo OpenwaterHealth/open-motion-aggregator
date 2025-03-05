@@ -42,7 +42,7 @@ unsigned char write_buf[4];
 unsigned char read_buf[4];
 unsigned char activation_key[5] = {0xFF, 0xA4, 0xC6, 0xF4, 0x8A};
 
-bool crosslink_verbose = false;
+bool crosslink_verbose = true;
 
 HAL_StatusTypeDef i2c_write_and_read(CameraDevice *cam, uint8_t *pData, uint16_t WriteSize, uint8_t *pReadData, uint16_t ReadSize)
 {

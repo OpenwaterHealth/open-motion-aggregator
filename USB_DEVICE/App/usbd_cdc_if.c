@@ -272,7 +272,7 @@ static int8_t CDC_Receive_HS(uint8_t* Buf, uint32_t *Len)
 {
   /* USER CODE BEGIN 11 */
   USBD_CDC_SetRxBuffer(&hUsbDeviceHS, &Buf[0]);
-  uint8_t len = (uint8_t) *Len; // Get length
+  uint16_t len = (uint16_t) *Len; // Get length
   uint16_t tempHeadPos = rxIndex;
   //printf("receive data\r\n");
 
