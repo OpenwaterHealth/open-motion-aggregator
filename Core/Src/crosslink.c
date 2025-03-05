@@ -184,7 +184,7 @@ HAL_StatusTypeDef i2c_write_bitstream(CameraDevice *cam, uint8_t *write_bitstrea
     HAL_StatusTypeDef ret;
     uint16_t offset = 0;
     uint32_t frame_flag;
-
+    if(bitstream_len ==0) Error_Handler();
     if(crosslink_verbose) printf("Bitstream CRC: 0x%04X Length: %ld\r\n", util_crc16((uint8_t*)(write_bitstream+4), bitstream_len-4), bitstream_len-4);
     if(crosslink_verbose) printf("FULL CRC: 0x%04X Length: %ld\r\n", util_crc16(write_bitstream, bitstream_len), bitstream_len);
 
