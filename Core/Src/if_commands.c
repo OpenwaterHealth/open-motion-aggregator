@@ -23,6 +23,8 @@ static float temp;
 
 static void process_basic_command(UartPacket *uartResp, UartPacket cmd)
 {
+	CameraDevice* pCam = get_active_cam();
+
 	switch (cmd.command)
 	{
 	case OW_CMD_NOP:
@@ -62,7 +64,7 @@ static void process_basic_command(UartPacket *uartResp, UartPacket cmd)
 		break;
 	case OW_CMD_I2C_BROADCAST:
 		printf("Broadcasting I2C on all channels\r\n");
-		TCA9548A_SelectBroadcast(cam.pI2c, 0x70);
+		TCA9548A_SelectBroadcast(pCam->pI2c, 0x70);
 		break;
 	case OW_TOGGLE_CAMERA_STREAM:
 		uartResp->id = cmd.id;
@@ -91,7 +93,6 @@ static void process_basic_command(UartPacket *uartResp, UartPacket cmd)
 	default:
 		uartResp->data_len = 0;
 		uartResp->packet_type = OW_UNKNOWN;
-		// uartResp.data = (uint8_t*)&cmd.tag;
 		break;
 	}
 }
@@ -123,19 +124,21 @@ void I2C_DisableEnableReset(I2C_HandleTypeDef *hi2c)
 
 static void process_fpga_commands(UartPacket *uartResp, UartPacket cmd)
 {
+	CameraDevice* pCam = get_active_cam();
+
 	switch (cmd.command)
 	{
 	case OW_FPGA_ON:
 		uartResp->command = OW_FPGA_ON;
-		fpga_on(&cam);
+		fpga_on(pCam);
 		break;
 	case OW_FPGA_OFF:
 		uartResp->command = OW_FPGA_OFF;
-		fpga_off(&cam);
+		fpga_off(pCam);
 		break;
 	case OW_FPGA_ACTIVATE:
 		uartResp->command = OW_FPGA_ACTIVATE;
-		fpga_send_activation(&cam);
+		fpga_send_activation(pCam);
 		break;
 	case OW_FPGA_ID:
 		uartResp->command = OW_FPGA_ID;
@@ -146,27 +149,27 @@ static void process_fpga_commands(UartPacket *uartResp, UartPacket cmd)
 		uartResp->data_len = 16;
 		uartResp->data = (uint8_t *)&id_words;
 #endif
-		fpga_checkid(&cam);
+		fpga_checkid(pCam);
 		break;
 	case OW_FPGA_ENTER_SRAM_PROG:
 		uartResp->command = OW_FPGA_ENTER_SRAM_PROG;
-		fpga_enter_sram_prog_mode(&cam);
+		fpga_enter_sram_prog_mode(pCam);
 		break;
 	case OW_FPGA_EXIT_SRAM_PROG:
 		uartResp->command = OW_FPGA_EXIT_SRAM_PROG;
-		fpga_exit_prog_mode(&cam);
+		fpga_exit_prog_mode(pCam);
 		break;
 	case OW_FPGA_ERASE_SRAM:
 		uartResp->command = OW_FPGA_ERASE_SRAM;
-		fpga_erase_sram(&cam);
+		fpga_erase_sram(pCam);
 		break;
 	case OW_FPGA_PROG_SRAM:
 		uartResp->command = OW_FPGA_PROG_SRAM;
-		fpga_program_sram(&cam, true, 0, 0);
+		fpga_program_sram(pCam, true, 0, 0);
 		break;
 	case OW_FPGA_USERCODE:
 		uartResp->command = OW_FPGA_USERCODE;
-		fpga_read_usercode(&cam);
+		fpga_read_usercode(pCam);
 		break;
 	case OW_FPGA_BITSTREAM:
 		uartResp->command = OW_FPGA_BITSTREAM;
@@ -190,29 +193,29 @@ static void process_fpga_commands(UartPacket *uartResp, UartPacket cmd)
 			Bitstream_Length+=cmd.data_len;
 		}else{
 			printf("Programming BITSTREAM\r\n");
-			fpga_program_sram(&cam, false, bitstream_buffer, Bitstream_Length);
+			fpga_program_sram(pCam, false, bitstream_buffer, Bitstream_Length);
 		}
 		break;
 	case OW_FPGA_STATUS:
 		uartResp->command = OW_FPGA_STATUS;
-		fpga_read_status(&cam);
+		fpga_read_status(pCam);
 		break;
 	case OW_FPGA_RESET:
 		uartResp->command = OW_FPGA_RESET;
-		fpga_reset(&cam);
+		fpga_reset(pCam);
 		HAL_Delay(1);
 
-		I2C_DisableEnableReset(cam.pI2c);
+		I2C_DisableEnableReset(pCam->pI2c);
 		break;
 	case OW_FPGA_SOFT_RESET:
 		uartResp->command = OW_FPGA_SOFT_RESET;
-		fpga_soft_reset(&cam);
-		if(cam.useUsart){
+		fpga_soft_reset(pCam);
+		if(pCam->useUsart){
 			// method 1: clear the rxfifo
 //			cam.pUart->Instance->RQR |= USART_RQR_RXFRQ;
 			// method 2: diable and reenable the usart
-			cam.pUart->Instance->CR1 &= ~USART_CR1_UE; // Disable USART
-			cam.pUart->Instance->CR1 |= USART_CR1_UE;
+			pCam->pUart->Instance->CR1 &= ~USART_CR1_UE; // Disable USART
+			pCam->pUart->Instance->CR1 |= USART_CR1_UE;
 			printf("Usart buffer reset\r\n");
 		}
 		break;
@@ -228,54 +231,56 @@ static void process_fpga_commands(UartPacket *uartResp, UartPacket cmd)
 
 static void process_camera_commands(UartPacket *uartResp, UartPacket cmd)
 {
+	CameraDevice* pCam = get_active_cam();
+
 	switch (cmd.command)
 	{
 	case OW_CAMERA_SCAN:
-		printf("Reading Camera %d ID\r\n", cam.id+1);
+		printf("Reading Camera %d ID\r\n",pCam->id+1);
 		uartResp->command = OW_CAMERA_SCAN;
 		uartResp->packet_type = OW_RESP;
-		if(X02C1B_detect(&cam)){
+		if(X02C1B_detect(pCam)){
 			// error
 			uartResp->packet_type = OW_ERROR;
 		}
 		break;
 	case OW_CAMERA_ON:
-		printf("Setting Camera %d Stream on\r\n", cam.id+1);
+		printf("Setting Camera %d Stream on\r\n",pCam->id+1);
 		uartResp->command = OW_CAMERA_ON;
 		uartResp->packet_type = OW_RESP;
-		if(X02C1B_stream_on(&cam)){
+		if(X02C1B_stream_on(pCam)){
 			// error
 			uartResp->packet_type = OW_ERROR;
 		}
 		break;
 	case OW_CAMERA_SET_CONFIG:
-		printf("Setting Camera %d config\r\n", cam.id+1);
+		printf("Setting Camera %d config\r\n",pCam->id+1);
 		uartResp->command = OW_CAMERA_SET_CONFIG;
 		uartResp->packet_type = OW_RESP;
-		if(X02C1B_configure_sensor(&cam)<0){
+		if(X02C1B_configure_sensor(pCam)<0){
 			// error
 			uartResp->packet_type = OW_ERROR;
 		}
 		break;
 	case OW_CAMERA_OFF:
-		printf("Setting Camera %d Stream off\r\n", cam.id+1);
+		printf("Setting Camera %d Stream off\r\n",pCam->id+1);
 		uartResp->command = OW_CAMERA_OFF;
 		uartResp->packet_type = OW_RESP;
-		if(X02C1B_stream_off(&cam)<0){
+		if(X02C1B_stream_off(pCam)<0){
 			// error
 			uartResp->packet_type = OW_ERROR;
 		}
 		break;
 	case OW_CAMERA_STATUS:
-		printf("Camera %d status not implemented\r\n", cam.id+1);
+		printf("Camera %d status not implemented\r\n",pCam->id+1);
 		uartResp->command = OW_CAMERA_STATUS;
 		uartResp->packet_type = OW_RESP;
 		break;
 	case OW_CAMERA_RESET:
-		printf("Camera %d Sensor Reset\r\n", cam.id+1);
+		printf("Camera %d Sensor Reset\r\n",pCam->id+1);
 		uartResp->command = OW_CAMERA_RESET;
 		uartResp->packet_type = OW_RESP;
-		if(X02C1B_soft_reset(&cam)<0){
+		if(X02C1B_soft_reset(pCam)<0){
 			// error
 			uartResp->packet_type = OW_ERROR;
 		}
@@ -301,14 +306,14 @@ static void process_camera_commands(UartPacket *uartResp, UartPacket cmd)
 	case OW_CAMERA_SWITCH:
 		uint8_t channel = cmd.data[0];
 		printf("Switching to camera %d\r\n",channel+1);
-        TCA9548A_SelectChannel(cam.pI2c, 0x70, channel);
-		cam = cam_array[channel];
+        TCA9548A_SelectChannel(pCam->pI2c, 0x70, channel);
+        set_active_camera(channel);
 		break;
 	case OW_CAMERA_READ_TEMP:
-		printf("Reading Camera %d Temp\r\n", cam.id+1);
+		printf("Reading Camera %d Temp\r\n",pCam->id+1);
 		uartResp->command = OW_CAMERA_READ_TEMP;
 		uartResp->packet_type = OW_RESP;
-		temp = X02C1B_read_temp(&cam);
+		temp = X02C1B_read_temp(pCam);
 		if(temp<0){
 			// error
 			uartResp->packet_type = OW_ERROR;
@@ -389,7 +394,7 @@ UartPacket process_if_command(UartPacket cmd)
 {
 	UartPacket uartResp;
 	I2C_TX_Packet i2c_packet;
-
+	CameraDevice* pCam = get_active_cam();
 	uartResp.id = cmd.id;
 	uartResp.packet_type = OW_RESP;
 	uartResp.data_len = 0;
@@ -417,7 +422,8 @@ UartPacket process_if_command(UartPacket cmd)
 		// i2c_tx_packet_print(&i2c_packet);
 
 		HAL_Delay(20);
-		send_buffer_to_slave(cam.pI2c, cmd.command, cmd.data, cmd.data_len);
+
+		send_buffer_to_slave(pCam->pI2c, cmd.command, cmd.data, cmd.data_len);
 
 		break;
 	default:

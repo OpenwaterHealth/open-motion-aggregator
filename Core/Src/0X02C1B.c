@@ -242,39 +242,39 @@ int toggle_camera_stream(uint8_t cam_id){
     printf("Event bits after toggling: %02X\r\n", event_bits_enabled);
 
     bool enabled = (event_bits_enabled & (1 << cam_id)) != 0;
-    cam_array[cam_id].streaming_enabled = enabled;
+    get_camera_byID(cam_id)->streaming_enabled = enabled;
     HAL_StatusTypeDef status;
     if(enabled){
         printf("Enabled camera stream %d\r\n", cam_id +1);
 
         // kick off the reception
-        if(cam_array[cam_id].useUsart) {
-            if(cam_array[cam_id].useDma)
-            	status = HAL_USART_Receive_DMA(cam_array[cam_id].pUart, cam_array[cam_id].pRecieveHistoBuffer, USART_PACKET_LENGTH);
+        if(get_camera_byID(cam_id)->useUsart) {
+            if(get_camera_byID(cam_id)->useDma)
+            	status = HAL_USART_Receive_DMA(get_camera_byID(cam_id)->pUart, get_camera_byID(cam_id)->pRecieveHistoBuffer, USART_PACKET_LENGTH);
             else
-            	status = HAL_USART_Receive_IT(cam_array[cam_id].pUart, cam_array[cam_id].pRecieveHistoBuffer, USART_PACKET_LENGTH);
+            	status = HAL_USART_Receive_IT(get_camera_byID(cam_id)->pUart, get_camera_byID(cam_id)->pRecieveHistoBuffer, USART_PACKET_LENGTH);
         }
         else{
-            if(cam_array[cam_id].useDma)
-            	status = HAL_SPI_Receive_DMA(cam_array[cam_id].pSpi, cam_array[cam_id].pRecieveHistoBuffer, SPI_PACKET_LENGTH);
+            if(get_camera_byID(cam_id)->useDma)
+            	status = HAL_SPI_Receive_DMA(get_camera_byID(cam_id)->pSpi, get_camera_byID(cam_id)->pRecieveHistoBuffer, SPI_PACKET_LENGTH);
             else
-            	status = HAL_SPI_Receive_IT(cam_array[cam_id].pSpi, cam_array[cam_id].pRecieveHistoBuffer, SPI_PACKET_LENGTH);
+            	status = HAL_SPI_Receive_IT(get_camera_byID(cam_id)->pSpi, get_camera_byID(cam_id)->pRecieveHistoBuffer, SPI_PACKET_LENGTH);
         }
     }
     else{
         printf("Disabled camera stream %d\r\n", cam_id +1);
         // disable the reception
-		if(cam_array[cam_id].useUsart) {
-			if(cam_array[cam_id].useDma)
-				status = HAL_USART_Abort(cam_array[cam_id].pUart);
+		if(get_camera_byID(cam_id)->useUsart) {
+			if(get_camera_byID(cam_id)->useDma)
+				status = HAL_USART_Abort(get_camera_byID(cam_id)->pUart);
 			else
-				status = HAL_USART_Abort_IT(cam_array[cam_id].pUart);
+				status = HAL_USART_Abort_IT(get_camera_byID(cam_id)->pUart);
 		}
 		else{
-			if(cam_array[cam_id].useDma)
-				status = HAL_SPI_Abort(cam_array[cam_id].pSpi);
+			if(get_camera_byID(cam_id)->useDma)
+				status = HAL_SPI_Abort(get_camera_byID(cam_id)->pSpi);
 			else
-				status = HAL_SPI_Abort_IT(cam_array[cam_id].pSpi);
+				status = HAL_SPI_Abort_IT(get_camera_byID(cam_id)->pSpi);
 		}
     }
     return status;

@@ -33,6 +33,7 @@ extern "C" {
 /* USER CODE BEGIN Includes */
 #include "common.h"
 #include "cmsis_os.h"
+#include "camera_manager.h"
 
 /* USER CODE END Includes */
 
@@ -112,14 +113,22 @@ void Error_Handler(void);
 
 /* USER CODE BEGIN Private defines */
 
+extern I2C_HandleTypeDef hi2c1;
+extern SPI_HandleTypeDef hspi2;
+extern SPI_HandleTypeDef hspi3;
+extern SPI_HandleTypeDef hspi4;
+extern SPI_HandleTypeDef hspi6;
+extern USART_HandleTypeDef husart1;
+extern USART_HandleTypeDef husart2;
+extern USART_HandleTypeDef husart3;
+extern USART_HandleTypeDef husart6;
+
 extern TIM_HandleTypeDef htim12;
 extern TIM_HandleTypeDef htim8;
 extern CRC_HandleTypeDef   hcrc;
 extern UART_HandleTypeDef huart4;
 extern TIM_HandleTypeDef htim4;
 
-extern CameraDevice cam_array[];
-extern CameraDevice cam;
 extern volatile uint8_t event_bits_enabled;
 
 #define DEBUG_UART huart4
