@@ -407,7 +407,7 @@ int main(void)
 	// Select default camera
 	cam = cam_array[0];
 	TCA9548A_SelectChannel(&hi2c1, 0x70, cam.i2c_target);
-	X02C1B_FSIN_EXT_disable();
+	 X02C1B_FSIN_EXT_enable();
 	comms_host_start();
 //   enable all the cameras
    for(int i = 0; i<8;i++){
@@ -1394,8 +1394,8 @@ static void MX_DMA_Init(void)
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
-/* USER CODE BEGIN MX_GPIO_Init_1 */
-/* USER CODE END MX_GPIO_Init_1 */
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+  /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
   __HAL_RCC_GPIOC_CLK_ENABLE();
@@ -1491,8 +1491,8 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(FS_OUT_EN_GPIO_Port, &GPIO_InitStruct);
 
-/* USER CODE BEGIN MX_GPIO_Init_2 */
-/* USER CODE END MX_GPIO_Init_2 */
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
@@ -1842,7 +1842,8 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 
 
   /* USER CODE END Callback 0 */
-  if (htim->Instance == TIM17) {
+  if (htim->Instance == TIM17)
+  {
     HAL_IncTick();
   }
   /* USER CODE BEGIN Callback 1 */
