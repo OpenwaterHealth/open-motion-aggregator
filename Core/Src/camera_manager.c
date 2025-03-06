@@ -8,6 +8,9 @@
 #include "main.h"
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
 
 CameraDevice cam_array[CAMERA_COUNT];	// array of all the cameras
 
@@ -16,6 +19,19 @@ static int _active_cam_idx = 0;
 volatile uint8_t frame_buffer[2][CAMERA_COUNT * HISTOGRAM_DATA_SIZE]; // Double buffer
 static uint8_t _active_buffer = 0; // Index of the buffer currently being written to
 
+static void generate_fake_histogram(uint8_t *histogram_data) {
+    // Cast the byte buffer to uint32_t pointer to store histogram data
+    uint32_t *histogram = (uint32_t *)histogram_data;
+
+    // Initialize histogram bins to zero
+    memset(histogram, 0, HISTOGRAM_DATA_SIZE/4);
+
+    // Generate random 10-bit grayscale image and compute histogram
+    for (int i = 0; i < WIDTH * HEIGHT; i++) {
+        uint32_t pixel_value = rand() % HISTOGRAM_BINS; // Random 10-bit value (0-1023)
+        histogram[pixel_value]++;
+    }
+}
 
 static void init_camera(CameraDevice *cam){
 	GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -183,3 +199,10 @@ uint8_t* get_active_frame_buffer(void) {
 uint8_t* get_inactive_frame_buffer(void) {
     return (uint8_t*)frame_buffer[1 - _active_buffer];
 }
+
+void fill_frame_buffers(void) {
+    for (int i = 0; i < CAMERA_COUNT; i++) {
+    	generate_fake_histogram(cam_array[i].pRecieveHistoBuffer);
+    }
+}
+

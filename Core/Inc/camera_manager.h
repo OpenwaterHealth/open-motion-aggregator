@@ -42,6 +42,9 @@ typedef struct {
 
 #define CAMERA_COUNT	8
 #define HISTOGRAM_DATA_SIZE	4096
+#define WIDTH 1920
+#define HEIGHT 1280
+#define HISTOGRAM_BINS 1024
 
 void init_camera_sensors(void);
 CameraDevice* get_active_cam(void);
@@ -50,5 +53,6 @@ CameraDevice* get_camera_byID(int id);
 void switch_frame_buffer(void);
 uint8_t* get_active_frame_buffer(void);
 uint8_t* get_inactive_frame_buffer(void);
+void fill_frame_buffers(void);
 
 #endif /* INC_CAMERA_MANAGER_H_ */
