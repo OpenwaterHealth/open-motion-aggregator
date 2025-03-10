@@ -89,17 +89,13 @@ DMA_HandleTypeDef hdma_usart6_rx;
 /* Definitions for defaultTask */
 
 uint8_t rxBuffer[COMMAND_MAX_SIZE];
-uint8_t txBuffer[COMMAND_MAX_SIZE * 3];
+uint8_t txBuffer[COMMAND_MAX_SIZE];
 __attribute__((section(".RAM_D1")))  uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE]; // 160KB buffer
 
 ScanPacket scanPacketA;
 ScanPacket scanPacketB;
-uint8_t a_buffer[SPI_PACKET_LENGTH];
-uint8_t b_buffer[SPI_PACKET_LENGTH];
 
 volatile uint8_t event_bits = 0x00;		 // holds the event bits to be flipped
-volatile uint8_t event_bits_enabled = 0x00; // holds the event bits for the cameras to be enabled
-uint32_t frame_id = 0;
 bool uart_stream = false;
 
 uint8_t FIRMWARE_VERSION_DATA[3] = { 2, 5, 0 };
@@ -252,40 +248,21 @@ int main(void) {
 	}
 	HAL_Delay(100);
 
-	for (int i = 0; i < SPI_PACKET_LENGTH; i++) {
-		a_buffer[i] = 'a';
-		b_buffer[i] = 'b';
-	}
-
 	HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
 	MX_USB_DEVICE_Init();
 
 	HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
 
-	scanPacketA = (ScanPacket ) { 0 };
-	scanPacketB = (ScanPacket ) { 0 };
-	event_bits = 0x00;
-	event_bits_enabled = 0x00;
-
 	init_camera_sensors();
 
 	// Select default camera
 	TCA9548A_SelectChannel(&hi2c1, 0x70, get_active_cam()->i2c_target);
-	X02C1B_FSIN_EXT_disable();
+	X02C1B_FSIN_EXT_enable();
 	comms_host_start();
-//   enable all the cameras
-	for (int i = 0; i < 8; i++) {
-		toggle_camera_stream(i);
-	}
-//	toggle_camera_stream(0);
-//	toggle_camera_stream(1);
-//	toggle_camera_stream(2);
 
 	printf("System Running\r\n");
 	/* USER CODE END 2 */
-
-	event_bits = 0x00;
 
 //  histoTaskHandle = osThreadNew(vTaskWaitForAllBits, NULL, &histoTask_attributes);
 
@@ -302,7 +279,7 @@ int main(void) {
 
 		/* USER CODE BEGIN 3 */
 		comms_host_check_received(); // check comms
-
+		SendHistogramData();
 	}
 	/* USER CODE END 3 */
 }
@@ -1375,80 +1352,6 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 	event_bits = event_bits | xBitToSet;
 }
 
-#if 0
-// Task to wait for all bits
-void vTaskWaitForAllBits(void *pvParameters) {
-
-	if (event_bits == event_bits_enabled && event_bits_enabled > 0) {
-		event_bits = 0x00;
-		frame_id++;
-		HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
-
-		UartPacket telem;
-		telem.id = 0; // arbitrarily deciding that all telem packets have id 0
-		telem.packet_type = OW_DATA;
-		telem.command = OW_HISTO;
-		telem.data_len = SPI_PACKET_LENGTH;
-		telem.addr = 0;
-
-		for (int i = 0; i < 8; i++) {
-			CameraDevice cam = cam_array[i];
-			HAL_StatusTypeDef status;
-
-			if (cam.streaming_enabled) {
-				// Step 1. send out the packet
-				// just send out each histo over the buffer
-				// this is vile but if it works i'm going to be upset
-				HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
-				telem.data = cam_array[i].pRecieveHistoBuffer;
-				telem.id = 0;
-				telem.addr = i;
-				if (i < 4)
-					UART_INTERFACE_SendDMA(&telem);
-				HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
-
-//                	Step 2 Switch the buffer
-//        		    cam_array[i].pRecieveHistoBuffer = (cam_array[i].pRecieveHistoBuffer == scanPacketA.cam0_buffer) ? scanPacketB.cam0_buffer : scanPacketA.cam0_buffer;
-
-				// Step 3 set up the next event
-				if (cam.useUsart) {
-					if (cam.useDma) {
-						status = HAL_USART_Receive_DMA(cam.pUart,
-								cam.pRecieveHistoBuffer, USART_PACKET_LENGTH);
-					} else {
-						status = HAL_USART_Receive_IT(cam.pUart,
-								cam.pRecieveHistoBuffer, USART_PACKET_LENGTH);
-					}
-				} else {
-					if (cam.useDma) {
-						status = HAL_SPI_Receive_DMA(cam.pSpi,
-								cam.pRecieveHistoBuffer, SPI_PACKET_LENGTH);
-					} else {
-						status = HAL_SPI_Receive_IT(cam.pSpi,
-								cam.pRecieveHistoBuffer, SPI_PACKET_LENGTH);
-					}
-				}
-				if (status != HAL_OK) {
-					Error_Handler();
-				}
-
-			}
-		}
-
-		// ship out the packets over UART
-		// UartPacket telem;
-		// telem.id = 0; // arbitrarily deciding that all telem packets have id 0
-		// telem.packet_type = OW_DATA;
-		// telem.command = OW_HISTO;
-		// telem.data_len = SPI_PACKET_LENGTH;
-		// telem.addr = 0;
-	}
-
-//        osDelay(2);
-//    }
-}
-
-#endif
 
 /* USER CODE END 4 */
 

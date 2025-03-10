@@ -14,14 +14,14 @@
 
 // Private variables
 extern uint8_t rxBuffer[COMMAND_MAX_SIZE];
-extern uint8_t txBuffer[COMMAND_MAX_SIZE * 3];
+extern uint8_t txBuffer[COMMAND_MAX_SIZE];
 
 volatile uint32_t ptrReceive;
 volatile uint8_t rx_flag = 0;
 volatile uint8_t tx_flag = 0;
 #define TX_TIMEOUT 25
 
-static void comms_interface_send(UartPacket *pResp) {
+void comms_interface_send(UartPacket *pResp) {
 	tx_flag = 0;  // Clear the flag before starting transmission
 
 //    memset(txBuffer, 0, sizeof(txBuffer));
@@ -40,6 +40,7 @@ static void comms_interface_send(UartPacket *pResp) {
 
 	// Check for possible buffer overflow (optional)
 	if ((bufferIndex + pResp->data_len + 4) > sizeof(txBuffer)) {
+		printf("Packet too large to send\r\n");
 		// Handle error: packet too large for txBuffer
 		return;
 	}
@@ -67,7 +68,7 @@ static void comms_interface_send(UartPacket *pResp) {
 	while (!tx_flag) {
 		if ((HAL_GetTick() - start_time) >= TX_TIMEOUT) {
 			// Timeout handling: Log error and break out or reset the flag.
-			// printf("TX Timeout\r\n");
+			printf("TX Timeout\r\n");
 			break;
 		}
 	}

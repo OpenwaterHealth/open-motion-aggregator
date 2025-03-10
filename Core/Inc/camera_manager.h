@@ -7,7 +7,7 @@
 
 #ifndef INC_CAMERA_MANAGER_H_
 #define INC_CAMERA_MANAGER_H_
-
+#include "main.h"
 
 typedef struct {
 	uint16_t id;
@@ -54,5 +54,7 @@ void switch_frame_buffer(void);
 uint8_t* get_active_frame_buffer(void);
 uint8_t* get_inactive_frame_buffer(void);
 void fill_frame_buffers(void);
+int toggle_camera_stream(uint8_t cam_id);
+void SendHistogramData(void);
 
 #endif /* INC_CAMERA_MANAGER_H_ */

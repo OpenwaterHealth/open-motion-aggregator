@@ -142,7 +142,7 @@ extern volatile uint8_t event_bits_enabled;
 #define BIT_6    ( 1 << 6 )
 #define BIT_7    ( 1 << 7 )
 
-void vTaskWaitForAllBits(void *pvParameters);
+void vTaskWaitForAllBits();
 
 /* USER CODE END Private defines */
 
