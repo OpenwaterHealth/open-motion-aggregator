@@ -129,8 +129,6 @@ extern CRC_HandleTypeDef   hcrc;
 extern UART_HandleTypeDef huart4;
 extern TIM_HandleTypeDef htim4;
 
-extern volatile uint8_t event_bits_enabled;
-
 #define DEBUG_UART huart4
 
 #define BIT_0    ( 1 << 0 )

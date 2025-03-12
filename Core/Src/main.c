@@ -35,6 +35,7 @@
 
 #include "FreeRTOS.h"
 #include "task.h"
+#include "stm32h7xx_ll_tim.h"
 
 /* USER CODE END Includes */
 
@@ -87,6 +88,7 @@ DMA_HandleTypeDef hdma_usart3_rx;
 DMA_HandleTypeDef hdma_usart6_rx;
 
 /* Definitions for defaultTask */
+uint8_t FIRMWARE_VERSION_DATA[3] = { 1, 0, 4 };
 
 uint8_t rxBuffer[COMMAND_MAX_SIZE];
 uint8_t txBuffer[COMMAND_MAX_SIZE];
@@ -96,9 +98,13 @@ ScanPacket scanPacketA;
 ScanPacket scanPacketB;
 
 volatile uint8_t event_bits = 0x00;		 // holds the event bits to be flipped
-bool uart_stream = false;
+volatile uint8_t event_bits_enabled = 0x00; // holds the event bits for the cameras to be enabled
 
-uint8_t FIRMWARE_VERSION_DATA[3] = { 1, 0, 4 };
+// Debug flags
+bool uart_stream = false;
+bool fake_data_gen = true;
+bool scanI2cAtStart = true;
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -236,7 +242,6 @@ int main(void)
 
 	HAL_Delay(2000);
 
-	bool scanI2cAtStart = true;
 	if (scanI2cAtStart) {
 		for (int i = 0; i < 8; i++) {
 			TCA9548A_SelectChannel(&hi2c1, 0x70, i);
@@ -260,7 +265,7 @@ int main(void)
 	TCA9548A_SelectChannel(&hi2c1, 0x70, get_active_cam()->i2c_target);
 	X02C1B_FSIN_EXT_enable();
 	comms_host_start();
-
+	fill_frame_buffers();
 	printf("System Running\r\n");
   /* USER CODE END 2 */
 
@@ -779,6 +784,10 @@ static void MX_TIM4_Init(void)
   {
     Error_Handler();
   }
+  if (HAL_TIM_OC_Init(&htim4) != HAL_OK)
+  {
+    Error_Handler();
+  }
   sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
   sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
   if (HAL_TIMEx_MasterConfigSynchronization(&htim4, &sMasterConfig) != HAL_OK)
@@ -793,8 +802,14 @@ static void MX_TIM4_Init(void)
   {
     Error_Handler();
   }
+  sConfigOC.OCMode = TIM_OCMODE_TIMING;
+  sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+  if (HAL_TIM_OC_ConfigChannel(&htim4, &sConfigOC, TIM_CHANNEL_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN TIM4_Init 2 */
-
+  LL_TIM_EnableIT_CC1(TIM4);
   /* USER CODE END TIM4_Init 2 */
   HAL_TIM_MspPostInit(&htim4);
 
@@ -1425,7 +1440,18 @@ void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
 	event_bits = event_bits | xBitToSet;
 }
 
+void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
+{
+	if (htim->Instance == TIM4) {
+		if(fake_data_gen){
+			// fill the buffer with fake data
+//			fill_frame_buffers(); TODO make this faster + dynamic
+			// trigger the send event
+			event_bits = event_bits_enabled;
 
+		}
+	}
+}
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */

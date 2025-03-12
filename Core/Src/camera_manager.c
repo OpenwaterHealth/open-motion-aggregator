@@ -20,8 +20,9 @@ static int _active_cam_idx = 0;
 volatile uint8_t frame_buffer[2][CAMERA_COUNT * HISTOGRAM_DATA_SIZE]; // Double buffer
 static uint8_t _active_buffer = 0; // Index of the buffer currently being written to
 uint8_t frame_id = 0;
-volatile uint8_t event_bits_enabled = 0x00; // holds the event bits for the cameras to be enabled
+extern uint8_t event_bits_enabled; // holds the event bits for the cameras to be enabled
 extern uint8_t event_bits;
+extern bool fake_data_gen;
 extern ScanPacket scanPacketA;
 extern ScanPacket scanPacketB;
 
@@ -239,7 +240,7 @@ void SendHistogramData(void) {
 			CameraDevice cam = cam_array[i];
 			HAL_StatusTypeDef status;
 
-			if (cam.streaming_enabled) {
+			if (cam.streaming_enabled ) {
 				// Step 1. send out the packet
 				// just send out each histo over the buffer
 				// this is vile but if it works i'm going to be upset
@@ -254,25 +255,29 @@ void SendHistogramData(void) {
 //        		    cam_array[i].pRecieveHistoBuffer = (cam_array[i].pRecieveHistoBuffer == scanPacketA.cam0_buffer) ? scanPacketB.cam0_buffer : scanPacketA.cam0_buffer;
 
 				// Step 3 set up the next event
-				if (cam.useUsart) {
-					if (cam.useDma) {
-						status = HAL_USART_Receive_DMA(cam.pUart,
-								cam.pRecieveHistoBuffer, USART_PACKET_LENGTH);
+				if(!fake_data_gen) {
+
+					//TODO refactor this out
+					if (cam.useUsart) {
+						if (cam.useDma) {
+							status = HAL_USART_Receive_DMA(cam.pUart,
+									cam.pRecieveHistoBuffer, USART_PACKET_LENGTH);
+						} else {
+							status = HAL_USART_Receive_IT(cam.pUart,
+									cam.pRecieveHistoBuffer, USART_PACKET_LENGTH);
+						}
 					} else {
-						status = HAL_USART_Receive_IT(cam.pUart,
-								cam.pRecieveHistoBuffer, USART_PACKET_LENGTH);
+						if (cam.useDma) {
+							status = HAL_SPI_Receive_DMA(cam.pSpi,
+									cam.pRecieveHistoBuffer, SPI_PACKET_LENGTH);
+						} else {
+							status = HAL_SPI_Receive_IT(cam.pSpi,
+									cam.pRecieveHistoBuffer, SPI_PACKET_LENGTH);
+						}
 					}
-				} else {
-					if (cam.useDma) {
-						status = HAL_SPI_Receive_DMA(cam.pSpi,
-								cam.pRecieveHistoBuffer, SPI_PACKET_LENGTH);
-					} else {
-						status = HAL_SPI_Receive_IT(cam.pSpi,
-								cam.pRecieveHistoBuffer, SPI_PACKET_LENGTH);
+					if (status != HAL_OK) {
+						Error_Handler();
 					}
-				}
-				if (status != HAL_OK) {
-					Error_Handler();
 				}
 
 			}
