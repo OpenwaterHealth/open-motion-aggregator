@@ -34,10 +34,21 @@ static void generate_fake_histogram(uint8_t *histogram_data) {
     memset(histogram, 0, HISTOGRAM_DATA_SIZE/4);
 
     // Generate random 10-bit grayscale image and compute histogram
-    for (int i = 0; i < WIDTH * HEIGHT; i++) {
-        uint32_t pixel_value = rand() % HISTOGRAM_BINS; // Random 10-bit value (0-1023)
-        histogram[pixel_value]++;
+    switch(HISTO_TEST_PATTERN){
+    	case 0:
+			for (int i = 0; i < WIDTH * HEIGHT; i++) {
+					uint32_t pixel_value = rand() % HISTOGRAM_BINS; // Random 10-bit value (0-1023)
+					histogram[pixel_value]++;
+				}
+			break;
+    	case 1:
+    		for(int i=0;i<HISTOGRAM_BINS;i++){
+    			histogram[i] = (uint32_t) (i*1024 + frame_id);
+    		}
+
     }
+
+    histogram[HISTOGRAM_BINS-1] |= ((uint32_t) frame_id)<<24; // fill in the frame_id to the last bin's spacer
 }
 
 static void init_camera(CameraDevice *cam){

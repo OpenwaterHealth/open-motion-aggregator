@@ -103,7 +103,7 @@ volatile uint8_t event_bits_enabled = 0x00; // holds the event bits for the came
 // Debug flags
 bool uart_stream = false;
 bool fake_data_gen = true;
-bool scanI2cAtStart = true;
+bool scanI2cAtStart = false;
 
 /* USER CODE END PV */
 
@@ -1445,7 +1445,7 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 	if (htim->Instance == TIM4) {
 		if(fake_data_gen){
 			// fill the buffer with fake data
-//			fill_frame_buffers(); TODO make this faster + dynamic
+			fill_frame_buffers(); //TODO make this faster + dynamic
 			// trigger the send event
 			event_bits = event_bits_enabled;
 

@@ -45,6 +45,7 @@ typedef struct {
 #define WIDTH 1920
 #define HEIGHT 1280
 #define HISTOGRAM_BINS 1024
+#define HISTO_TEST_PATTERN 1
 
 void init_camera_sensors(void);
 CameraDevice* get_active_cam(void);
