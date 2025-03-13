@@ -100,6 +100,8 @@ ScanPacket scanPacketB;
 volatile uint8_t event_bits = 0x00;		 // holds the event bits to be flipped
 volatile uint8_t event_bits_enabled = 0x00; // holds the event bits for the cameras to be enabled
 
+uint8_t cameras_present = 0x00;
+
 // Debug flags
 bool uart_stream = false;
 bool fake_data_gen = true;
@@ -240,18 +242,36 @@ int main(void)
 	else
 		printf("IMU detected\r\n\n");
 
-	HAL_Delay(2000);
+	HAL_Delay(10);
 
-	if (scanI2cAtStart) {
-		for (int i = 0; i < 8; i++) {
-			TCA9548A_SelectChannel(&hi2c1, 0x70, i);
-			HAL_Delay(300);
-			printf("I2C Scanning bus %d\r\n", i + 1);
-			I2C_scan(&hi2c1, NULL, 0, true);
-			HAL_Delay(100);
-		}
-	}
-	HAL_Delay(100);
+  // Scan for I2C cameras
+  for (int i = 0; i < 8; i++) {
+    uint8_t addresses_found[10];
+    bool camera_found = false, fpga_found = false;
+    
+    TCA9548A_SelectChannel(&hi2c1, 0x70, i);
+    HAL_Delay(10);
+    
+    if(scanI2cAtStart) printf("I2C Scanning bus %d\r\n", i + 1);
+    I2C_scan(&hi2c1, addresses_found, sizeof(addresses_found), scanI2cAtStart);
+    
+    for(int j = 0; j < sizeof(addresses_found); j++) {
+      if(addresses_found[j] == 0x36) 
+        camera_found =true;
+      else if(addresses_found[j] == 0x40) 
+        fpga_found = true;
+    }
+    
+    if(camera_found && fpga_found)
+      cameras_present |= 0x01 << i;
+    else
+      printf("Camera %d not found\r\n", i + 1);
+//    HAL_Delay(10);
+  }
+  if(cameras_present == 0xFF)
+    printf("All cameras found\r\n");
+  
+  HAL_Delay(100);
 
 	HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
 	HAL_Delay(100);
