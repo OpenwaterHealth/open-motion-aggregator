@@ -313,6 +313,8 @@ int main(void)
     /* USER CODE BEGIN 3 */
 		comms_host_check_received(); // check comms
 		SendHistogramData();
+		HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+
 	}
   /* USER CODE END 3 */
 }
@@ -1444,11 +1446,8 @@ void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
 	if (htim->Instance == TIM4) {
 		if(fake_data_gen){
-			// fill the buffer with fake data
-			fill_frame_buffers(); //TODO make this faster + dynamic
 			// trigger the send event
 			event_bits = event_bits_enabled;
-
 		}
 	}
 }

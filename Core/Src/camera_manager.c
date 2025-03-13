@@ -43,7 +43,7 @@ static void generate_fake_histogram(uint8_t *histogram_data) {
 			break;
     	case 1:
     		for(int i=0;i<HISTOGRAM_BINS;i++){
-    			histogram[i] = (uint32_t) (i*1024 + frame_id);
+    			histogram[i] = (uint32_t) (i + frame_id);
     		}
 
     }
@@ -238,7 +238,6 @@ void SendHistogramData(void) {
 	if (event_bits == event_bits_enabled && event_bits_enabled > 0) {
 		event_bits = 0x00;
 		frame_id++;
-		HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
 
 		UartPacket telem;
 		telem.id = 0; // arbitrarily deciding that all telem packets have id 0
@@ -290,6 +289,7 @@ void SendHistogramData(void) {
 						Error_Handler();
 					}
 				}
+				else fill_frame_buffers(); //TODO make this faster + dynamic
 
 			}
 		}

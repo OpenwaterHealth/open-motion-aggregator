@@ -19,7 +19,7 @@ extern uint8_t txBuffer[COMMAND_MAX_SIZE];
 volatile uint32_t ptrReceive;
 volatile uint8_t rx_flag = 0;
 volatile uint8_t tx_flag = 0;
-#define TX_TIMEOUT 25
+#define TX_TIMEOUT 5
 
 void comms_interface_send(UartPacket *pResp) {
 	tx_flag = 0;  // Clear the flag before starting transmission
