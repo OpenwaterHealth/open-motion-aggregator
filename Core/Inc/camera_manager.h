@@ -41,7 +41,7 @@ typedef struct {
 } ScanPacket;
 
 #define CAMERA_COUNT	8
-#define HISTOGRAM_DATA_SIZE	4096
+#define HISTOGRAM_DATA_SIZE	4100
 #define WIDTH 1920
 #define HEIGHT 1280
 #define HISTOGRAM_BINS 1024
