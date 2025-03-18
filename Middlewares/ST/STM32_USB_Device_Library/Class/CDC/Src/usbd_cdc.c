@@ -163,11 +163,6 @@ USBD_ClassTypeDef  USBD_CDC =
 #endif /* USE_USBD_COMPOSITE  */
 };
 
-#define USB_VENDOR_EP_ADDR    0x83  // Endpoint 1, IN, Isochronous
-#define USB_VENDOR_EP_SIZE    1024  // Max 1024 bytes for HS
-#define USB_VENDOR_EP_INTERVAL 4    // 4 = 1ms for HS (unit = 125µs)
-#define USB_VENDOR_INTERFACE  2
-#define USB_INTERFACE_COUNT  3  // CDC (2) + Vendor (1)
 
 #ifndef USE_USBD_COMPOSITE
 /* USB CDC device Configuration Descriptor */

@@ -24,6 +24,8 @@
 #include "usbd_def.h"
 #include "usbd_core.h"
 #include "usbd_cdc.h"
+#include "usbd_composite_builder.h"
+#include "usbd_vendor.h"
 
 /* USER CODE BEGIN Includes */
 

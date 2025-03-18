@@ -26,6 +26,7 @@
 #include "usbd_cdc.h"
 #include "usbd_cdc_if.h"
 #include "usbd_vendor.h"
+#include "usbd_conf.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -55,6 +56,8 @@ USBD_HandleTypeDef hUsbDeviceHS;
  * -- Insert your external function declaration here --
  */
 /* USER CODE BEGIN 1 */
+uint8_t CDC_EpAdd_Inst1[3] = {CDC_IN_EP, CDC_OUT_EP, CDC_CMD_EP}; /* CDC Endpoint Adress First Instance */
+uint8_t VEN_EpAdd_Inst2[1] = {USB_VENDOR_EP_ADDR}; /* CDC Endpoint Adress Second Instance */
 
 /* USER CODE END 1 */
 
@@ -73,20 +76,39 @@ void MX_USB_DEVICE_Init(void)
   {
     Error_Handler();
   }
-  if (USBD_RegisterClass(&hUsbDeviceHS, &USBD_CDC) != USBD_OK)
-  {
-    Error_Handler();
-  }
+  // if (USBD_RegisterClass(&hUsbDeviceHS, &USBD_CDC) != USBD_OK)
+  // {
+  //   Error_Handler();
+  // }
   /* Register the Vendor-Specific Class */
   // if (USBD_RegisterClass(&hUsbDeviceHS, &USBD_VendorClassDriver) != USBD_OK)
   // {
   //   Error_Handler();
   // }
+  // if (USBD_CDC_RegisterInterface(&hUsbDeviceHS, &USBD_Interface_fops_HS) != USBD_OK)
+  // {
+  //   Error_Handler();
+  // }
   //TODO fix the RegisterClass function to allow multiple classes
-  
-  if (USBD_CDC_RegisterInterface(&hUsbDeviceHS, &USBD_Interface_fops_HS) != USBD_OK)
+
+  if (USBD_RegisterClassComposite(&hUsbDeviceHS, &USBD_CDC, CLASS_TYPE_CDC, CDC_EpAdd_Inst1) != USBD_OK)
   {
     Error_Handler();
+  }
+  if (USBD_RegisterClassComposite(&hUsbDeviceHS, &USBD_VendorClassDriver, CLASS_TYPE_NONE, VEN_EpAdd_Inst2) != USBD_OK)
+  {
+    Error_Handler();
+  }
+  /* Add CDC Interface Class */
+  if (USBD_CMPSIT_SetClassID(&hUsbDeviceHS, CLASS_TYPE_CDC, CDC_CLASS_ID) != 0xFF)
+  {
+    USBD_CDC_RegisterInterface(&hUsbDeviceHS, &USBD_Interface_fops_HS);
+  }
+
+  /* Add CDC Interface Class */
+  if (USBD_CMPSIT_SetClassID(&hUsbDeviceHS, CLASS_TYPE_NONE, VENDOR_CLASS_ID) != 0xFF)
+  {
+    USBD_CDC_RegisterInterface(&hUsbDeviceHS, &USBD_Interface_fops_HS);
   }
 
   if (USBD_Start(&hUsbDeviceHS) != USBD_OK)

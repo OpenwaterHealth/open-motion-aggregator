@@ -23,7 +23,7 @@
 
 /* USER CODE BEGIN INCLUDE */
 #include "uart_comms.h"
-
+#include "usbd_conf.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -162,7 +162,7 @@ static int8_t CDC_Init_HS(void)
 {
   /* USER CODE BEGIN 8 */
   /* Set Application Buffers */
-  USBD_CDC_SetTxBuffer(&hUsbDeviceHS, UserTxBufferHS, 0);
+  USBD_CDC_SetTxBuffer(&hUsbDeviceHS, UserTxBufferHS, 0,CDC_CLASS_ID);
   USBD_CDC_SetRxBuffer(&hUsbDeviceHS, UserRxBufferHS);
   return (USBD_OK);
   /* USER CODE END 8 */
@@ -316,8 +316,8 @@ uint8_t CDC_Transmit_HS(uint8_t* Buf, uint16_t Len)
   if (hcdc->TxState != 0){
     return USBD_BUSY;
   }
-  USBD_CDC_SetTxBuffer(&hUsbDeviceHS, Buf, Len);
-  result = USBD_CDC_TransmitPacket(&hUsbDeviceHS);
+  USBD_CDC_SetTxBuffer(&hUsbDeviceHS, Buf, Len,CDC_CLASS_ID);
+  result = USBD_CDC_TransmitPacket(&hUsbDeviceHS,CDC_CLASS_ID);
   /* USER CODE END 12 */
   return result;
 }

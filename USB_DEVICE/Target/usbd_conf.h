@@ -36,6 +36,21 @@
 
 /* USER CODE BEGIN INCLUDE */
 
+#define USE_USB_HS
+#define USE_USBD_COMPOSITE
+#define USBD_CMPSIT_ACTIVATE_CDC                           1U
+
+#define USB_VENDOR_EP_ADDR 0x83
+
+#define USB_VENDOR_EP_SIZE    1024  // Max 1024 bytes for HS
+#define USB_VENDOR_EP_INTERVAL 4    // 4 = 1ms for HS (unit = 125µs)
+#define USB_VENDOR_INTERFACE  2
+#define USB_INTERFACE_COUNT  3  // CDC (2) + Vendor (1)
+
+
+#define VENDOR_CLASS_ID 1
+#define CDC_CLASS_ID 0
+
 /* USER CODE END INCLUDE */
 
 /** @addtogroup USBD_OTG_DRIVER
@@ -63,7 +78,7 @@
   */
 
 /*---------- -----------*/
-#define USBD_MAX_NUM_INTERFACES     1U
+#define USBD_MAX_NUM_INTERFACES     6U
 /*---------- -----------*/
 #define USBD_MAX_NUM_CONFIGURATION     1U
 /*---------- -----------*/
