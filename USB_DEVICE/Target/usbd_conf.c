@@ -427,9 +427,10 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   HAL_PCD_RegisterIsoInIncpltCallback(&hpcd_USB_OTG_HS, PCD_ISOINIncompleteCallback);
 #endif /* USE_HAL_PCD_REGISTER_CALLBACKS */
   /* USER CODE BEGIN TxRx_HS_Configuration */
-  HAL_PCDEx_SetRxFiFo(&hpcd_USB_OTG_HS, 0x200);
-  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_HS, 0, 0x80);
-  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_HS, 1, 0x174);
+  HAL_PCDEx_SetRxFiFo(&hpcd_USB_OTG_HS, 0x200);     // Control
+  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_HS, 0, 0x80);   // CDC In bulk
+  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_HS, 1, 0x174);  // cdc command
+  HAL_PCDEx_SetTxFiFo(&hpcd_USB_OTG_HS, 2, 0x174);  // TODO: confirm that this fifo number connects to the correct endpoint
   /* USER CODE END TxRx_HS_Configuration */
   }
   return USBD_OK;

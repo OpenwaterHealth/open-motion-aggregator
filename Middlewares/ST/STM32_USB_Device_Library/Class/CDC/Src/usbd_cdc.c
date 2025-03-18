@@ -163,6 +163,12 @@ USBD_ClassTypeDef  USBD_CDC =
 #endif /* USE_USBD_COMPOSITE  */
 };
 
+#define USB_VENDOR_EP_ADDR    0x83  // Endpoint 1, IN, Isochronous
+#define USB_VENDOR_EP_SIZE    1024  // Max 1024 bytes for HS
+#define USB_VENDOR_EP_INTERVAL 4    // 4 = 1ms for HS (unit = 125µs)
+#define USB_VENDOR_INTERFACE  2
+#define USB_INTERFACE_COUNT  3  // CDC (2) + Vendor (1)
+
 #ifndef USE_USBD_COMPOSITE
 /* USB CDC device Configuration Descriptor */
 __ALIGN_BEGIN static uint8_t USBD_CDC_CfgDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIGN_END =
@@ -172,7 +178,7 @@ __ALIGN_BEGIN static uint8_t USBD_CDC_CfgDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIGN_E
   USB_DESC_TYPE_CONFIGURATION,                /* bDescriptorType: Configuration */
   USB_CDC_CONFIG_DESC_SIZ,                    /* wTotalLength */
   0x00,
-  0x02,                                       /* bNumInterfaces: 2 interfaces */
+  USB_INTERFACE_COUNT,                        /* bNumInterfaces: 2 interfaces */
   0x01,                                       /* bConfigurationValue: Configuration value */
   0x00,                                       /* iConfiguration: Index of string descriptor
                                                  describing the configuration */
@@ -261,13 +267,36 @@ __ALIGN_BEGIN static uint8_t USBD_CDC_CfgDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIGN_E
   0x02,                                       /* bmAttributes: Bulk */
   LOBYTE(CDC_DATA_FS_MAX_PACKET_SIZE),        /* wMaxPacketSize */
   HIBYTE(CDC_DATA_FS_MAX_PACKET_SIZE),
-  0x00                                        /* bInterval */
+  0x00,                                       /* bInterval */
+ 
+  /*---------------------------------------------------------------------------*/
+  /* Vendor-Specific Interface Descriptor (Interface 2) */
+  0x09,                                       /* bLength: Interface Descriptor size */
+  USB_DESC_TYPE_INTERFACE,                    /* bDescriptorType: Interface */
+  USB_VENDOR_INTERFACE,                       /* bInterfaceNumber: Interface 2 */
+  0x00,                                       /* bAlternateSetting: Alternate setting */
+  0x01,                                       /* bNumEndpoints: One endpoint used */
+  0xFF,                                       /* bInterfaceClass: Vendor-Specific */
+  0x00,                                       /* bInterfaceSubClass */
+  0x00,                                       /* bInterfaceProtocol */
+  0x00,                                       /* iInterface */
+
+  /* Vendor-Specific Isochronous IN Endpoint Descriptor */
+  0x07,                                       /* bLength: Endpoint Descriptor size */
+  USB_DESC_TYPE_ENDPOINT,                     /* bDescriptorType: Endpoint */
+  USB_VENDOR_EP_ADDR,                           /* bEndpointAddress: IN direction */
+  0x01,                                       /* bmAttributes: Isochronous */ //TODO this is a guess! verify later, may need to be adaptive
+  LOBYTE(USB_VENDOR_EP_SIZE), 
+  HIBYTE(USB_VENDOR_EP_SIZE),                 /* wMaxPacketSize: 1024 bytes (for High-Speed) */
+  USB_VENDOR_EP_INTERVAL                      /* bInterval: 1 (125 µs for HS) */
 };
-#endif /* USE_USBD_COMPOSITE  */
+#endif
+
 
 static uint8_t CDCInEpAdd = CDC_IN_EP;
 static uint8_t CDCOutEpAdd = CDC_OUT_EP;
 static uint8_t CDCCmdEpAdd = CDC_CMD_EP;
+static uint8_t CustomDataEpAdd = USB_VENDOR_EP_ADDR;
 
 /**
   * @}
