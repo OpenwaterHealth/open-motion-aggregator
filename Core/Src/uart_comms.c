@@ -10,7 +10,7 @@
 #include "uart_comms.h"
 #include "utils.h"
 #include <string.h>
-#include "usbd_cdc_if.h"
+// #include "usbd_cdc_if.h"
 
 // Private variables
 extern uint8_t rxBuffer[COMMAND_MAX_SIZE];
@@ -79,12 +79,12 @@ void comms_host_start(void) {
 	memset(rxBuffer, 0, sizeof(rxBuffer));
 	ptrReceive = 0;
 
-	CDC_FlushRxBuffer_HS();
+	// CDC_FlushRxBuffer_HS();
 
 	rx_flag = 0;
 	tx_flag = 0;
 
-	CDC_ReceiveToIdle(rxBuffer, COMMAND_MAX_SIZE);
+	// CDC_ReceiveToIdle(rxBuffer, COMMAND_MAX_SIZE);
 
 }
 
@@ -182,7 +182,7 @@ void comms_host_check_received(void) {
 //	memset(rxBuffer, 0, sizeof(rxBuffer));
 	ptrReceive = 0;
 	rx_flag = 0;
-	CDC_ReceiveToIdle(rxBuffer, COMMAND_MAX_SIZE);
+	// CDC_ReceiveToIdle(rxBuffer, COMMAND_MAX_SIZE);
 }
 
 // Callback functions

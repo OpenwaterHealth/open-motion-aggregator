@@ -25,7 +25,7 @@
 #include "uart_comms.h"
 #include "0X02C1B.h"
 #include "usb_device.h"
-#include "usbd_cdc_if.h"
+// #include "usbd_cdc_if.h"
 #include "logging.h"
 #include "utils.h"
 #include "i2c_master.h"

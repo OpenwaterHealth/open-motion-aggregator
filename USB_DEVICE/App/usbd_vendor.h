@@ -12,6 +12,27 @@ extern "C" {
 #define USB_VENDOR_SUBCLASS 0x00
 #define USB_VENDOR_PROTOCOL 0x00
 
+#define USB_VEN_CONFIG_DESC_SIZ                     (9U+ 16U)
+#define USB_INTERFACE_COUNT 1
+#define USB_VENDOR_EP_ADDR    0x83  // Endpoint 1, IN, Isochronous
+#define USB_VENDOR_EP_SIZE    1024  // Max 1024 bytes for HS
+#define USB_VENDOR_EP_INTERVAL 4    // 4 = 1ms for HS (unit = 125µs)
+#define USB_VENDOR_INTERFACE  2
+#define USB_INTERFACE_COUNT  1  // CDC (2) + Vendor (1)
+typedef struct
+{
+  uint32_t data[512U / 4U];      /* Force 32-bit alignment */
+  uint8_t  CmdOpCode;
+  uint8_t  CmdLength;
+  uint8_t  *RxBuffer;
+  uint8_t  *TxBuffer;
+  uint32_t RxLength;
+  uint32_t TxLength;
+
+  __IO uint32_t TxState;
+  __IO uint32_t RxState;
+} USBD_VEN_HandleTypeDef;
+
 /* Endpoint Address */
 #define USB_VENDOR_IN_EP  0x83  /* Isochronous IN Endpoint */
 #define USB_VENDOR_MAX_PACKET_SIZE 1024 /* Max packet size for HS Isochronous */
@@ -25,6 +46,8 @@ USBD_StatusTypeDef USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx);
 USBD_StatusTypeDef USBD_Vendor_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx);
 USBD_StatusTypeDef USBD_Vendor_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
 USBD_StatusTypeDef USBD_Vendor_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum);
+static uint8_t *USBD_VEN_GetHSCfgDesc(uint16_t *length);
+
 void USBD_Vendor_SendData(USBD_HandleTypeDef *pdev, uint8_t *data, uint16_t length);
 
 #ifdef __cplusplus
