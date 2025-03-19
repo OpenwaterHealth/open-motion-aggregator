@@ -60,7 +60,7 @@ void comms_interface_send(UartPacket *pResp) {
 	txBuffer[bufferIndex++] = OW_END_BYTE;
 
 	// Initiate transmission via USB CDC
-	CDC_Transmit_HS(txBuffer, bufferIndex);
+	// CDC_Transmit_HS(txBuffer, bufferIndex);
 
 	// Wait for the transmit complete flag with a timeout to avoid infinite loop.
 	uint32_t start_time = HAL_GetTick();
