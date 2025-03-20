@@ -23,7 +23,7 @@ static int8_t VEN_Init_HS(void)
   /* Set Application Buffers */
 //   USBD_VEN_SetTxBuffer(&hUsbDeviceHS, UserTxBufferHS, 0);
 //   USBD_VEN_SetRxBuffer(&hUsbDeviceHS, UserRxBufferHS);
-  printf("USB Vendor device initialized\r\n");
+  printf("HS USB Vendor device initialized\r\n");
   return (USBD_OK);
   /* USER CODE END 8 */
 }

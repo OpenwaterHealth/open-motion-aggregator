@@ -56,7 +56,7 @@ USBD_StatusTypeDef USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
     USBD_LL_OpenEP(pdev, USB_VENDOR_IN_EP, USBD_EP_TYPE_ISOC, USB_VENDOR_MAX_PACKET_SIZE);
 
     /* Prepare the first packet */
-    USBD_Vendor_SendData(pdev, Vendor_Buffer, USB_VENDOR_MAX_PACKET_SIZE);
+    // USBD_Vendor_SendData(pdev, Vendor_Buffer, USB_VENDOR_MAX_PACKET_SIZE);
 
     return USBD_OK;
 }
@@ -84,18 +84,22 @@ USBD_StatusTypeDef USBD_Vendor_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
   */  
 USBD_StatusTypeDef USBD_Vendor_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
-  printf("Vendor setup\r\n");
-    switch (req->bmRequest & USB_REQ_TYPE_MASK)
-    {
-        case USB_REQ_TYPE_CLASS:
-            /* Handle vendor-specific class requests here */
-            break;
-        
-        default:
-            USBD_CtlError(pdev, req);
-            return USBD_FAIL;
+    printf("USB SETUP Request: bmRequestType=0x%02X, bRequest=0x%02X, wLength=%d\r\n",
+           req->bmRequest, req->bRequest, req->wLength);
+
+    static uint8_t response_data[8] = {0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE};  // Test response
+
+    if ((req->bmRequest == 0xC0) && (req->bRequest == 0x01)) { 
+        printf("USB CLASS Request received! Preparing to send response...\r\n");
+
+        // Send data response
+        USBD_CtlSendData(pdev, response_data, sizeof(response_data));
+        printf("✅ Data sent to host: 8 bytes\r\n");
+
+        return USBD_OK;
     }
-    return USBD_OK;
+
+    return USBD_FAIL;
 }
 
 /**
@@ -107,9 +111,9 @@ USBD_StatusTypeDef USBD_Vendor_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqType
   */
 USBD_StatusTypeDef USBD_Vendor_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
+    printf("Vendor Data IN: %d bytes sent\r\n", USB_VENDOR_MAX_PACKET_SIZE);
     /* Refill buffer for next transfer */
     USBD_Vendor_SendData(pdev, Vendor_Buffer, USB_VENDOR_MAX_PACKET_SIZE);
-    printf("Vendor Data IN: %d bytes sent\r\n", USB_VENDOR_MAX_PACKET_SIZE);
     return USBD_OK;
 }
 
