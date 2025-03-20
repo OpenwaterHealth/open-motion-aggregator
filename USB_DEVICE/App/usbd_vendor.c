@@ -16,21 +16,26 @@ USBD_ClassTypeDef USBD_VendorClassDriver =
     NULL, /* SOF */
     NULL, /* IsoINIncomplete */
     NULL, /* IsoOUTIncomplete */
-    USBD_VEN_GetHSCfgDesc  /* Get Configuration Descriptor */
+    USBD_VEN_GetHSCfgDesc,  /* Get Configuration Descriptor */
+    NULL,
+    USBD_VEN_GetOtherSpeedCfgDesc,
+    USBD_VEN_GetDeviceQualifierDescriptor
 };
 
-//uint8_t USBD_VEN_RegisterInterface(USBD_HandleTypeDef *pdev,
-//                                   USBD_CDC_ItfTypeDef *fops)
-//{
-//  if (fops == NULL)
-//  {
-//    return (uint8_t)USBD_FAIL;
-//  }
-//
-//  pdev->pUserData[pdev->classId] = fops;
-//
-//  return (uint8_t)USBD_OK;
-//}
+__ALIGN_BEGIN static uint8_t USBD_VEN_DeviceQualifierDesc[USB_LEN_DEV_QUALIFIER_DESC] __ALIGN_END =
+{
+  USB_LEN_DEV_QUALIFIER_DESC,
+  USB_DESC_TYPE_DEVICE_QUALIFIER,
+  0x00,
+  0x02,
+  0x00,
+  0x00,
+  0x00,
+  0x40,
+  0x01,
+  0x00,
+};
+
 void InitDummyData(void) {
     for (uint16_t i = 0; i < USB_VENDOR_MAX_PACKET_SIZE; i++) {
     	Vendor_Buffer[i] = (i & 0xFF);  // Example: 0x00, 0x01, ..., 0xFF repeating
@@ -45,13 +50,14 @@ void InitDummyData(void) {
   */
 USBD_StatusTypeDef USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 {
+      printf("Vendor device initialized\r\n");
     InitDummyData(); // Initialize the buffer with dummy data
     /* Open the Isochronous IN Endpoint */
     USBD_LL_OpenEP(pdev, USB_VENDOR_IN_EP, USBD_EP_TYPE_ISOC, USB_VENDOR_MAX_PACKET_SIZE);
 
     /* Prepare the first packet */
     USBD_Vendor_SendData(pdev, Vendor_Buffer, USB_VENDOR_MAX_PACKET_SIZE);
-    printf("Vendor device initialized");
+
     return USBD_OK;
 }
 
@@ -75,9 +81,10 @@ USBD_StatusTypeDef USBD_Vendor_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
   * @param  pdev: device instance
   * @param  req: USB setup request
   * @retval status
-  */
+  */  
 USBD_StatusTypeDef USBD_Vendor_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
+  printf("Vendor setup\r\n");
     switch (req->bmRequest & USB_REQ_TYPE_MASK)
     {
         case USB_REQ_TYPE_CLASS:
@@ -102,7 +109,7 @@ USBD_StatusTypeDef USBD_Vendor_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
     /* Refill buffer for next transfer */
     USBD_Vendor_SendData(pdev, Vendor_Buffer, USB_VENDOR_MAX_PACKET_SIZE);
-    printf("Vendor Data IN: %d bytes sent\n", USB_VENDOR_MAX_PACKET_SIZE);
+    printf("Vendor Data IN: %d bytes sent\r\n", USB_VENDOR_MAX_PACKET_SIZE);
     return USBD_OK;
 }
 
@@ -206,4 +213,17 @@ uint8_t USBD_VEN_RegisterInterface(USBD_HandleTypeDef *pdev,
   pdev->pUserData[pdev->classId] = fops;
 
   return (uint8_t)USBD_OK;
+}
+
+uint8_t *USBD_VEN_GetDeviceQualifierDescriptor(uint16_t *length)
+{
+  *length = (uint16_t)sizeof(USBD_VEN_DeviceQualifierDesc);
+
+  return USBD_VEN_DeviceQualifierDesc;
+}
+
+static uint8_t *USBD_VEN_GetOtherSpeedCfgDesc(uint16_t *length)
+{
+  *length = (uint16_t)sizeof(USBD_VEN_CfgDesc);
+  return USBD_VEN_CfgDesc;
 }

@@ -246,6 +246,7 @@ __ALIGN_BEGIN uint8_t USBD_StringSerial[USB_SIZ_STRING_SERIAL] __ALIGN_END = {
 uint8_t * USBD_HS_DeviceDescriptor(USBD_SpeedTypeDef speed, uint16_t *length)
 {
   UNUSED(speed);
+  printf("USBD_HS_DeviceDescriptor\r\n");
   *length = sizeof(USBD_HS_DeviceDesc);
   return USBD_HS_DeviceDesc;
 }

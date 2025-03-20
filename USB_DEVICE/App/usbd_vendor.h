@@ -53,6 +53,9 @@ USBD_StatusTypeDef USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx);
 USBD_StatusTypeDef USBD_Vendor_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx);
 USBD_StatusTypeDef USBD_Vendor_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
 USBD_StatusTypeDef USBD_Vendor_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum);
+uint8_t *USBD_VEN_GetDeviceQualifierDescriptor(uint16_t *length);
+static uint8_t *USBD_VEN_GetOtherSpeedCfgDesc(uint16_t *length);
+
 static uint8_t *USBD_VEN_GetHSCfgDesc(uint16_t *length);
 
 void USBD_Vendor_SendData(USBD_HandleTypeDef *pdev, uint8_t *data, uint16_t length);

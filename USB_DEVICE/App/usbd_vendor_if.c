@@ -23,7 +23,7 @@ static int8_t VEN_Init_HS(void)
   /* Set Application Buffers */
 //   USBD_VEN_SetTxBuffer(&hUsbDeviceHS, UserTxBufferHS, 0);
 //   USBD_VEN_SetRxBuffer(&hUsbDeviceHS, UserRxBufferHS);
-  printf("USB Vendor device initialized\n");
+  printf("USB Vendor device initialized\r\n");
   return (USBD_OK);
   /* USER CODE END 8 */
 }
@@ -41,11 +41,11 @@ static int8_t VEN_DeInit_HS(void)
 }
 
 static int8_t USBD_Vendor_DataIn_HS(USBD_HandleTypeDef *pdev, uint8_t epnum) {
-    printf("USB Vendor Data IN Requested on EP 0x%02X\n", epnum);
+    printf("USB Vendor Data IN Requested on EP 0x%02X\r\n", epnum);
     return USBD_OK;
 }
 
 static int8_t USBD_Vendor_DataOut_HS(USBD_HandleTypeDef *pdev, uint8_t epnum) {
-    printf("USB Vendor Data OUT Received on EP 0x%02X\n", epnum);
+    printf("USB Vendor Data OUT Received on EP 0x%02X\r\n", epnum);
     return USBD_OK;
 }
