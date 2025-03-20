@@ -31,7 +31,11 @@ USBD_ClassTypeDef USBD_VendorClassDriver =
 //
 //  return (uint8_t)USBD_OK;
 //}
-
+void InitDummyData(void) {
+    for (uint16_t i = 0; i < USB_VENDOR_MAX_PACKET_SIZE; i++) {
+    	Vendor_Buffer[i] = (i & 0xFF);  // Example: 0x00, 0x01, ..., 0xFF repeating
+    }
+}
 /**
   * @brief  USBD_Vendor_Init
   *         Initialize the vendor-specific interface
@@ -41,12 +45,13 @@ USBD_ClassTypeDef USBD_VendorClassDriver =
   */
 USBD_StatusTypeDef USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 {
+    InitDummyData(); // Initialize the buffer with dummy data
     /* Open the Isochronous IN Endpoint */
     USBD_LL_OpenEP(pdev, USB_VENDOR_IN_EP, USBD_EP_TYPE_ISOC, USB_VENDOR_MAX_PACKET_SIZE);
 
     /* Prepare the first packet */
     USBD_Vendor_SendData(pdev, Vendor_Buffer, USB_VENDOR_MAX_PACKET_SIZE);
-
+    printf("Vendor device initialized");
     return USBD_OK;
 }
 
@@ -97,6 +102,7 @@ USBD_StatusTypeDef USBD_Vendor_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
 {
     /* Refill buffer for next transfer */
     USBD_Vendor_SendData(pdev, Vendor_Buffer, USB_VENDOR_MAX_PACKET_SIZE);
+    printf("Vendor Data IN: %d bytes sent\n", USB_VENDOR_MAX_PACKET_SIZE);
     return USBD_OK;
 }
 
@@ -168,16 +174,36 @@ static uint8_t *USBD_VEN_GetHSCfgDesc(uint16_t *length)
 {
   USBD_EpDescTypeDef *pEpVenDesc = USBD_GetEpDesc(USBD_VEN_CfgDesc, USB_VENDOR_EP_ADDR);
 
-  if (pEpVenDesc != NULL)
-  {
-	  pEpVenDesc->bInterval = USB_VENDOR_EP_INTERVAL;
-  }
+  // if (pEpVenDesc != NULL)
+  // {
+	//   pEpVenDesc->bInterval = USB_VENDOR_EP_INTERVAL;
+  // }
 
-  if (pEpVenDesc != NULL)
-  {
-	  pEpVenDesc->wMaxPacketSize = USB_VENDOR_EP_SIZE;
-  }
+  // if (pEpVenDesc != NULL)
+  // {
+	//   pEpVenDesc->wMaxPacketSize = USB_VENDOR_EP_SIZE;
+  // }
 
   *length = (uint16_t)sizeof(USBD_VEN_CfgDesc);
   return USBD_VEN_CfgDesc;
+}
+
+
+/**
+  * @brief  USBD_CDC_RegisterInterface
+  * @param  pdev: device instance
+  * @param  fops: CD  Interface callback
+  * @retval status
+  */
+uint8_t USBD_VEN_RegisterInterface(USBD_HandleTypeDef *pdev,
+                                   USBD_VEN_ItfTypeDef *fops)
+{
+  if (fops == NULL)
+  {
+    return (uint8_t)USBD_FAIL;
+  }
+
+  pdev->pUserData[pdev->classId] = fops;
+
+  return (uint8_t)USBD_OK;
 }

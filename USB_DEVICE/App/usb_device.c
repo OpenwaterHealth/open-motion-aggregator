@@ -26,6 +26,7 @@
 // #include "usbd_cdc.h"
 // #include "usbd_cdc_if.h"
 #include "usbd_vendor.h"
+#include "usbd_vendor_if.h"
 
 /* USER CODE BEGIN Includes */
 
@@ -77,17 +78,19 @@ void MX_USB_DEVICE_Init(void)
   // {
   //   Error_Handler();
   // }
+  //  if (USBD_CDC_RegisterInterface(&hUsbDeviceHS, &USBD_Interface_fops_HS) != USBD_OK)
+  //  {
+  //    Error_Handler();
+  //  }
   /* Register the Vendor-Specific Class */
   if (USBD_RegisterClass(&hUsbDeviceHS, &USBD_VendorClassDriver) != USBD_OK)
   {
     Error_Handler();
   }
-  // TODO fix the RegisterClass function to allow multiple classes
-  
-//  if (USBD_CDC_RegisterInterface(&hUsbDeviceHS, &USBD_Interface_fops_HS) != USBD_OK)
-//  {
-//    Error_Handler();
-//  }
+  if (USBD_VEN_RegisterInterface(&hUsbDeviceHS, &USBD_Interface_fops_HS) != USBD_OK)
+  {
+    Error_Handler();
+  }
 
   if (USBD_Start(&hUsbDeviceHS) != USBD_OK)
   {

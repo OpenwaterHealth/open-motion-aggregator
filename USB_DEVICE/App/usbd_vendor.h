@@ -17,7 +17,7 @@ extern "C" {
 #define USB_VENDOR_EP_ADDR    0x83  // Endpoint 1, IN, Isochronous
 #define USB_VENDOR_EP_SIZE    1024  // Max 1024 bytes for HS
 #define USB_VENDOR_EP_INTERVAL 4    // 4 = 1ms for HS (unit = 125µs)
-#define USB_VENDOR_INTERFACE  2
+#define USB_VENDOR_INTERFACE  0
 #define USB_INTERFACE_COUNT  1  // CDC (2) + Vendor (1)
 typedef struct
 {
@@ -41,6 +41,13 @@ typedef struct
 /* USB Vendor Class Structure */
 extern USBD_ClassTypeDef USBD_VendorClassDriver;
 
+typedef struct {
+    int8_t (*Init)        (void);   // Initialize Vendor Class
+    int8_t (*DeInit)      (void);   // Deinitialize Vendor Class
+    int8_t (*DataIn)      (USBD_HandleTypeDef *pdev, uint8_t epnum);  // Host requests IN data
+    int8_t (*DataOut)     (USBD_HandleTypeDef *pdev, uint8_t epnum);  // Host sends OUT data
+} USBD_VEN_ItfTypeDef;
+
 /* Function Prototypes */
 USBD_StatusTypeDef USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx);
 USBD_StatusTypeDef USBD_Vendor_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx);
@@ -50,6 +57,8 @@ static uint8_t *USBD_VEN_GetHSCfgDesc(uint16_t *length);
 
 void USBD_Vendor_SendData(USBD_HandleTypeDef *pdev, uint8_t *data, uint16_t length);
 
+uint8_t USBD_VEN_RegisterInterface(USBD_HandleTypeDef *pdev,
+                                   USBD_VEN_ItfTypeDef *fops);
 #ifdef __cplusplus
 }
 #endif
