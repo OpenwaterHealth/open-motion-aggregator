@@ -88,16 +88,16 @@ DMA_HandleTypeDef hdma_usart3_rx;
 DMA_HandleTypeDef hdma_usart6_rx;
 
 /* Definitions for defaultTask */
-uint8_t FIRMWARE_VERSION_DATA[3] = { 1, 0, 4 };
+uint8_t FIRMWARE_VERSION_DATA[3] = {1, 0, 4};
 
 uint8_t rxBuffer[COMMAND_MAX_SIZE];
 uint8_t txBuffer[COMMAND_MAX_SIZE];
-__attribute__((section(".RAM_D1")))  uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE]; // 160KB buffer
+__attribute__((section(".RAM_D1"))) uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE]; // 160KB buffer
 
 ScanPacket scanPacketA;
 ScanPacket scanPacketB;
 
-volatile uint8_t event_bits = 0x00;		 // holds the event bits to be flipped
+volatile uint8_t event_bits = 0x00;         // holds the event bits to be flipped
 volatile uint8_t event_bits_enabled = 0x00; // holds the event bits for the cameras to be enabled
 
 uint8_t cameras_present = 0x00;
@@ -105,7 +105,7 @@ uint8_t cameras_present = 0x00;
 // Debug flags
 bool uart_stream = false;
 bool fake_data_gen = false;
-bool scanI2cAtStart = false;
+bool scanI2cAtStart = true;
 
 /* USER CODE END PV */
 
@@ -140,29 +140,30 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-static void PrintI2CSpeed(I2C_HandleTypeDef *hi2c) {
-	// Assuming the timing is configured in I2C_TIMINGR register
-	uint32_t timing = hi2c->Init.Timing;
-	uint32_t presc = (timing >> 28) & 0xF;
-	uint32_t scll = (timing >> 0) & 0xFF;
-	uint32_t sclh = (timing >> 8) & 0xFF;
+static void PrintI2CSpeed(I2C_HandleTypeDef *hi2c)
+{
+  // Assuming the timing is configured in I2C_TIMINGR register
+  uint32_t timing = hi2c->Init.Timing;
+  uint32_t presc = (timing >> 28) & 0xF;
+  uint32_t scll = (timing >> 0) & 0xFF;
+  uint32_t sclh = (timing >> 8) & 0xFF;
 
-	// Get the I2C clock source frequency
-	uint32_t i2c_clk_freq = HAL_RCC_GetPCLK1Freq();
+  // Get the I2C clock source frequency
+  uint32_t i2c_clk_freq = HAL_RCC_GetPCLK1Freq();
 
-	// Calculate SCL speed (frequency) in Hz
-	uint32_t scl_freq = i2c_clk_freq / ((presc + 1) * (scll + 1 + sclh + 1));
+  // Calculate SCL speed (frequency) in Hz
+  uint32_t scl_freq = i2c_clk_freq / ((presc + 1) * (scll + 1 + sclh + 1));
 
-	// Print I2C speed
-	printf("I2C Speed: %ld Hz\r\n", scl_freq); // Print the I2C speed in kHz
+  // Print I2C speed
+  printf("I2C Speed: %ld Hz\r\n", scl_freq); // Print the I2C speed in kHz
 }
 
 /* USER CODE END 0 */
 
 /**
-  * @brief  The application entry point.
-  * @retval int
-  */
+ * @brief  The application entry point.
+ * @retval int
+ */
 int main(void)
 {
 
@@ -213,84 +214,89 @@ int main(void)
   MX_USART2_Init();
   MX_USART3_Init();
   /* USER CODE BEGIN 2 */
-	init_dma_logging();
+  init_dma_logging();
 
-	// enable I2C MUX
-	HAL_GPIO_WritePin(MUX_RESET_GPIO_Port, MUX_RESET_Pin, GPIO_PIN_RESET);
+  // enable I2C MUX
+  HAL_GPIO_WritePin(MUX_RESET_GPIO_Port, MUX_RESET_Pin, GPIO_PIN_RESET);
 
-	// enable USB PHY
-	HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_RESET);
+  // enable USB PHY
+  HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_RESET);
 
-	printf("\033c");
-	fflush(stdout);
-	HAL_Delay(500);
-	printf("Openwater open-MOTION Aggregator FW v%d.%d.%d\r\n\r\n",
-			FIRMWARE_VERSION_DATA[0], FIRMWARE_VERSION_DATA[1],
-			FIRMWARE_VERSION_DATA[2]);
-	printf("CPU Clock Frequency: %lu MHz\r\n",
-			HAL_RCC_GetSysClockFreq() / 1000000);
-	printf("Initializing, please wait ...\r\n");
-	// enable I2C MUX
-	HAL_GPIO_WritePin(MUX_RESET_GPIO_Port, MUX_RESET_Pin, GPIO_PIN_SET);
+  printf("\033c");
+  fflush(stdout);
+  HAL_Delay(500);
+  printf("Openwater open-MOTION Aggregator FW v%d.%d.%d\r\n\r\n",
+         FIRMWARE_VERSION_DATA[0], FIRMWARE_VERSION_DATA[1],
+         FIRMWARE_VERSION_DATA[2]);
+  printf("CPU Clock Frequency: %lu MHz\r\n",
+         HAL_RCC_GetSysClockFreq() / 1000000);
+  printf("Initializing, please wait ...\r\n");
+  // enable I2C MUX
+  HAL_GPIO_WritePin(MUX_RESET_GPIO_Port, MUX_RESET_Pin, GPIO_PIN_SET);
 
-	// test i2c
-	PrintI2CSpeed(&hi2c1);
-	HAL_Delay(100);
+  // test i2c
+  PrintI2CSpeed(&hi2c1);
+  HAL_Delay(100);
 
-	if (ICM20948_IsAlive(&hi2c1, 0) == HAL_OK)
-		printf("IMU detected\r\n");
-	else
-		printf("IMU detected\r\n\n");
+  if (ICM20948_IsAlive(&hi2c1, 0) == HAL_OK)
+    printf("IMU detected\r\n");
+  else
+    printf("IMU detected\r\n\n");
 
-	HAL_Delay(10);
+  HAL_Delay(10);
+
+  HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
+  HAL_Delay(100);
+  MX_USB_DEVICE_Init();
+
+  HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
+
+  init_camera_sensors();
+  HAL_Delay(100);
 
   // Scan for I2C cameras
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < 8; i++)
+  {
     uint8_t addresses_found[10];
     bool camera_found = false, fpga_found = false;
-    
+
     TCA9548A_SelectChannel(&hi2c1, 0x70, i);
     HAL_Delay(10);
-    
-    if(scanI2cAtStart) printf("I2C Scanning bus %d\r\n", i + 1);
+
+    if (scanI2cAtStart)
+      printf("I2C Scanning bus %d\r\n", i + 1);
     I2C_scan(&hi2c1, addresses_found, sizeof(addresses_found), scanI2cAtStart);
-    
-    for(int j = 0; j < sizeof(addresses_found); j++) {
-      if(addresses_found[j] == 0x36) 
-        camera_found =true;
-      else if(addresses_found[j] == 0x40) 
+
+    for (int j = 0; j < sizeof(addresses_found); j++)
+    {
+      if (addresses_found[j] == 0x36)
+        camera_found = true;
+      else if (addresses_found[j] == 0x40)
         fpga_found = true;
     }
-    
-    if(camera_found && fpga_found)
+
+    if (camera_found && fpga_found)
       cameras_present |= 0x01 << i;
     else
       printf("Camera %d not found\r\n", i + 1);
-//    HAL_Delay(10);
+    //    HAL_Delay(10);
   }
-  if(cameras_present == 0xFF)
+
+  if (cameras_present == 0xFF)
+  {
     printf("All cameras found\r\n");
-  
-  HAL_Delay(100);
+  }
 
-	HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
-	HAL_Delay(100);
-	MX_USB_DEVICE_Init();
-
-	HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
-
-	init_camera_sensors();
-
-	// Select default camera
-	TCA9548A_SelectChannel(&hi2c1, 0x70, get_active_cam()->i2c_target);
-	X02C1B_FSIN_EXT_enable();
-	comms_host_start();
-	fill_frame_buffers();
-	printf("System Running\r\n");
+  // Select default camera
+  TCA9548A_SelectChannel(&hi2c1, 0x70, get_active_cam()->i2c_target);
+  X02C1B_FSIN_EXT_enable();
+  comms_host_start();
+  fill_frame_buffers();
+  printf("System Running\r\n");
   /* USER CODE END 2 */
 
   /* Init scheduler */
-//  osKernelInitialize();
+  //  osKernelInitialize();
 
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
@@ -310,7 +316,7 @@ int main(void)
 
   /* Create the thread(s) */
   /* creation of defaultTask */
-//  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
+  //  defaultTaskHandle = osThreadNew(StartDefaultTask, NULL, &defaultTask_attributes);
 
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
@@ -321,46 +327,48 @@ int main(void)
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
-//  osKernelStart();
+  //  osKernelStart();
 
   /* We should never get here as control is now taken by the scheduler */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-	while (1) {
+  while (1)
+  {
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-		comms_host_check_received(); // check comms
-		SendHistogramData();
-		HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
-
-	}
+    comms_host_check_received(); // check comms
+    SendHistogramData();
+    HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+  }
   /* USER CODE END 3 */
 }
 
 /**
-  * @brief System Clock Configuration
-  * @retval None
-  */
+ * @brief System Clock Configuration
+ * @retval None
+ */
 void SystemClock_Config(void)
 {
   RCC_OscInitTypeDef RCC_OscInitStruct = {0};
   RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
   /** Supply configuration update enable
-  */
+   */
   HAL_PWREx_ConfigSupply(PWR_LDO_SUPPLY);
 
   /** Configure the main internal regulator output voltage
-  */
+   */
   __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
 
-  while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
+  while (!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY))
+  {
+  }
 
   /** Initializes the RCC Oscillators according to the specified parameters
-  * in the RCC_OscInitTypeDef structure.
-  */
+   * in the RCC_OscInitTypeDef structure.
+   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
   RCC_OscInitStruct.HSEState = RCC_HSE_ON;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
@@ -379,10 +387,8 @@ void SystemClock_Config(void)
   }
 
   /** Initializes the CPU, AHB and APB buses clocks
-  */
-  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
-                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
-                              |RCC_CLOCKTYPE_D3PCLK1|RCC_CLOCKTYPE_D1PCLK1;
+   */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2 | RCC_CLOCKTYPE_D3PCLK1 | RCC_CLOCKTYPE_D1PCLK1;
   RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.SYSCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_HCLK_DIV2;
@@ -400,16 +406,16 @@ void SystemClock_Config(void)
 }
 
 /**
-  * @brief Peripherals Common Clock Configuration
-  * @retval None
-  */
+ * @brief Peripherals Common Clock Configuration
+ * @retval None
+ */
 void PeriphCommonClock_Config(void)
 {
   RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
 
   /** Initializes the peripherals clock
-  */
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI3|RCC_PERIPHCLK_SPI2;
+   */
+  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_SPI3 | RCC_PERIPHCLK_SPI2;
   PeriphClkInitStruct.PLL2.PLL2M = 6;
   PeriphClkInitStruct.PLL2.PLL2N = 120;
   PeriphClkInitStruct.PLL2.PLL2P = 4;
@@ -426,10 +432,10 @@ void PeriphCommonClock_Config(void)
 }
 
 /**
-  * @brief CRC Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief CRC Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_CRC_Init(void)
 {
 
@@ -453,14 +459,13 @@ static void MX_CRC_Init(void)
   /* USER CODE BEGIN CRC_Init 2 */
 
   /* USER CODE END CRC_Init 2 */
-
 }
 
 /**
-  * @brief I2C1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief I2C1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_I2C1_Init(void)
 {
 
@@ -486,14 +491,14 @@ static void MX_I2C1_Init(void)
   }
 
   /** Configure Analogue filter
-  */
+   */
   if (HAL_I2CEx_ConfigAnalogFilter(&hi2c1, I2C_ANALOGFILTER_ENABLE) != HAL_OK)
   {
     Error_Handler();
   }
 
   /** Configure Digital filter
-  */
+   */
   if (HAL_I2CEx_ConfigDigitalFilter(&hi2c1, 0) != HAL_OK)
   {
     Error_Handler();
@@ -501,14 +506,13 @@ static void MX_I2C1_Init(void)
   /* USER CODE BEGIN I2C1_Init 2 */
 
   /* USER CODE END I2C1_Init 2 */
-
 }
 
 /**
-  * @brief RNG Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief RNG Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_RNG_Init(void)
 {
 
@@ -528,14 +532,13 @@ static void MX_RNG_Init(void)
   /* USER CODE BEGIN RNG_Init 2 */
 
   /* USER CODE END RNG_Init 2 */
-
 }
 
 /**
-  * @brief SPI2 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief SPI2 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_SPI2_Init(void)
 {
 
@@ -575,14 +578,13 @@ static void MX_SPI2_Init(void)
   /* USER CODE BEGIN SPI2_Init 2 */
 
   /* USER CODE END SPI2_Init 2 */
-
 }
 
 /**
-  * @brief SPI3 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief SPI3 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_SPI3_Init(void)
 {
 
@@ -622,14 +624,13 @@ static void MX_SPI3_Init(void)
   /* USER CODE BEGIN SPI3_Init 2 */
 
   /* USER CODE END SPI3_Init 2 */
-
 }
 
 /**
-  * @brief SPI4 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief SPI4 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_SPI4_Init(void)
 {
 
@@ -669,14 +670,13 @@ static void MX_SPI4_Init(void)
   /* USER CODE BEGIN SPI4_Init 2 */
 
   /* USER CODE END SPI4_Init 2 */
-
 }
 
 /**
-  * @brief SPI6 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief SPI6 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_SPI6_Init(void)
 {
 
@@ -716,14 +716,13 @@ static void MX_SPI6_Init(void)
   /* USER CODE BEGIN SPI6_Init 2 */
 
   /* USER CODE END SPI6_Init 2 */
-
 }
 
 /**
-  * @brief TIM2 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM2 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM2_Init(void)
 {
 
@@ -775,14 +774,13 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 2 */
   HAL_TIM_MspPostInit(&htim2);
-
 }
 
 /**
-  * @brief TIM4 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM4 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM4_Init(void)
 {
 
@@ -834,14 +832,13 @@ static void MX_TIM4_Init(void)
   LL_TIM_EnableIT_CC1(TIM4);
   /* USER CODE END TIM4_Init 2 */
   HAL_TIM_MspPostInit(&htim4);
-
 }
 
 /**
-  * @brief TIM8 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM8 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM8_Init(void)
 {
 
@@ -858,7 +855,7 @@ static void MX_TIM8_Init(void)
   htim8.Instance = TIM8;
   htim8.Init.Prescaler = 0;
   htim8.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim8.Init.Period = 10-1;
+  htim8.Init.Period = 10 - 1;
   htim8.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim8.Init.RepetitionCounter = 0;
   htim8.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
@@ -881,14 +878,13 @@ static void MX_TIM8_Init(void)
   /* USER CODE BEGIN TIM8_Init 2 */
 
   /* USER CODE END TIM8_Init 2 */
-
 }
 
 /**
-  * @brief TIM12 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief TIM12 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_TIM12_Init(void)
 {
 
@@ -903,9 +899,9 @@ static void MX_TIM12_Init(void)
 
   /* USER CODE END TIM12_Init 1 */
   htim12.Instance = TIM12;
-  htim12.Init.Prescaler = 24000-1;
+  htim12.Init.Prescaler = 24000 - 1;
   htim12.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim12.Init.Period = 250-1;
+  htim12.Init.Period = 250 - 1;
   htim12.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim12.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_Base_Init(&htim12) != HAL_OK)
@@ -926,14 +922,13 @@ static void MX_TIM12_Init(void)
   /* USER CODE BEGIN TIM12_Init 2 */
 
   /* USER CODE END TIM12_Init 2 */
-
 }
 
 /**
-  * @brief UART4 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief UART4 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_UART4_Init(void)
 {
 
@@ -974,14 +969,13 @@ static void MX_UART4_Init(void)
   /* USER CODE BEGIN UART4_Init 2 */
 
   /* USER CODE END UART4_Init 2 */
-
 }
 
 /**
-  * @brief USART1 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief USART1 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_USART1_Init(void)
 {
 
@@ -1026,14 +1020,13 @@ static void MX_USART1_Init(void)
   /* USER CODE BEGIN USART1_Init 2 */
 
   /* USER CODE END USART1_Init 2 */
-
 }
 
 /**
-  * @brief USART2 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief USART2 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_USART2_Init(void)
 {
 
@@ -1078,14 +1071,13 @@ static void MX_USART2_Init(void)
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
-
 }
 
 /**
-  * @brief USART3 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief USART3 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_USART3_Init(void)
 {
 
@@ -1130,14 +1122,13 @@ static void MX_USART3_Init(void)
   /* USER CODE BEGIN USART3_Init 2 */
 
   /* USER CODE END USART3_Init 2 */
-
 }
 
 /**
-  * @brief USART6 Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief USART6 Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_USART6_Init(void)
 {
 
@@ -1182,12 +1173,11 @@ static void MX_USART6_Init(void)
   /* USER CODE BEGIN USART6_Init 2 */
 
   /* USER CODE END USART6_Init 2 */
-
 }
 
 /**
-  * Enable DMA controller clock
-  */
+ * Enable DMA controller clock
+ */
 static void MX_BDMA_Init(void)
 {
 
@@ -1198,12 +1188,11 @@ static void MX_BDMA_Init(void)
   /* BDMA_Channel0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(BDMA_Channel0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(BDMA_Channel0_IRQn);
-
 }
 
 /**
-  * Enable DMA controller clock
-  */
+ * Enable DMA controller clock
+ */
 static void MX_DMA_Init(void)
 {
 
@@ -1239,14 +1228,13 @@ static void MX_DMA_Init(void)
   /* DMA2_Stream0_IRQn interrupt configuration */
   HAL_NVIC_SetPriority(DMA2_Stream0_IRQn, 5, 0);
   HAL_NVIC_EnableIRQ(DMA2_Stream0_IRQn);
-
 }
 
 /**
-  * @brief GPIO Initialization Function
-  * @param None
-  * @retval None
-  */
+ * @brief GPIO Initialization Function
+ * @param None
+ * @retval None
+ */
 static void MX_GPIO_Init(void)
 {
   GPIO_InitTypeDef GPIO_InitStruct = {0};
@@ -1262,7 +1250,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOH_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, ERROR_LED_Pin|MUX_RESET_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOC, ERROR_LED_Pin | MUX_RESET_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_RESET);
@@ -1274,20 +1262,20 @@ static void MX_GPIO_Init(void)
   HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : ERROR_LED_Pin MUX_RESET_Pin */
-  GPIO_InitStruct.Pin = ERROR_LED_Pin|MUX_RESET_Pin;
+  GPIO_InitStruct.Pin = ERROR_LED_Pin | MUX_RESET_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : GPIO0_8_Pin PC12 PC4 IMU_INT_Pin */
-  GPIO_InitStruct.Pin = GPIO0_8_Pin|GPIO_PIN_12|GPIO_PIN_4|IMU_INT_Pin;
+  GPIO_InitStruct.Pin = GPIO0_8_Pin | GPIO_PIN_12 | GPIO_PIN_4 | IMU_INT_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
 
   /*Configure GPIO pins : GPIO0_7_Pin GPIO0_5_Pin PB8 */
-  GPIO_InitStruct.Pin = GPIO0_7_Pin|GPIO0_5_Pin|GPIO_PIN_8;
+  GPIO_InitStruct.Pin = GPIO0_7_Pin | GPIO0_5_Pin | GPIO_PIN_8;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
@@ -1302,9 +1290,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : GPIO0_6_Pin CRESET_8_Pin CRESET_7_Pin PE0
                            PE10 PE14 GPIO0_2_Pin GPIO0_3_Pin
                            CRESET_1_Pin CRESET_3_Pin CRESET_2_Pin CRESET_4_Pin */
-  GPIO_InitStruct.Pin = GPIO0_6_Pin|CRESET_8_Pin|CRESET_7_Pin|GPIO_PIN_0
-                          |GPIO_PIN_10|GPIO_PIN_14|GPIO0_2_Pin|GPIO0_3_Pin
-                          |CRESET_1_Pin|CRESET_3_Pin|CRESET_2_Pin|CRESET_4_Pin;
+  GPIO_InitStruct.Pin = GPIO0_6_Pin | CRESET_8_Pin | CRESET_7_Pin | GPIO_PIN_0 | GPIO_PIN_10 | GPIO_PIN_14 | GPIO0_2_Pin | GPIO0_3_Pin | CRESET_1_Pin | CRESET_3_Pin | CRESET_2_Pin | CRESET_4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOE, &GPIO_InitStruct);
@@ -1312,15 +1298,13 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : CRESET_6_Pin PD2 PD3 CRESET_5_Pin
                            PD4 PD0 PD15 PD11
                            GPIO0_4_Pin */
-  GPIO_InitStruct.Pin = CRESET_6_Pin|GPIO_PIN_2|GPIO_PIN_3|CRESET_5_Pin
-                          |GPIO_PIN_4|GPIO_PIN_0|GPIO_PIN_15|GPIO_PIN_11
-                          |GPIO0_4_Pin;
+  GPIO_InitStruct.Pin = CRESET_6_Pin | GPIO_PIN_2 | GPIO_PIN_3 | CRESET_5_Pin | GPIO_PIN_4 | GPIO_PIN_0 | GPIO_PIN_15 | GPIO_PIN_11 | GPIO0_4_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA10 GPIO0_1_Pin */
-  GPIO_InitStruct.Pin = GPIO_PIN_10|GPIO0_1_Pin;
+  GPIO_InitStruct.Pin = GPIO_PIN_10 | GPIO0_1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
@@ -1353,145 +1337,176 @@ static void MX_GPIO_Init(void)
 
 /* USER CODE BEGIN 4 */
 
-void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart) {
-
+void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
+{
 }
 
-void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart) {
-	if (huart->Instance == UART4) {
-		logging_UART_TxCpltCallback(huart);
-	}
+void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
+{
+  if (huart->Instance == UART4)
+  {
+    logging_UART_TxCpltCallback(huart);
+  }
 }
 
 // Error handling callback for USART
-void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart) {
-	// Identify specific errors using error codes
-	printf("USART Error occurred: ");
+void HAL_USART_ErrorCallback(USART_HandleTypeDef *husart)
+{
+  // Identify specific errors using error codes
+  printf("USART Error occurred: ");
 
-	if (husart->ErrorCode & HAL_USART_ERROR_PE) {
-		printf("Parity error ");
-	}
-	if (husart->ErrorCode & HAL_USART_ERROR_NE) {
-		printf("Noise error ");
-	}
-	if (husart->ErrorCode & HAL_USART_ERROR_FE) {
-		printf("Framing error ");
-	}
-	if (husart->ErrorCode & HAL_USART_ERROR_ORE) {
-		printf("Overrun error ");
-	}
-	if (husart->ErrorCode & HAL_USART_ERROR_DMA) {
-		printf("DMA transfer error ");
-	}
-	printf("\r\n");
+  if (husart->ErrorCode & HAL_USART_ERROR_PE)
+  {
+    printf("Parity error ");
+  }
+  if (husart->ErrorCode & HAL_USART_ERROR_NE)
+  {
+    printf("Noise error ");
+  }
+  if (husart->ErrorCode & HAL_USART_ERROR_FE)
+  {
+    printf("Framing error ");
+  }
+  if (husart->ErrorCode & HAL_USART_ERROR_ORE)
+  {
+    printf("Overrun error ");
+  }
+  if (husart->ErrorCode & HAL_USART_ERROR_DMA)
+  {
+    printf("DMA transfer error ");
+  }
+  printf("\r\n");
 
-	Error_Handler();
+  Error_Handler();
 }
 
 // Error handling callback for SPI
-void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi) {
-	// Identify specific errors using error codes
-	printf("SPI Error occurred: ");
-	if (hspi->ErrorCode & HAL_SPI_ERROR_OVR) {
-		printf("Overrun error ");
-	}
-	if (hspi->ErrorCode & HAL_SPI_ERROR_MODF) {
-		printf("Mode fault error ");
-	}
-	if (hspi->ErrorCode & HAL_SPI_ERROR_CRC) {
-		printf("CRC error ");
-	}
-	if (hspi->ErrorCode & HAL_SPI_ERROR_FRE) {
-		printf("Frame error ");
-	}
-	if (hspi->ErrorCode & HAL_SPI_ERROR_DMA) {
-		if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_TE)
-			printf("TE - HAL_DMA_ERROR_TE");
-		if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_FE)
-			printf("HAL_DMA_ERROR_FE ");
-		if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_DME)
-			printf("HAL_DMA_ERROR_DME");
-		if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_TIMEOUT)
-			printf("HAL_DMA_ERROR_TIMEOUT");
-		if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_PARAM)
-			printf("HAL_DMA_ERROR_PARAM");
-		if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_NO_XFER)
-			printf("HAL_DMA_ERROR_NO_XFER");
-		if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_NOT_SUPPORTED)
-			printf("HAL_DMA_ERROR_NOT_SUPPORTED");
-		if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_SYNC)
-			printf("HAL_DMA_ERROR_SYNC");
-		if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_REQGEN)
-			printf("HAL_DMA_ERROR_REQGEN");
-		if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_BUSY)
-			printf("HAL_DMA_ERROR_BUSY");
-	}
-	printf("\r\n");
+void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
+{
+  // Identify specific errors using error codes
+  printf("SPI Error occurred: ");
+  if (hspi->ErrorCode & HAL_SPI_ERROR_OVR)
+  {
+    printf("Overrun error ");
+  }
+  if (hspi->ErrorCode & HAL_SPI_ERROR_MODF)
+  {
+    printf("Mode fault error ");
+  }
+  if (hspi->ErrorCode & HAL_SPI_ERROR_CRC)
+  {
+    printf("CRC error ");
+  }
+  if (hspi->ErrorCode & HAL_SPI_ERROR_FRE)
+  {
+    printf("Frame error ");
+  }
+  if (hspi->ErrorCode & HAL_SPI_ERROR_DMA)
+  {
+    if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_TE)
+      printf("TE - HAL_DMA_ERROR_TE");
+    if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_FE)
+      printf("HAL_DMA_ERROR_FE ");
+    if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_DME)
+      printf("HAL_DMA_ERROR_DME");
+    if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_TIMEOUT)
+      printf("HAL_DMA_ERROR_TIMEOUT");
+    if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_PARAM)
+      printf("HAL_DMA_ERROR_PARAM");
+    if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_NO_XFER)
+      printf("HAL_DMA_ERROR_NO_XFER");
+    if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_NOT_SUPPORTED)
+      printf("HAL_DMA_ERROR_NOT_SUPPORTED");
+    if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_SYNC)
+      printf("HAL_DMA_ERROR_SYNC");
+    if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_REQGEN)
+      printf("HAL_DMA_ERROR_REQGEN");
+    if (hspi->hdmarx->ErrorCode == HAL_DMA_ERROR_BUSY)
+      printf("HAL_DMA_ERROR_BUSY");
+  }
+  printf("\r\n");
 
-	Error_Handler();  // Handle any error during re-enabling
-
+  Error_Handler(); // Handle any error during re-enabling
 }
 
 // Interrupt handler for SPI reception
-void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi) {
-	uint8_t xBitToSet = 0x00;
-	if (hspi->Instance == SPI2) {
-		xBitToSet = BIT_6;
-	} else if (hspi->Instance == SPI3) {
-		xBitToSet = BIT_5;
-	} else if (hspi->Instance == SPI4) {
-		xBitToSet = BIT_7;
-	} else if (hspi->Instance == SPI6) {
-		xBitToSet = BIT_1;
-	}
-	event_bits = event_bits | xBitToSet;
+void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
+{
+  uint8_t xBitToSet = 0x00;
+  if (hspi->Instance == SPI2)
+  {
+    xBitToSet = BIT_6;
+  }
+  else if (hspi->Instance == SPI3)
+  {
+    xBitToSet = BIT_5;
+  }
+  else if (hspi->Instance == SPI4)
+  {
+    xBitToSet = BIT_7;
+  }
+  else if (hspi->Instance == SPI6)
+  {
+    xBitToSet = BIT_1;
+  }
+  event_bits = event_bits | xBitToSet;
 }
 
-void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart) {
-	uint8_t xBitToSet = 0x00;
-	if (husart->Instance == USART1) { // Check if the interrupt is for USART2
-		xBitToSet = BIT_4;
-	} else if (husart->Instance == USART2) { // Check if the interrupt is for USART2
-		xBitToSet = BIT_0;
-	} else if (husart->Instance == USART3) { // Check if the interrupt is for USART2
-		xBitToSet = BIT_2;
-	} else if (husart->Instance == USART6) { // Check if the interrupt is for USART2
-		xBitToSet = BIT_3;
-	}
+void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart)
+{
+  uint8_t xBitToSet = 0x00;
+  if (husart->Instance == USART1)
+  { // Check if the interrupt is for USART2
+    xBitToSet = BIT_4;
+  }
+  else if (husart->Instance == USART2)
+  { // Check if the interrupt is for USART2
+    xBitToSet = BIT_0;
+  }
+  else if (husart->Instance == USART3)
+  { // Check if the interrupt is for USART2
+    xBitToSet = BIT_2;
+  }
+  else if (husart->Instance == USART6)
+  { // Check if the interrupt is for USART2
+    xBitToSet = BIT_3;
+  }
 
-	event_bits = event_bits | xBitToSet;
+  event_bits = event_bits | xBitToSet;
 }
 
 void HAL_TIM_PWM_PulseFinishedCallback(TIM_HandleTypeDef *htim)
 {
-	if (htim->Instance == TIM4) {
-		if(fake_data_gen){
-			// trigger the send event
-			event_bits = event_bits_enabled;
-		}
-	}
+  if (htim->Instance == TIM4)
+  {
+    if (fake_data_gen)
+    {
+      // trigger the send event
+      event_bits = event_bits_enabled;
+    }
+  }
 }
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
-  * @brief  Function implementing the defaultTask thread.
-  * @param  argument: Not used
-  * @retval None
-  */
+ * @brief  Function implementing the defaultTask thread.
+ * @param  argument: Not used
+ * @retval None
+ */
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {
   /* USER CODE BEGIN 5 */
   /* Infinite loop */
-  for(;;)
+  for (;;)
   {
     osDelay(1);
   }
   /* USER CODE END 5 */
 }
 
- /* MPU Configuration */
+/* MPU Configuration */
 
 void MPU_Config(void)
 {
@@ -1501,7 +1516,7 @@ void MPU_Config(void)
   HAL_MPU_Disable();
 
   /** Initializes and configures the Region and the memory to be protected
-  */
+   */
   MPU_InitStruct.Enable = MPU_REGION_ENABLE;
   MPU_InitStruct.Number = MPU_REGION_NUMBER0;
   MPU_InitStruct.BaseAddress = 0x0;
@@ -1517,23 +1532,23 @@ void MPU_Config(void)
   HAL_MPU_ConfigRegion(&MPU_InitStruct);
   /* Enables the MPU */
   HAL_MPU_Enable(MPU_PRIVILEGED_DEFAULT);
-
 }
 
 /**
-  * @brief  Period elapsed callback in non blocking mode
-  * @note   This function is called  when TIM17 interrupt took place, inside
-  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
-  * a global variable "uwTick" used as application time base.
-  * @param  htim : TIM handle
-  * @retval None
-  */
+ * @brief  Period elapsed callback in non blocking mode
+ * @note   This function is called  when TIM17 interrupt took place, inside
+ * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+ * a global variable "uwTick" used as application time base.
+ * @param  htim : TIM handle
+ * @retval None
+ */
 void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 {
   /* USER CODE BEGIN Callback 0 */
-	if (htim->Instance == TIM12) {
-		CDC_Idle_Timer_Handler();
-	}
+  if (htim->Instance == TIM12)
+  {
+    CDC_Idle_Timer_Handler();
+  }
 
   /* USER CODE END Callback 0 */
   if (htim->Instance == TIM17)
@@ -1546,51 +1561,52 @@ void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
 }
 
 /**
-  * @brief  This function is executed in case of error occurrence.
-  * @retval None
-  */
+ * @brief  This function is executed in case of error occurrence.
+ * @retval None
+ */
 void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
-	/* User can add his own implementation to report the HAL error return state */
+  /* User can add his own implementation to report the HAL error return state */
 
-	uint32_t *stack_ptr;
+  uint32_t *stack_ptr;
 
-	HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
-	printf(">>> HARD FAULT <<<\r\n");
-	fflush(stdout);  // Ensure the output is flushed immediately
+  HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+  printf(">>> HARD FAULT <<<\r\n");
+  fflush(stdout); // Ensure the output is flushed immediately
 
-	// Get the current stack pointer
-	__ASM volatile ("MRS %0, MSP" : "=r" (stack_ptr));
+  // Get the current stack pointer
+  __ASM volatile("MRS %0, MSP" : "=r"(stack_ptr));
 
-	// Print general-purpose registers
-	printf("Stack Pointer (MSP): 0x%08lX\r\n", (unsigned long) stack_ptr);
-	printf("Register dump:\r\n");
-	printf("R0 : 0x%08lX\r\n", stack_ptr[0]);
-	printf("R1 : 0x%08lX\r\n", stack_ptr[1]);
-	printf("R2 : 0x%08lX\r\n", stack_ptr[2]);
-	printf("R3 : 0x%08lX\r\n", stack_ptr[3]);
-	printf("R12: 0x%08lX\r\n", stack_ptr[4]);
-	printf("LR : 0x%08lX (Link Register)\r\n", stack_ptr[5]);
-	printf("PC : 0x%08lX (Program Counter)\r\n", stack_ptr[6]);
-	printf("xPSR: 0x%08lX\r\n", stack_ptr[7]);
-	fflush(stdout);
+  // Print general-purpose registers
+  printf("Stack Pointer (MSP): 0x%08lX\r\n", (unsigned long)stack_ptr);
+  printf("Register dump:\r\n");
+  printf("R0 : 0x%08lX\r\n", stack_ptr[0]);
+  printf("R1 : 0x%08lX\r\n", stack_ptr[1]);
+  printf("R2 : 0x%08lX\r\n", stack_ptr[2]);
+  printf("R3 : 0x%08lX\r\n", stack_ptr[3]);
+  printf("R12: 0x%08lX\r\n", stack_ptr[4]);
+  printf("LR : 0x%08lX (Link Register)\r\n", stack_ptr[5]);
+  printf("PC : 0x%08lX (Program Counter)\r\n", stack_ptr[6]);
+  printf("xPSR: 0x%08lX\r\n", stack_ptr[7]);
+  fflush(stdout);
 
-	HAL_Delay(100);
-	__disable_irq();
-	while (1) {
-	}
+  HAL_Delay(100);
+  __disable_irq();
+  while (1)
+  {
+  }
   /* USER CODE END Error_Handler_Debug */
 }
 
-#ifdef  USE_FULL_ASSERT
+#ifdef USE_FULL_ASSERT
 /**
-  * @brief  Reports the name of the source file and the source line number
-  *         where the assert_param error has occurred.
-  * @param  file: pointer to the source file name
-  * @param  line: assert_param error line source number
-  * @retval None
-  */
+ * @brief  Reports the name of the source file and the source line number
+ *         where the assert_param error has occurred.
+ * @param  file: pointer to the source file name
+ * @param  line: assert_param error line source number
+ * @retval None
+ */
 void assert_failed(uint8_t *file, uint32_t line)
 {
   /* USER CODE BEGIN 6 */
