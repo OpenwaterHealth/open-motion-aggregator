@@ -62,7 +62,7 @@
   * @{
   */
 
-#define USBD_VID     0x483
+#define USBD_VID     0x484
 #define USBD_LANGID_STRING     1033
 #define USBD_MANUFACTURER_STRING     "STMicroelectronics"
 #define USBD_PID_HS     0x5A5A

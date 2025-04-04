@@ -191,9 +191,11 @@ void init_camera_sensors() {
 
 	scanPacketA = (ScanPacket ) { 0 };
 	scanPacketB = (ScanPacket ) { 0 };
-	for (int i = 0; i < 8; i++) {
-		toggle_camera_stream(i);
-	}
+//	for (int i = 0; i < 8; i++) {
+//		toggle_camera_stream(i);
+//	}
+//
+	toggle_camera_stream(4);
 }
 
 CameraDevice* get_active_cam(void) {

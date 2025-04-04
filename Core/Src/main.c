@@ -105,7 +105,7 @@ uint8_t cameras_present = 0x00;
 // Debug flags
 bool uart_stream = false;
 bool fake_data_gen = false;
-bool scanI2cAtStart = false;
+bool scanI2cAtStart = true;
 
 /* USER CODE END PV */
 
@@ -244,32 +244,7 @@ int main(void)
 
 	HAL_Delay(10);
 
-  // Scan for I2C cameras
-  for (int i = 0; i < 8; i++) {
-    uint8_t addresses_found[10];
-    bool camera_found = false, fpga_found = false;
-    
-    TCA9548A_SelectChannel(&hi2c1, 0x70, i);
-    HAL_Delay(10);
-    
-    if(scanI2cAtStart) printf("I2C Scanning bus %d\r\n", i + 1);
-    I2C_scan(&hi2c1, addresses_found, sizeof(addresses_found), scanI2cAtStart);
-    
-    for(int j = 0; j < sizeof(addresses_found); j++) {
-      if(addresses_found[j] == 0x36) 
-        camera_found =true;
-      else if(addresses_found[j] == 0x40) 
-        fpga_found = true;
-    }
-    
-    if(camera_found && fpga_found)
-      cameras_present |= 0x01 << i;
-    else
-      printf("Camera %d not found\r\n", i + 1);
-//    HAL_Delay(10);
-  }
-  if(cameras_present == 0xFF)
-    printf("All cameras found\r\n");
+
   
   HAL_Delay(100);
 
@@ -280,6 +255,34 @@ int main(void)
 	HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
 
 	init_camera_sensors();
+
+
+	// Scan for I2C cameras
+	  for (int i = 0; i < 8; i++) {
+	    uint8_t addresses_found[10];
+	    bool camera_found = false, fpga_found = false;
+
+	    TCA9548A_SelectChannel(&hi2c1, 0x70, i);
+	    HAL_Delay(10);
+
+	    if(scanI2cAtStart) printf("I2C Scanning bus %d\r\n", i + 1);
+	    I2C_scan(&hi2c1, addresses_found, sizeof(addresses_found), scanI2cAtStart);
+
+	    for(int j = 0; j < sizeof(addresses_found); j++) {
+	      if(addresses_found[j] == 0x36)
+	        camera_found =true;
+	      else if(addresses_found[j] == 0x40)
+	        fpga_found = true;
+	    }
+
+	    if(camera_found && fpga_found)
+	      cameras_present |= 0x01 << i;
+	    else
+	      printf("Camera %d not found\r\n", i + 1);
+	//    HAL_Delay(10);
+	  }
+	  if(cameras_present == 0xFF)
+	      printf("All cameras found\r\n");
 
 	// Select default camera
 	TCA9548A_SelectChannel(&hi2c1, 0x70, get_active_cam()->i2c_target);
