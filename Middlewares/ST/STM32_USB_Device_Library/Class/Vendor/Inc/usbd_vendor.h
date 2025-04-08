@@ -14,9 +14,9 @@ extern "C" {
 
 #define USB_VEN_CONFIG_DESC_SIZ                     (9U+ 16U)
 #define USB_INTERFACE_COUNT 1
-#define USB_VENDOR_EP_ADDR    0x83  // Endpoint 1, IN, Isochronous
-#define USB_VENDOR_EP_SIZE    1024  // Max 1024 bytes for HS
-#define USB_VENDOR_EP_INTERVAL 4    // 4 = 1ms for HS (unit = 125µs)
+#define USB_VENDOR_EP_ADDR    0x81  // Endpoint 1, IN, Isochronous
+#define USB_VENDOR_EP_SIZE    512  // Max 1024 bytes for HS
+#define USB_VENDOR_EP_INTERVAL 1    // 4 = 1ms for HS (unit = 125µs)
 #define USB_VENDOR_INTERFACE  0
 #define USB_INTERFACE_COUNT  1  // CDC (2) + Vendor (1)
 typedef struct
@@ -34,8 +34,7 @@ typedef struct
 } USBD_VEN_HandleTypeDef;
 
 /* Endpoint Address */
-#define USB_VENDOR_IN_EP  0x83  /* Isochronous IN Endpoint */
-#define USB_VENDOR_MAX_PACKET_SIZE 1024 /* Max packet size for HS Isochronous */
+#define USB_VENDOR_MAX_PACKET_SIZE 512 /* Max packet size for HS Isochronous */
 #define USB_VENDOR_INTERVAL 1 /* 1ms interval (for HS) */
 
 /* USB Vendor Class Structure */
@@ -53,15 +52,15 @@ USBD_StatusTypeDef USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx);
 USBD_StatusTypeDef USBD_Vendor_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx);
 USBD_StatusTypeDef USBD_Vendor_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req);
 USBD_StatusTypeDef USBD_Vendor_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum);
+USBD_StatusTypeDef USBD_Vendor_SOF(USBD_HandleTypeDef  *pdev); /* SOF */
+USBD_StatusTypeDef USBD_Vendor_IsoINIncomplete(USBD_HandleTypeDef *hpcd, uint8_t epnum); /* IsoINIncomplete */
+USBD_StatusTypeDef USBD_Vendor_IsoOUTIncomplete(USBD_HandleTypeDef *hpcd, uint8_t epnum); /* IsoOUTIncomplete */
 uint8_t *USBD_VEN_GetDeviceQualifierDescriptor(uint16_t *length);
 static uint8_t *USBD_VEN_GetOtherSpeedCfgDesc(uint16_t *length);
-
 static uint8_t *USBD_VEN_GetHSCfgDesc(uint16_t *length);
-
 void USBD_Vendor_SendData(USBD_HandleTypeDef *pdev, uint8_t *data, uint16_t length);
 
-uint8_t USBD_VEN_RegisterInterface(USBD_HandleTypeDef *pdev,
-                                   USBD_VEN_ItfTypeDef *fops);
+uint8_t USBD_VEN_RegisterInterface(USBD_HandleTypeDef *pdev, USBD_VEN_ItfTypeDef *fops);
 #ifdef __cplusplus
 }
 #endif

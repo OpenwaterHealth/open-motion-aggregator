@@ -2,7 +2,8 @@
 #include "usbd_ctlreq.h"
 
 static uint8_t Vendor_Buffer[USB_VENDOR_MAX_PACKET_SIZE];
-
+volatile uint16_t buffer_head = 0;       // Points to the next empty position
+volatile uint16_t buffer_tail = 0;       // Points to the next data to send
 /* USB Vendor Class Callbacks */
 USBD_ClassTypeDef USBD_VendorClassDriver = 
 {
@@ -13,9 +14,9 @@ USBD_ClassTypeDef USBD_VendorClassDriver =
     NULL, /* EP0_RxReady */
     USBD_Vendor_DataIn,
     NULL, /* DataOut (not used) */
-    NULL, /* SOF */
-    NULL, /* IsoINIncomplete */
-    NULL, /* IsoOUTIncomplete */
+    USBD_Vendor_SOF, /* SOF */
+    USBD_Vendor_IsoINIncomplete, /* IsoINIncomplete */
+    USBD_Vendor_IsoOUTIncomplete, /* IsoOUTIncomplete */
     USBD_VEN_GetHSCfgDesc,  /* Get Configuration Descriptor */
     NULL,
     USBD_VEN_GetOtherSpeedCfgDesc,
@@ -50,14 +51,22 @@ void InitDummyData(void) {
   */
 USBD_StatusTypeDef USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 {
-      printf("Vendor device initialized\r\n");
     InitDummyData(); // Initialize the buffer with dummy data
-    /* Open the Isochronous IN Endpoint */
-    USBD_LL_OpenEP(pdev, USB_VENDOR_IN_EP, USBD_EP_TYPE_ISOC, USB_VENDOR_MAX_PACKET_SIZE);
+    printf("🚀 USBD_Vendor_Init: Configuring Isochronous Endpoint\r\n");
 
-    /* Prepare the first packet */
-    // USBD_Vendor_SendData(pdev, Vendor_Buffer, USB_VENDOR_MAX_PACKET_SIZE);
+    // Open Isochronous IN Endpoint (Device → Host)
+    printf("✅ Opened EP 0x81 as Isochronous IN (1024 bytes per packet)\r\n");
 
+    // Mark endpoint as used
+    pdev->ep_in[USB_VENDOR_EP_ADDR & 0x7F].is_used = 1;
+    pdev->ep_in[USB_VENDOR_EP_ADDR & 0x7F].bInterval = 1;  // Polling every 125µs
+    pdev->ep_in[USB_VENDOR_EP_ADDR & 0x7F].maxpacket = 512;
+    ((USBD_VEN_ItfTypeDef *)pdev->pUserData[0])->Init();
+
+
+    USBD_LL_OpenEP(pdev, USB_VENDOR_EP_ADDR, USBD_EP_TYPE_ISOC, 1024);
+    USBD_LL_FlushEP(pdev, USB_VENDOR_EP_ADDR);
+    
     return USBD_OK;
 }
 
@@ -71,7 +80,7 @@ USBD_StatusTypeDef USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 USBD_StatusTypeDef USBD_Vendor_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 {
     /* Close the Isochronous IN Endpoint */
-    USBD_LL_CloseEP(pdev, USB_VENDOR_IN_EP);
+    USBD_LL_CloseEP(pdev, USB_VENDOR_EP_ADDR);
     return USBD_OK;
 }
 
@@ -88,16 +97,24 @@ USBD_StatusTypeDef USBD_Vendor_Setup(USBD_HandleTypeDef *pdev, USBD_SetupReqType
            req->bmRequest, req->bRequest, req->wLength);
 
     static uint8_t response_data[8] = {0xDE, 0xAD, 0xBE, 0xEF, 0xCA, 0xFE, 0xBA, 0xBE};  // Test response
+	  
+    switch (req->bmRequest & USB_REQ_TYPE_MASK) {
+    
+      // Request Type Class
+      case USB_REQ_TYPE_CLASS :		
+    			switch (req->bRequest & 0x1F) {  // filter on the target
+				    case USB_REQ_RECIPIENT_INTERFACE:
+              printf("USB CLASS Request received! Preparing to send response...\r\n");
 
-    if ((req->bmRequest == 0xC0) && (req->bRequest == 0x01)) { 
-        printf("USB CLASS Request received! Preparing to send response...\r\n");
+              // Send data response 
+              USBD_CtlSendData(pdev, response_data, sizeof(response_data));
+              printf("✅ Data sent to host: 8 bytes\r\n");
 
-        // Send data response
-        USBD_CtlSendData(pdev, response_data, sizeof(response_data));
-        printf("✅ Data sent to host: 8 bytes\r\n");
+              return USBD_OK;
 
-        return USBD_OK;
+          }
     }
+    
 
     return USBD_FAIL;
 }
@@ -127,11 +144,12 @@ USBD_StatusTypeDef USBD_Vendor_DataIn(USBD_HandleTypeDef *pdev, uint8_t epnum)
   */
 void USBD_Vendor_SendData(USBD_HandleTypeDef *pdev, uint8_t *data, uint16_t length)
 {
+  printf("USBD_Vendor_SendData");
     /* Ensure length does not exceed max packet size */
     length = (length > USB_VENDOR_MAX_PACKET_SIZE) ? USB_VENDOR_MAX_PACKET_SIZE : length;
     
     /* Transmit data via the USB stack */
-    USBD_LL_Transmit(pdev, USB_VENDOR_IN_EP, data, length);
+    USBD_LL_Transmit(pdev, USB_VENDOR_EP_ADDR, data, length);
 }
 
 
@@ -185,15 +203,11 @@ static uint8_t *USBD_VEN_GetHSCfgDesc(uint16_t *length)
 {
   USBD_EpDescTypeDef *pEpVenDesc = USBD_GetEpDesc(USBD_VEN_CfgDesc, USB_VENDOR_EP_ADDR);
 
-  // if (pEpVenDesc != NULL)
-  // {
-	//   pEpVenDesc->bInterval = USB_VENDOR_EP_INTERVAL;
-  // }
-
-  // if (pEpVenDesc != NULL)
-  // {
-	//   pEpVenDesc->wMaxPacketSize = USB_VENDOR_EP_SIZE;
-  // }
+  if (pEpVenDesc != NULL)
+  {
+	   pEpVenDesc->bInterval = USB_VENDOR_EP_INTERVAL;
+	   pEpVenDesc->wMaxPacketSize = USB_VENDOR_EP_SIZE;
+  }
 
   *length = (uint16_t)sizeof(USBD_VEN_CfgDesc);
   return USBD_VEN_CfgDesc;
@@ -215,7 +229,7 @@ uint8_t USBD_VEN_RegisterInterface(USBD_HandleTypeDef *pdev,
   }
 
   pdev->pUserData[pdev->classId] = fops;
-
+  printf("ClassID: %d\r\n", pdev->classId);
   return (uint8_t)USBD_OK;
 }
 
@@ -230,4 +244,66 @@ static uint8_t *USBD_VEN_GetOtherSpeedCfgDesc(uint16_t *length)
 {
   *length = (uint16_t)sizeof(USBD_VEN_CfgDesc);
   return USBD_VEN_CfgDesc;
+}
+USBD_StatusTypeDef USBD_Vendor_SOF(USBD_HandleTypeDef  *pdev){
+  printf("USB Vendor SOF\r\n");
+  USBD_VEN_HandleTypeDef *hVEN = (USBD_VEN_HandleTypeDef *) pdev->pClassDataCmsit[pdev->classId];
+
+  if (hVEN->TxState == 0)
+  {
+    (void)USBD_LL_Transmit(pdev, USB_VENDOR_EP_ADDR, hVEN->TxBuffer, hVEN->TxLength);
+  }
+
+  return (uint8_t)USBD_OK;
+} /* SOF */
+USBD_StatusTypeDef USBD_Vendor_IsoINIncomplete(USBD_HandleTypeDef *pdev, uint8_t epnum) /* IsoINIncomplete */
+{
+  printf("USB Vendor Isochronous IN Incomplete: %d\r\n", epnum);
+    // USBD_VEN_HandleTypeDef *hvendor = (USBD_VEN_HandleTypeDef*) pdev->pClassData;
+
+    // if (hvendor == NULL) {
+    //     printf("ISO IN Incomplete: Class Data is NULL\n");
+    //     return USBD_FAIL;
+    // }
+
+    // // Debug output
+    // printf("ISO IN Incomplete: Host missed a packet on EP 0x%02X\n", epnum);
+
+    // // Refill the buffer and resend data if available
+    // uint16_t available = (buffer_head >= buffer_tail) ?
+    //                      (buffer_head - buffer_tail) :
+    //                      (USB_VENDOR_MAX_PACKET_SIZE - buffer_tail + buffer_head);
+
+    // if (available >= hvendor->IsoPacketSize) {
+    //     printf("ISO IN Incomplete: Retrying %d bytes\n", hvendor->IsoPacketSize);
+
+    //     for (uint16_t i = 0; i < hvendor->IsoPacketSize; i++) {
+    //         hvendor->TxBuffer[i] = Vendor_Buffer[buffer_tail];
+    //         buffer_tail = (buffer_tail + 1) % USB_VENDOR_MAX_PACKET_SIZE;
+    //     }
+
+    //     // Attempt to resend the packet
+    //     return USBD_LL_Transmit(pdev, USB_VENDOR_EP_ADDR, hvendor->TxBuffer, hvendor->IsoPacketSize);
+    // } else {
+    //     printf("ISO IN Incomplete: No data available, skipping retry\n");
+    // }
+    printf("ISO IN Incomplete: No data available, skipping retry\r\n");
+    
+    return USBD_OK;
+}
+USBD_StatusTypeDef USBD_Vendor_IsoOUTIncomplete(USBD_HandleTypeDef *hpcd, uint8_t epnum) /* IsoOUTIncomplete */
+{
+  printf("USB Vendor Isochronous OUT Incomplete: %d\r\n", epnum);
+  return (uint8_t) USBD_OK;
+}
+void Vendor_EnqueueData(uint8_t *data, uint16_t len) {
+    for (uint16_t i = 0; i < len; i++) {
+    	Vendor_Buffer[buffer_head] = data[i];
+        buffer_head = (buffer_head + 1) % USB_VENDOR_MAX_PACKET_SIZE;
+
+        // Prevent buffer overflow (overwrite old data if full)
+        if (buffer_head == buffer_tail) {
+            buffer_tail = (buffer_tail + 1) % USB_VENDOR_MAX_PACKET_SIZE;
+        }
+    }
 }

@@ -238,6 +238,8 @@ USBD_StatusTypeDef USBD_StdItfReq(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef
   */
 USBD_StatusTypeDef USBD_StdEPReq(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
+  printf("Handling standard USB endpoint request: bmRequestType=0x%02X, bRequest=0x%02X, wIndex=0x%04X, wValue=0x%04X, wLength=%d\r\n",
+         req->bmRequest, req->bRequest, req->wIndex, req->wValue, req->wLength);
   USBD_EndpointTypeDef *pep;
   uint8_t ep_addr;
   uint8_t idx;

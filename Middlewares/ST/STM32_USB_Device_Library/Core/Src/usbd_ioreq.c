@@ -95,7 +95,7 @@ USBD_StatusTypeDef USBD_CtlSendData(USBD_HandleTypeDef *pdev,
 #else
   pdev->ep_in[0].rem_length = len;
 #endif /* USBD_AVOID_PACKET_SPLIT_MPS */
-
+printf("USBD_CtlSendData: len=%d\r\n", len);
   /* Start the transfer */
   (void)USBD_LL_Transmit(pdev, 0x00U, pbuf, len);
 
@@ -113,6 +113,7 @@ USBD_StatusTypeDef USBD_CtlSendData(USBD_HandleTypeDef *pdev,
 USBD_StatusTypeDef USBD_CtlContinueSendData(USBD_HandleTypeDef *pdev,
                                             uint8_t *pbuf, uint32_t len)
 {
+  printf("USBD_CtlContinueSendData: len=%d\r\n", len);
   /* Start the next transfer */
   (void)USBD_LL_Transmit(pdev, 0x00U, pbuf, len);
 
@@ -172,7 +173,7 @@ USBD_StatusTypeDef USBD_CtlSendStatus(USBD_HandleTypeDef *pdev)
 {
   /* Set EP0 State */
   pdev->ep0_state = USBD_EP0_STATUS_IN;
-
+  printf("USBD_CtlSendStatus: Sending zero length packet\r\n");
   /* Start the transfer */
   (void)USBD_LL_Transmit(pdev, 0x00U, NULL, 0U);
 

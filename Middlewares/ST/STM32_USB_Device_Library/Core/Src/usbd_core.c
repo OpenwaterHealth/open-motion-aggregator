@@ -466,7 +466,7 @@ USBD_StatusTypeDef USBD_RunTestMode(USBD_HandleTypeDef *pdev)
 USBD_StatusTypeDef USBD_SetClassConfig(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 {
   USBD_StatusTypeDef ret = USBD_OK;
-
+  printf("USBD_SetClassConfig: cfgidx = %d\r\n", cfgidx);
 #ifdef USE_USBD_COMPOSITE
   /* Parse the table of classes in use */
   for (uint32_t i = 0U; i < USBD_MAX_SUPPORTED_CLASS; i++)
@@ -685,6 +685,7 @@ USBD_StatusTypeDef USBD_LL_DataInStage(USBD_HandleTypeDef *pdev,
   USBD_EndpointTypeDef *pep;
   USBD_StatusTypeDef ret;
   uint8_t idx;
+  printf("USBD_LL_DataInStage\r\n");
 
   if (epnum == 0U)
   {
@@ -931,6 +932,7 @@ USBD_StatusTypeDef USBD_LL_SOF(USBD_HandleTypeDef *pdev)
 USBD_StatusTypeDef USBD_LL_IsoINIncomplete(USBD_HandleTypeDef *pdev,
                                            uint8_t epnum)
 {
+  printf("USBD_LL_IsoINIncomplete\r\n");
   if (pdev->pClass[pdev->classId] == NULL)
   {
     return USBD_FAIL;
