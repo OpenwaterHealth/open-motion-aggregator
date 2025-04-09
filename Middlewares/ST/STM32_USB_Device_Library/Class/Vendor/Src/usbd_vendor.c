@@ -266,8 +266,8 @@ __ALIGN_BEGIN static uint8_t USBD_Vendor_CfgDesc[USB_Vendor_CONFIG_DESC_SIZ] __A
 #endif /* USE_USBD_COMPOSITE  */
 
 static uint8_t VendorInEpAdd = Vendor_IN_EP;
-static uint8_t VendorOutEpAdd = Vendor_OUT_EP;
-static uint8_t VendorCmdEpAdd = Vendor_CMD_EP;
+// static uint8_t VendorOutEpAdd = Vendor_OUT_EP;
+// static uint8_t VendorCmdEpAdd = Vendor_CMD_EP;
 
 /**
   * @}
@@ -305,8 +305,8 @@ static uint8_t USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 #ifdef USE_USBD_COMPOSITE
   /* Get the Endpoints addresses allocated for this class instance */
   VendorInEpAdd  = USBD_CoreGetEPAdd(pdev, USBD_EP_IN, USBD_EP_TYPE_BULK, (uint8_t)pdev->classId);
-  VendorOutEpAdd = USBD_CoreGetEPAdd(pdev, USBD_EP_OUT, USBD_EP_TYPE_BULK, (uint8_t)pdev->classId);
-  VendorCmdEpAdd = USBD_CoreGetEPAdd(pdev, USBD_EP_IN, USBD_EP_TYPE_INTR, (uint8_t)pdev->classId);
+  // VendorOutEpAdd = USBD_CoreGetEPAdd(pdev, USBD_EP_OUT, USBD_EP_TYPE_BULK, (uint8_t)pdev->classId);
+  // VendorCmdEpAdd = USBD_CoreGetEPAdd(pdev, USBD_EP_IN, USBD_EP_TYPE_INTR, (uint8_t)pdev->classId);
 #endif /* USE_USBD_COMPOSITE */
 
   if (pdev->dev_speed == USBD_SPEED_HIGH)
@@ -317,14 +317,14 @@ static uint8_t USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 
     pdev->ep_in[VendorInEpAdd & 0xFU].is_used = 1U;
 
-    /* Open EP OUT */
-    (void)USBD_LL_OpenEP(pdev, VendorOutEpAdd, USBD_EP_TYPE_BULK,
-                         Vendor_DATA_HS_OUT_PACKET_SIZE);
+    // /* Open EP OUT */
+    // (void)USBD_LL_OpenEP(pdev, VendorOutEpAdd, USBD_EP_TYPE_BULK,
+    //                      Vendor_DATA_HS_OUT_PACKET_SIZE);
 
-    pdev->ep_out[VendorOutEpAdd & 0xFU].is_used = 1U;
+    // pdev->ep_out[VendorOutEpAdd & 0xFU].is_used = 1U;
 
     /* Set bInterval for Vendor CMD Endpoint */
-    pdev->ep_in[VendorCmdEpAdd & 0xFU].bInterval = Vendor_HS_BINTERVAL;
+    // pdev->ep_in[VendorCmdEpAdd & 0xFU].bInterval = Vendor_HS_BINTERVAL;
   }
   else
   {
@@ -334,19 +334,19 @@ static uint8_t USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 
     pdev->ep_in[VendorInEpAdd & 0xFU].is_used = 1U;
 
-    /* Open EP OUT */
-    (void)USBD_LL_OpenEP(pdev, VendorOutEpAdd, USBD_EP_TYPE_BULK,
-                         Vendor_DATA_FS_OUT_PACKET_SIZE);
+    // /* Open EP OUT */
+    // (void)USBD_LL_OpenEP(pdev, VendorOutEpAdd, USBD_EP_TYPE_BULK,
+    //                      Vendor_DATA_FS_OUT_PACKET_SIZE);
 
-    pdev->ep_out[VendorOutEpAdd & 0xFU].is_used = 1U;
+    // pdev->ep_out[VendorOutEpAdd & 0xFU].is_used = 1U;
 
     /* Set bInterval for CMD Endpoint */
-    pdev->ep_in[VendorCmdEpAdd & 0xFU].bInterval = Vendor_FS_BINTERVAL;
+    // pdev->ep_in[VendorCmdEpAdd & 0xFU].bInterval = Vendor_FS_BINTERVAL;
   }
 
   /* Open Command IN EP */
-  (void)USBD_LL_OpenEP(pdev, VendorCmdEpAdd, USBD_EP_TYPE_INTR, Vendor_CMD_PACKET_SIZE);
-  pdev->ep_in[VendorCmdEpAdd & 0xFU].is_used = 1U;
+  // (void)USBD_LL_OpenEP(pdev, VendorCmdEpAdd, USBD_EP_TYPE_INTR, Vendor_CMD_PACKET_SIZE);
+  // pdev->ep_in[VendorCmdEpAdd & 0xFU].is_used = 1U;
 
   hVendor->RxBuffer = NULL;
 
@@ -362,18 +362,18 @@ static uint8_t USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
     return (uint8_t)USBD_EMEM;
   }
 
-  if (pdev->dev_speed == USBD_SPEED_HIGH)
-  {
-    /* Prepare Out endpoint to receive next packet */
-    (void)USBD_LL_PrepareReceive(pdev, VendorOutEpAdd, hVendor->RxBuffer,
-                                 Vendor_DATA_HS_OUT_PACKET_SIZE);
-  }
-  else
-  {
-    /* Prepare Out endpoint to receive next packet */
-    (void)USBD_LL_PrepareReceive(pdev, VendorOutEpAdd, hVendor->RxBuffer,
-                                 Vendor_DATA_FS_OUT_PACKET_SIZE);
-  }
+  // if (pdev->dev_speed == USBD_SPEED_HIGH)
+  // {
+  //   /* Prepare Out endpoint to receive next packet */
+  //   (void)USBD_LL_PrepareReceive(pdev, VendorOutEpAdd, hVendor->RxBuffer,
+  //                                Vendor_DATA_HS_OUT_PACKET_SIZE);
+  // }
+  // else
+  // {
+  //   /* Prepare Out endpoint to receive next packet */
+  //   (void)USBD_LL_PrepareReceive(pdev, VendorOutEpAdd, hVendor->RxBuffer,
+  //                                Vendor_DATA_FS_OUT_PACKET_SIZE);
+  // }
 
   return (uint8_t)USBD_OK;
 }
@@ -393,22 +393,22 @@ static uint8_t USBD_Vendor_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 #ifdef USE_USBD_COMPOSITE
   /* Get the Endpoints addresses allocated for this Vendor class instance */
   VendorInEpAdd  = USBD_CoreGetEPAdd(pdev, USBD_EP_IN, USBD_EP_TYPE_BULK, (uint8_t)pdev->classId);
-  VendorOutEpAdd = USBD_CoreGetEPAdd(pdev, USBD_EP_OUT, USBD_EP_TYPE_BULK, (uint8_t)pdev->classId);
-  VendorCmdEpAdd = USBD_CoreGetEPAdd(pdev, USBD_EP_IN, USBD_EP_TYPE_INTR, (uint8_t)pdev->classId);
+  // VendorOutEpAdd = USBD_CoreGetEPAdd(pdev, USBD_EP_OUT, USBD_EP_TYPE_BULK, (uint8_t)pdev->classId);
+  // VendorCmdEpAdd = USBD_CoreGetEPAdd(pdev, USBD_EP_IN, USBD_EP_TYPE_INTR, (uint8_t)pdev->classId);
 #endif /* USE_USBD_COMPOSITE */
 
   /* Close EP IN */
   (void)USBD_LL_CloseEP(pdev, VendorInEpAdd);
   pdev->ep_in[VendorInEpAdd & 0xFU].is_used = 0U;
 
-  /* Close EP OUT */
-  (void)USBD_LL_CloseEP(pdev, VendorOutEpAdd);
-  pdev->ep_out[VendorOutEpAdd & 0xFU].is_used = 0U;
+  // /* Close EP OUT */
+  // (void)USBD_LL_CloseEP(pdev, VendorOutEpAdd);
+  // pdev->ep_out[VendorOutEpAdd & 0xFU].is_used = 0U;
 
   /* Close Command IN EP */
-  (void)USBD_LL_CloseEP(pdev, VendorCmdEpAdd);
-  pdev->ep_in[VendorCmdEpAdd & 0xFU].is_used = 0U;
-  pdev->ep_in[VendorCmdEpAdd & 0xFU].bInterval = 0U;
+  // (void)USBD_LL_CloseEP(pdev, VendorCmdEpAdd);
+  // pdev->ep_in[VendorCmdEpAdd & 0xFU].is_used = 0U;
+  // pdev->ep_in[VendorCmdEpAdd & 0xFU].bInterval = 0U;
 
   /* DeInit  physical Interface components */
   if (pdev->pClassDataCmsit[pdev->classId] != NULL)
@@ -432,6 +432,13 @@ static uint8_t USBD_Vendor_DeInit(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 static uint8_t USBD_Vendor_Setup(USBD_HandleTypeDef *pdev,
                               USBD_SetupReqTypedef *req)
 {
+  //Print all the details of req
+  printf("bRequest: %d\n", req->bRequest);
+  printf("bmRequest: %d\n", req->bmRequest);
+  printf("wValue: %d\n", req->wValue);
+  printf("wIndex: %d\n", req->wIndex);
+  printf("wLength: %d\n", req->wLength);
+
   USBD_Vendor_HandleTypeDef *hVendor = (USBD_Vendor_HandleTypeDef *)pdev->pClassDataCmsit[pdev->classId];
   uint16_t len;
   uint8_t ifalt = 0U;
@@ -628,19 +635,19 @@ static uint8_t USBD_Vendor_EP0_RxReady(USBD_HandleTypeDef *pdev)
   */
 static uint8_t *USBD_Vendor_GetFSCfgDesc(uint16_t *length)
 {
-  USBD_EpDescTypeDef *pEpCmdDesc = USBD_GetEpDesc(USBD_Vendor_CfgDesc, Vendor_CMD_EP);
-  USBD_EpDescTypeDef *pEpOutDesc = USBD_GetEpDesc(USBD_Vendor_CfgDesc, Vendor_OUT_EP);
+  // USBD_EpDescTypeDef *pEpCmdDesc = USBD_GetEpDesc(USBD_Vendor_CfgDesc, Vendor_CMD_EP);
+  // USBD_EpDescTypeDef *pEpOutDesc = USBD_GetEpDesc(USBD_Vendor_CfgDesc, Vendor_OUT_EP);
   USBD_EpDescTypeDef *pEpInDesc = USBD_GetEpDesc(USBD_Vendor_CfgDesc, Vendor_IN_EP);
 
-  if (pEpCmdDesc != NULL)
-  {
-    pEpCmdDesc->bInterval = Vendor_FS_BINTERVAL;
-  }
+  // if (pEpCmdDesc != NULL)
+  // {
+  //   pEpCmdDesc->bInterval = Vendor_FS_BINTERVAL;
+  // }
 
-  if (pEpOutDesc != NULL)
-  {
-    pEpOutDesc->wMaxPacketSize = Vendor_DATA_FS_MAX_PACKET_SIZE;
-  }
+  // if (pEpOutDesc != NULL)
+  // {
+  //   pEpOutDesc->wMaxPacketSize = Vendor_DATA_FS_MAX_PACKET_SIZE;
+  // }
 
   if (pEpInDesc != NULL)
   {
@@ -690,19 +697,19 @@ static uint8_t *USBD_Vendor_GetHSCfgDesc(uint16_t *length)
   */
 static uint8_t *USBD_Vendor_GetOtherSpeedCfgDesc(uint16_t *length)
 {
-  USBD_EpDescTypeDef *pEpCmdDesc = USBD_GetEpDesc(USBD_Vendor_CfgDesc, Vendor_CMD_EP);
-  USBD_EpDescTypeDef *pEpOutDesc = USBD_GetEpDesc(USBD_Vendor_CfgDesc, Vendor_OUT_EP);
+  // USBD_EpDescTypeDef *pEpCmdDesc = USBD_GetEpDesc(USBD_Vendor_CfgDesc, Vendor_CMD_EP);
+  // USBD_EpDescTypeDef *pEpOutDesc = USBD_GetEpDesc(USBD_Vendor_CfgDesc, Vendor_OUT_EP);
   USBD_EpDescTypeDef *pEpInDesc = USBD_GetEpDesc(USBD_Vendor_CfgDesc, Vendor_IN_EP);
 
-  if (pEpCmdDesc != NULL)
-  {
-    pEpCmdDesc->bInterval = Vendor_FS_BINTERVAL;
-  }
+  // if (pEpCmdDesc != NULL)
+  // {
+  //   pEpCmdDesc->bInterval = Vendor_FS_BINTERVAL;
+  // }
 
-  if (pEpOutDesc != NULL)
-  {
-    pEpOutDesc->wMaxPacketSize = Vendor_DATA_FS_MAX_PACKET_SIZE;
-  }
+  // if (pEpOutDesc != NULL)
+  // {
+  //   pEpOutDesc->wMaxPacketSize = Vendor_DATA_FS_MAX_PACKET_SIZE;
+  // }
 
   if (pEpInDesc != NULL)
   {
@@ -864,18 +871,18 @@ uint8_t USBD_Vendor_ReceivePacket(USBD_HandleTypeDef *pdev)
     return (uint8_t)USBD_FAIL;
   }
 
-  if (pdev->dev_speed == USBD_SPEED_HIGH)
-  {
-    /* Prepare Out endpoint to receive next packet */
-    (void)USBD_LL_PrepareReceive(pdev, VendorOutEpAdd, hVendor->RxBuffer,
-                                 Vendor_DATA_HS_OUT_PACKET_SIZE);
-  }
-  else
-  {
-    /* Prepare Out endpoint to receive next packet */
-    (void)USBD_LL_PrepareReceive(pdev, VendorOutEpAdd, hVendor->RxBuffer,
-                                 Vendor_DATA_FS_OUT_PACKET_SIZE);
-  }
+  // if (pdev->dev_speed == USBD_SPEED_HIGH)
+  // {
+  //   /* Prepare Out endpoint to receive next packet */
+  //   (void)USBD_LL_PrepareReceive(pdev, VendorOutEpAdd, hVendor->RxBuffer,
+  //                                Vendor_DATA_HS_OUT_PACKET_SIZE);
+  // }
+  // else
+  // {
+  //   /* Prepare Out endpoint to receive next packet */
+  //   (void)USBD_LL_PrepareReceive(pdev, VendorOutEpAdd, hVendor->RxBuffer,
+  //                                Vendor_DATA_FS_OUT_PACKET_SIZE);
+  // }
 
   return (uint8_t)USBD_OK;
 }

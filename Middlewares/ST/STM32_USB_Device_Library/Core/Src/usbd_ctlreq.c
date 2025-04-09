@@ -104,7 +104,7 @@ static uint8_t USBD_GetLen(uint8_t *buf);
 USBD_StatusTypeDef USBD_StdDevReq(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
   USBD_StatusTypeDef ret = USBD_OK;
-
+  printf("USBD_StdDevReq\r\n");
   switch (req->bmRequest & USB_REQ_TYPE_MASK)
   {
     case USB_REQ_TYPE_CLASS:
@@ -979,7 +979,8 @@ void USBD_ParseSetupRequest(USBD_SetupReqTypedef *req, uint8_t *pdata)
 void USBD_CtlError(USBD_HandleTypeDef *pdev, USBD_SetupReqTypedef *req)
 {
   UNUSED(req);
-
+  printf("USBD_CtlError\r\n");
+  
   (void)USBD_LL_StallEP(pdev, 0x80U);
   (void)USBD_LL_StallEP(pdev, 0U);
 }
