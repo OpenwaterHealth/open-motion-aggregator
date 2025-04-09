@@ -74,7 +74,7 @@ void MX_USB_DEVICE_Init(void)
   {
     Error_Handler();
   }
-  bool cdc_mode = true;
+  bool cdc_mode = false;
 
   if(cdc_mode){
     if (USBD_RegisterClass(&hUsbDeviceHS, &USBD_CDC) != USBD_OK)

@@ -198,15 +198,16 @@ USBD_StatusTypeDef USBD_DeInit(USBD_HandleTypeDef *pdev)
   * @param  pdev: Device Handle
   * @param  pclass: Class handle
   * @retval USBD Status
-  */
-#define USE_USB_HS
+  */ 
+#define USE_USB_HS //TODO(Put this somewhere smarter)
 USBD_StatusTypeDef USBD_RegisterClass(USBD_HandleTypeDef *pdev, USBD_ClassTypeDef *pclass)
 {
   uint16_t len = 0U;
-
+  printf("Registering class\n");
   if (pclass == NULL)
   {
 #if (USBD_DEBUG_LEVEL > 1U)
+  printf("Invalid Class handle");
     USBD_ErrLog("Invalid Class handle");
 #endif /* (USBD_DEBUG_LEVEL > 1U) */
     return USBD_FAIL;

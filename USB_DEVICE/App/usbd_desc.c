@@ -64,11 +64,11 @@
 
 #define USBD_VID     0x483
 #define USBD_LANGID_STRING     1033
-#define USBD_MANUFACTURER_STRING     "STMicroelectronics"
+#define USBD_MANUFACTURER_STRING     "Openwater"
 #define USBD_PID_HS     0x5A5A
 #define USBD_PRODUCT_STRING_HS     "OpenMotion Sensor Module"
-#define USBD_CONFIGURATION_STRING_HS     "CDC Config"
-#define USBD_INTERFACE_STRING_HS     "CDC Interface"
+#define USBD_CONFIGURATION_STRING_HS     "Vendor Specific Interface Config"
+#define USBD_INTERFACE_STRING_HS     "VEN Interface"
 
 #define USB_SIZ_BOS_DESC            0x0C
 

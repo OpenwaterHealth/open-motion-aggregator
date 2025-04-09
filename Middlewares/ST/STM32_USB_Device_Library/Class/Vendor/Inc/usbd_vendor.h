@@ -63,7 +63,7 @@ extern "C" {
 #define Vendor_DATA_FS_MAX_PACKET_SIZE                 64U  /* Endpoint IN & OUT Packet size */
 #define Vendor_CMD_PACKET_SIZE                         8U  /* Control Endpoint Packet size */
 
-#define USB_Vendor_CONFIG_DESC_SIZ                     67U
+#define USB_Vendor_CONFIG_DESC_SIZ                     25U
 #define Vendor_DATA_HS_IN_PACKET_SIZE                  Vendor_DATA_HS_MAX_PACKET_SIZE
 #define Vendor_DATA_HS_OUT_PACKET_SIZE                 Vendor_DATA_HS_MAX_PACKET_SIZE
 
