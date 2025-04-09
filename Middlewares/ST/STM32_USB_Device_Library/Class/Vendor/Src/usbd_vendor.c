@@ -259,8 +259,8 @@ __ALIGN_BEGIN static uint8_t USBD_Vendor_CfgDesc[USB_Vendor_CONFIG_DESC_SIZ] __A
   USB_DESC_TYPE_ENDPOINT,                     /* bDescriptorType: Endpoint */
   Vendor_IN_EP,                                  /* bEndpointAddress */
   0x01,                                       /* bmAttributes: Isochronous */
-  LOBYTE(Vendor_DATA_FS_MAX_PACKET_SIZE),        /* wMaxPacketSize */
-  HIBYTE(Vendor_DATA_FS_MAX_PACKET_SIZE),
+  LOBYTE(Vendor_DATA_HS_MAX_PACKET_SIZE),        /* wMaxPacketSize */
+  HIBYTE(Vendor_DATA_HS_MAX_PACKET_SIZE),
   0x01                                        /* bInterval */
 };
 #endif /* USE_USBD_COMPOSITE  */

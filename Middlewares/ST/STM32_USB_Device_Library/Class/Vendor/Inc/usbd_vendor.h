@@ -59,7 +59,7 @@ extern "C" {
 #endif /* Vendor_FS_BINTERVAL */
 
 /* Vendor Endpoints parameters: you can fine tune these values depending on the needed baudrates and performance. */
-#define Vendor_DATA_HS_MAX_PACKET_SIZE                 512U  /* Endpoint IN & OUT Packet size */
+#define Vendor_DATA_HS_MAX_PACKET_SIZE                 1024U  /* Endpoint IN & OUT Packet size */
 #define Vendor_DATA_FS_MAX_PACKET_SIZE                 64U  /* Endpoint IN & OUT Packet size */
 #define Vendor_CMD_PACKET_SIZE                         8U  /* Control Endpoint Packet size */
 
