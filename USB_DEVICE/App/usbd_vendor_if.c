@@ -1,7 +1,7 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file           : usbd_cdc_if.c
+  * @file           : usbd_Vendor_if.c
   * @version        : v1.0_Cube
   * @brief          : Usb device for Virtual Com Port.
   ******************************************************************************
@@ -19,10 +19,10 @@
 /* USER CODE END Header */
 
 /* Includes ------------------------------------------------------------------*/
-#include "usbd_cdc_if.h"
+#include "usbd_vendor_if.h"
 
 /* USER CODE BEGIN INCLUDE */
-#include "uart_comms.h"
+// #include "uart_comms.h"
 
 /* USER CODE END INCLUDE */
 
@@ -40,11 +40,11 @@
   * @{
   */
 
-/** @addtogroup USBD_CDC_IF
+/** @addtogroup USBD_Vendor_IF
   * @{
   */
 
-/** @defgroup USBD_CDC_IF_Private_TypesDefinitions USBD_CDC_IF_Private_TypesDefinitions
+/** @defgroup USBD_Vendor_IF_Private_TypesDefinitions USBD_Vendor_IF_Private_TypesDefinitions
   * @brief Private types.
   * @{
   */
@@ -57,17 +57,17 @@
   * @}
   */
 
-/** @defgroup USBD_CDC_IF_Private_Defines USBD_CDC_IF_Private_Defines
+/** @defgroup USBD_Vendor_IF_Private_Defines USBD_Vendor_IF_Private_Defines
   * @brief Private defines.
   * @{
   */
 
 /* USER CODE BEGIN PRIVATE_DEFINES */
 
-volatile uint8_t ven_read_to_idle_enabled = 0;
-volatile uint16_t rxIndex = 0;
-volatile uint16_t rxMaxSize = 0;
-uint8_t* pRX = 0;
+// volatile uint8_t read_to_idle_enabled = 0;
+// volatile uint16_t rxIndex = 0;
+// volatile uint16_t rxMaxSize = 0;
+// uint8_t* pRX = 0;
 
 /* USER CODE END PRIVATE_DEFINES */
 
@@ -75,7 +75,7 @@ uint8_t* pRX = 0;
   * @}
   */
 
-/** @defgroup USBD_CDC_IF_Private_Macros USBD_CDC_IF_Private_Macros
+/** @defgroup USBD_Vendor_IF_Private_Macros USBD_Vendor_IF_Private_Macros
   * @brief Private macros.
   * @{
   */
@@ -88,7 +88,7 @@ uint8_t* pRX = 0;
   * @}
   */
 
-/** @defgroup USBD_CDC_IF_Private_Variables USBD_CDC_IF_Private_Variables
+/** @defgroup USBD_Vendor_IF_Private_Variables USBD_Vendor_IF_Private_Variables
   * @brief Private variables.
   * @{
   */
@@ -96,10 +96,10 @@ uint8_t* pRX = 0;
 /* Create buffer for reception and transmission           */
 /* It's up to user to redefine and/or remove those define */
 /** Received data over USB are stored in this buffer      */
-uint8_t UserRxBufferHS[APP_RX_DATA_SIZE];
+uint8_t VenUserRxBufferHS[APP_RX_DATA_SIZE];
 
-/** Data to send over USB CDC are stored in this buffer   */
-uint8_t UserTxBufferHS[APP_TX_DATA_SIZE];
+/** Data to send over USB Vendor are stored in this buffer   */
+uint8_t VenUserTxBufferHS[APP_TX_DATA_SIZE];
 
 /* USER CODE BEGIN PRIVATE_VARIABLES */
 
@@ -109,7 +109,7 @@ uint8_t UserTxBufferHS[APP_TX_DATA_SIZE];
   * @}
   */
 
-/** @defgroup USBD_CDC_IF_Exported_Variables USBD_CDC_IF_Exported_Variables
+/** @defgroup USBD_Vendor_IF_Exported_Variables USBD_Vendor_IF_Exported_Variables
   * @brief Public variables.
   * @{
   */
@@ -124,16 +124,16 @@ extern USBD_HandleTypeDef hUsbDeviceHS;
   * @}
   */
 
-/** @defgroup USBD_CDC_IF_Private_FunctionPrototypes USBD_CDC_IF_Private_FunctionPrototypes
+/** @defgroup USBD_Vendor_IF_Private_FunctionPrototypes USBD_Vendor_IF_Private_FunctionPrototypes
   * @brief Private functions declaration.
   * @{
   */
 
-static int8_t CDC_Init_HS(void);
-static int8_t CDC_DeInit_HS(void);
-static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length);
-static int8_t CDC_Receive_HS(uint8_t* pbuf, uint32_t *Len);
-static int8_t CDC_TransmitCplt_HS(uint8_t *pbuf, uint32_t *Len, uint8_t epnum);
+static int8_t Vendor_Init_HS(void);
+static int8_t Vendor_DeInit_HS(void);
+static int8_t Vendor_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length);
+static int8_t Vendor_Receive_HS(uint8_t* pbuf, uint32_t *Len);
+static int8_t Vendor_TransmitCplt_HS(uint8_t *pbuf, uint32_t *Len, uint8_t epnum);
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_DECLARATION */
 
@@ -143,37 +143,37 @@ static int8_t CDC_TransmitCplt_HS(uint8_t *pbuf, uint32_t *Len, uint8_t epnum);
   * @}
   */
 
-USBD_CDC_ItfTypeDef USBD_Interface_fops_HS =
+USBD_Vendor_ItfTypeDef USBD_VEN_Interface_fops_HS =
 {
-  CDC_Init_HS,
-  CDC_DeInit_HS,
-  CDC_Control_HS,
-  CDC_Receive_HS,
-  CDC_TransmitCplt_HS
+  Vendor_Init_HS,
+  Vendor_DeInit_HS,
+  Vendor_Control_HS,
+  Vendor_Receive_HS,
+  Vendor_TransmitCplt_HS
 };
 
 /* Private functions ---------------------------------------------------------*/
 
 /**
-  * @brief  Initializes the CDC media low layer over the USB HS IP
+  * @brief  Initializes the Vendor media low layer over the USB HS IP
   * @retval USBD_OK if all operations are OK else USBD_FAIL
   */
-static int8_t CDC_Init_HS(void)
+static int8_t Vendor_Init_HS(void)
 {
   /* USER CODE BEGIN 8 */
   /* Set Application Buffers */
-  USBD_CDC_SetTxBuffer(&hUsbDeviceHS, UserTxBufferHS, 0);
-  USBD_CDC_SetRxBuffer(&hUsbDeviceHS, UserRxBufferHS);
+  USBD_Vendor_SetTxBuffer(&hUsbDeviceHS, VenUserTxBufferHS, 0);
+  USBD_Vendor_SetRxBuffer(&hUsbDeviceHS, VenUserRxBufferHS);
   return (USBD_OK);
   /* USER CODE END 8 */
 }
 
 /**
-  * @brief  DeInitializes the CDC media low layer
+  * @brief  DeInitializes the Vendor media low layer
   * @param  None
   * @retval USBD_OK if all operations are OK else USBD_FAIL
   */
-static int8_t CDC_DeInit_HS(void)
+static int8_t Vendor_DeInit_HS(void)
 {
   /* USER CODE BEGIN 9 */
   return (USBD_OK);
@@ -181,34 +181,34 @@ static int8_t CDC_DeInit_HS(void)
 }
 
 /**
-  * @brief  Manage the CDC class requests
+  * @brief  Manage the Vendor class requests
   * @param  cmd: Command code
   * @param  pbuf: Buffer containing command data (request parameters)
   * @param  length: Number of data to be sent (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
-static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
+static int8_t Vendor_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 {
   /* USER CODE BEGIN 10 */
   switch(cmd)
   {
-  case CDC_SEND_ENCAPSULATED_COMMAND:
+  case Vendor_SEND_ENCAPSULATED_COMMAND:
 
     break;
 
-  case CDC_GET_ENCAPSULATED_RESPONSE:
+  case Vendor_GET_ENCAPSULATED_RESPONSE:
 
     break;
 
-  case CDC_SET_COMM_FEATURE:
+  case Vendor_SET_COMM_FEATURE:
 
     break;
 
-  case CDC_GET_COMM_FEATURE:
+  case Vendor_GET_COMM_FEATURE:
 
     break;
 
-  case CDC_CLEAR_COMM_FEATURE:
+  case Vendor_CLEAR_COMM_FEATURE:
 
     break;
 
@@ -229,19 +229,19 @@ static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   /*                                        4 - Space                            */
   /* 6      | bDataBits  |   1   | Number Data bits (5, 6, 7, 8 or 16).          */
   /*******************************************************************************/
-  case CDC_SET_LINE_CODING:
+  case Vendor_SET_LINE_CODING:
 
     break;
 
-  case CDC_GET_LINE_CODING:
+  case Vendor_GET_LINE_CODING:
 
     break;
 
-  case CDC_SET_CONTROL_LINE_STATE:
+  case Vendor_SET_CONTROL_LINE_STATE:
 
     break;
 
-  case CDC_SEND_BREAK:
+  case Vendor_SEND_BREAK:
 
     break;
 
@@ -254,13 +254,13 @@ static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
 }
 
 /**
-  * @brief Data received over USB OUT endpoint are sent over CDC interface
+  * @brief Data received over USB OUT endpoint are sent over Vendor interface
   *         through this function.
   *
   *         @note
   *         This function will issue a NAK packet on any OUT packet received on
   *         USB endpoint until exiting this function. If you exit this function
-  *         before transfer is complete on CDC interface (ie. using DMA controller)
+  *         before transfer is complete on Vendor interface (ie. using DMA controller)
   *         it will result in receiving more data while previous ones are still
   *         not sent.
   *
@@ -268,62 +268,62 @@ static int8_t CDC_Control_HS(uint8_t cmd, uint8_t* pbuf, uint16_t length)
   * @param  Len: Number of data received (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAILL
   */
-static int8_t CDC_Receive_HS(uint8_t* Buf, uint32_t *Len)
+static int8_t Vendor_Receive_HS(uint8_t* Buf, uint32_t *Len)
 {
-  /* USER CODE BEGIN 11 */
-  USBD_CDC_SetRxBuffer(&hUsbDeviceHS, &Buf[0]);
-  uint16_t len = (uint16_t) *Len; // Get length
-  uint16_t tempHeadPos = rxIndex;
-  //printf("receive data\r\n");
+  // /* USER CODE BEGIN 11 */
+  // USBD_Vendor_SetRxBuffer(&hUsbDeviceHS, &Buf[0]);
+  // uint16_t len = (uint16_t) *Len; // Get length
+  // uint16_t tempHeadPos = rxIndex;
+  // //printf("receive data\r\n");
 
-  if(ven_read_to_idle_enabled == 1){
-	  // Restart timer when data is received
-	  HAL_TIM_Base_Stop_IT(&htim12);
-    __HAL_TIM_SET_COUNTER(&htim12, 0); // Reset the timer counter
+  // if(read_to_idle_enabled == 1){
+	//   // Restart timer when data is received
+	//   HAL_TIM_Base_Stop_IT(&htim12);
+  //   __HAL_TIM_SET_COUNTER(&htim12, 0); // Reset the timer counter
 
-	  if(pRX){
-		  for (uint32_t i = 0; i < len; i++) {
-			pRX[tempHeadPos] = Buf[i];
-		  	tempHeadPos = (uint16_t)((uint16_t)(tempHeadPos + 1) % rxMaxSize);
+	//   if(pRX){
+	// 	  for (uint32_t i = 0; i < len; i++) {
+	// 		pRX[tempHeadPos] = Buf[i];
+	// 	  	tempHeadPos = (uint16_t)((uint16_t)(tempHeadPos + 1) % rxMaxSize);
 
-		    if (tempHeadPos == rxIndex) {
-		      return USBD_FAIL;
-		    }
-		  }
-	  }
-	  rxIndex = tempHeadPos;
-	  //printf("start idle timer\r\n");
-	  HAL_TIM_Base_Start_IT(&htim12);
-  }
+	// 	    if (tempHeadPos == rxIndex) {
+	// 	      return USBD_FAIL;
+	// 	    }
+	// 	  }
+	//   }
+	//   rxIndex = tempHeadPos;
+	//   //printf("start idle timer\r\n");
+	//   HAL_TIM_Base_Start_IT(&htim12);
+//  }
 
-  USBD_CDC_ReceivePacket(&hUsbDeviceHS);
+  USBD_Vendor_ReceivePacket(&hUsbDeviceHS);
   return (USBD_OK);
   /* USER CODE END 11 */
 }
 
 /**
-  * @brief  Data to send over USB IN endpoint are sent over CDC interface
+  * @brief  Data to send over USB IN endpoint are sent over Vendor interface
   *         through this function.
   * @param  Buf: Buffer of data to be sent
   * @param  Len: Number of data to be sent (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL or USBD_BUSY
   */
-uint8_t CDC_Transmit_HS(uint8_t* Buf, uint16_t Len)
+uint8_t Vendor_Transmit_HS(uint8_t* Buf, uint16_t Len)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 12 */
-  USBD_CDC_HandleTypeDef *hcdc = (USBD_CDC_HandleTypeDef*)hUsbDeviceHS.pClassData;
-  if (hcdc->TxState != 0){
+  USBD_Vendor_HandleTypeDef *hVendor = (USBD_Vendor_HandleTypeDef*)hUsbDeviceHS.pClassData;
+  if (hVendor->TxState != 0){
     return USBD_BUSY;
   }
-  USBD_CDC_SetTxBuffer(&hUsbDeviceHS, Buf, Len);
-  result = USBD_CDC_TransmitPacket(&hUsbDeviceHS);
+  USBD_Vendor_SetTxBuffer(&hUsbDeviceHS, Buf, Len);
+  result = USBD_Vendor_TransmitPacket(&hUsbDeviceHS);
   /* USER CODE END 12 */
   return result;
 }
 
 /**
-  * @brief  CDC_TransmitCplt_HS
+  * @brief  Vendor_TransmitCplt_HS
   *         Data transmitted callback
   *
   *         @note
@@ -334,47 +334,47 @@ uint8_t CDC_Transmit_HS(uint8_t* Buf, uint16_t Len)
   * @param  Len: Number of data received (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
-static int8_t CDC_TransmitCplt_HS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
+static int8_t Vendor_TransmitCplt_HS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
 {
   uint8_t result = USBD_OK;
   /* USER CODE BEGIN 14 */
   UNUSED(Buf);
   UNUSED(Len);
   UNUSED(epnum);
-  CDC_handle_TxCpltCallback();
+  // Vendor_handle_TxCpltCallback();
   /* USER CODE END 14 */
   return result;
 }
 
 /* USER CODE BEGIN PRIVATE_FUNCTIONS_IMPLEMENTATION */
-void CDC_FlushRxBuffer_HS() {
+void Vendor_FlushRxBuffer_HS() {
 
 }
 
-void CDC_ReceiveToIdle(uint8_t* Buf, uint16_t max_size)
+void Vendor_ReceiveToIdle(uint8_t* Buf, uint16_t max_size)
 {
-    rxIndex = 0;
-    rxMaxSize = max_size;
-    pRX = Buf;
-	ven_read_to_idle_enabled = 1;
+  //   rxIndex = 0;
+  //   rxMaxSize = max_size;
+  //   pRX = Buf;
+	// read_to_idle_enabled = 1;
 }
 
-extern void CDC_handle_RxCpltCallback(uint16_t len);
-void CDC_Idle_Timer_Handler()
+extern void Vendor_handle_RxCpltCallback(uint16_t len);
+void Vendor_Idle_Timer_Handler()
 {
-	ven_read_to_idle_enabled = 0;
-	HAL_TIM_Base_Stop_IT(&htim12);
+	// read_to_idle_enabled = 0;
+	// HAL_TIM_Base_Stop_IT(&htim12);
 
-	if(pRX){
-		// printf("CDC_handle_RxCpltCallback %d \r\n", rxIndex);
-		CDC_handle_RxCpltCallback(rxIndex);
-	}else{
-		printf("RX EMPTY\r\n");
-		CDC_handle_RxCpltCallback(0);
-	}
+	// if(pRX){
+	// 	// printf("Vendor_handle_RxCpltCallback %d \r\n", rxIndex);
+	// 	Vendor_handle_RxCpltCallback(rxIndex);
+	// }else{
+	// 	printf("RX EMPTY\r\n");
+	// 	Vendor_handle_RxCpltCallback(0);
+	// }
 
-    rxMaxSize = 0;
-    pRX = 0;
+  //   rxMaxSize = 0;
+  //   pRX = 0;
 }
 /* USER CODE END PRIVATE_FUNCTIONS_IMPLEMENTATION */
 
