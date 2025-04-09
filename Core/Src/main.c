@@ -104,7 +104,7 @@ uint8_t cameras_present = 0x00;
 
 // Debug flags
 bool uart_stream = false;
-bool fake_data_gen = false;
+bool fake_data_gen = true;
 bool scanI2cAtStart = true;
 
 /* USER CODE END PV */
