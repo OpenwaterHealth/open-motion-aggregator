@@ -23,8 +23,8 @@
 #include "usb_device.h"
 #include "usbd_core.h"
 #include "usbd_desc.h"
-// #include "usbd_cdc.h"
-// #include "usbd_cdc_if.h"
+#include "usbd_cdc.h"
+#include "usbd_cdc_if.h"
 #include "usbd_vendor.h"
 #include "usbd_vendor_if.h"
 
