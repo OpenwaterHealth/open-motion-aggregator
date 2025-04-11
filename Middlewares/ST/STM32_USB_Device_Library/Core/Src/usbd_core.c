@@ -548,6 +548,9 @@ USBD_StatusTypeDef USBD_ClrClassConfig(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 USBD_StatusTypeDef USBD_LL_SetupStage(USBD_HandleTypeDef *pdev, uint8_t *psetup)
 {
   USBD_StatusTypeDef ret;
+  printf("USBD_LL_SetupStage\r\n");
+  printf("    bmRequest: %x\r\n", psetup[0]);
+  printf("    bRequest: %x\r\n", psetup[1]);
 
   USBD_ParseSetupRequest(&pdev->request, psetup);
 
@@ -559,17 +562,22 @@ USBD_StatusTypeDef USBD_LL_SetupStage(USBD_HandleTypeDef *pdev, uint8_t *psetup)
   {
     case USB_REQ_RECIPIENT_DEVICE:
       ret = USBD_StdDevReq(pdev, &pdev->request);
+      printf("    USB_REQ_RECIPIENT_DEVICE\r\n");
       break;
 
     case USB_REQ_RECIPIENT_INTERFACE:
       ret = USBD_StdItfReq(pdev, &pdev->request);
+        printf("    USB_REQ_RECIPIENT_INTERFACE\r\n");
+
       break;
 
     case USB_REQ_RECIPIENT_ENDPOINT:
       ret = USBD_StdEPReq(pdev, &pdev->request);
+      printf("    USB_REQ_RECIPIENT_ENDPOINT\r\n");
       break;
 
     default:
+      printf("    default\r\n");
       ret = USBD_LL_StallEP(pdev, (pdev->request.bmRequest & 0x80U));
       break;
   }

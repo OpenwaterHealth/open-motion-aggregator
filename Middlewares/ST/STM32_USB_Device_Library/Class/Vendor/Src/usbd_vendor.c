@@ -144,9 +144,9 @@ USBD_ClassTypeDef  USBD_Vendor =
   USBD_Vendor_DeInit,
   USBD_Vendor_Setup,
   NULL,                 /* EP0_TxSent */
-  USBD_Vendor_EP0_RxReady,
+  NULL,
   USBD_Vendor_DataIn,
-  USBD_Vendor_DataOut,
+  NULL,
   NULL,
   NULL,
   NULL,
@@ -286,6 +286,7 @@ static uint8_t VendorInEpAdd = Vendor_IN_EP;
   */
 static uint8_t USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
 {
+  printf("usb vendor init\r\n");
   UNUSED(cfgidx);
   USBD_Vendor_HandleTypeDef *hVendor;
 
@@ -312,7 +313,7 @@ static uint8_t USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
   if (pdev->dev_speed == USBD_SPEED_HIGH)
   {
     /* Open EP IN */
-    (void)USBD_LL_OpenEP(pdev, VendorInEpAdd, USBD_EP_TYPE_BULK,
+    (void)USBD_LL_OpenEP(pdev, VendorInEpAdd, USBD_EP_TYPE_ISOC,
                          Vendor_DATA_HS_IN_PACKET_SIZE);
 
     pdev->ep_in[VendorInEpAdd & 0xFU].is_used = 1U;
@@ -329,7 +330,7 @@ static uint8_t USBD_Vendor_Init(USBD_HandleTypeDef *pdev, uint8_t cfgidx)
   else
   {
     /* Open EP IN */
-    (void)USBD_LL_OpenEP(pdev, VendorInEpAdd, USBD_EP_TYPE_BULK,
+    (void)USBD_LL_OpenEP(pdev, VendorInEpAdd, USBD_EP_TYPE_ISOC,
                          Vendor_DATA_FS_IN_PACKET_SIZE);
 
     pdev->ep_in[VendorInEpAdd & 0xFU].is_used = 1U;
@@ -433,11 +434,12 @@ static uint8_t USBD_Vendor_Setup(USBD_HandleTypeDef *pdev,
                               USBD_SetupReqTypedef *req)
 {
   //Print all the details of req
-  printf("bRequest: %d\n", req->bRequest);
-  printf("bmRequest: %d\n", req->bmRequest);
-  printf("wValue: %d\n", req->wValue);
-  printf("wIndex: %d\n", req->wIndex);
-  printf("wLength: %d\n", req->wLength);
+  printf("USBD_Vendor_Setup\r\n");
+  printf("    bRequest: %d\r\n", req->bRequest);
+  printf("    bmRequest: %d\r\n", req->bmRequest);
+  printf("    wValue: %d\r\n", req->wValue);
+  printf("    wIndex: %d\r\n", req->wIndex);
+  printf("    wLength: %d\r\n", req->wLength);
 
   USBD_Vendor_HandleTypeDef *hVendor = (USBD_Vendor_HandleTypeDef *)pdev->pClassDataCmsit[pdev->classId];
   uint16_t len;

@@ -470,6 +470,7 @@ void USART6_IRQHandler(void)
 void OTG_HS_EP1_OUT_IRQHandler(void)
 {
   /* USER CODE BEGIN OTG_HS_EP1_OUT_IRQn 0 */
+  printf("EP1 OUT USB interrupt hit\r\n");
 
   /* USER CODE END OTG_HS_EP1_OUT_IRQn 0 */
   HAL_PCD_IRQHandler(&hpcd_USB_OTG_HS);
@@ -484,6 +485,7 @@ void OTG_HS_EP1_OUT_IRQHandler(void)
 void OTG_HS_EP1_IN_IRQHandler(void)
 {
   /* USER CODE BEGIN OTG_HS_EP1_IN_IRQn 0 */
+  printf("USB EP1 IN interrupt hit\r\n");
 
   /* USER CODE END OTG_HS_EP1_IN_IRQn 0 */
   HAL_PCD_IRQHandler(&hpcd_USB_OTG_HS);
@@ -498,7 +500,7 @@ void OTG_HS_EP1_IN_IRQHandler(void)
 void OTG_HS_IRQHandler(void)
 {
   /* USER CODE BEGIN OTG_HS_IRQn 0 */
-
+  // printf("USB HS  interrupt hit\r\n");
   /* USER CODE END OTG_HS_IRQn 0 */
   HAL_PCD_IRQHandler(&hpcd_USB_OTG_HS);
   /* USER CODE BEGIN OTG_HS_IRQn 1 */

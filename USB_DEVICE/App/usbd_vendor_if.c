@@ -162,6 +162,7 @@ static int8_t Vendor_Init_HS(void)
 {
   /* USER CODE BEGIN 8 */
   /* Set Application Buffers */
+  printf("Vendor IF Init\r\n");
   USBD_Vendor_SetTxBuffer(&hUsbDeviceHS, VenUserTxBufferHS, 0);
   USBD_Vendor_SetRxBuffer(&hUsbDeviceHS, VenUserRxBufferHS);
   return (USBD_OK);

@@ -66,6 +66,9 @@
   * @{
   */
 
+#define USB_OTG_HS
+#define HAL_PCD_MODULE_ENABLED
+
 #ifdef HAL_PCD_MODULE_ENABLED
 
 #if defined (USB_OTG_FS) || defined (USB_OTG_HS)
@@ -1039,7 +1042,6 @@ HAL_StatusTypeDef HAL_PCD_Stop(PCD_HandleTypeDef *hpcd)
 
   return HAL_OK;
 }
-
 #if defined (USB_OTG_FS) || defined (USB_OTG_HS)
 /**
   * @brief  Handles PCD interrupt request.
@@ -1057,13 +1059,15 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
   uint32_t epnum;
   uint32_t fifoemptymsk;
   uint32_t RegVal;
-
+  
+  printf("HAL_PCD_IRQHandler: %x\r\n", USBx->GINTSTS);
   /* ensure that we are in device mode */
   if (USB_GetMode(hpcd->Instance) == USB_OTG_MODE_DEVICE)
   {
     /* avoid spurious interrupt */
     if (__HAL_PCD_IS_INVALID_INTERRUPT(hpcd))
     {
+      printf("    Spurious interrupt\r\n");
       return;
     }
 
@@ -1072,6 +1076,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
 
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_MMIS))
     {
+      printf("    USB_OTG_GINTSTS_MMIS\r\n");
+
       /* incorrect mode, acknowledge the interrupt */
       __HAL_PCD_CLEAR_FLAG(hpcd, USB_OTG_GINTSTS_MMIS);
     }
@@ -1079,6 +1085,7 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
     /* Handle RxQLevel Interrupt */
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_RXFLVL))
     {
+      printf("    USB_OTG_GINTSTS_RXFLVL\r\n");
       USB_MASK_INTERRUPT(hpcd->Instance, USB_OTG_GINTSTS_RXFLVL);
 
       RegVal = USBx->GRXSTSP;
@@ -1111,6 +1118,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
 
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_OEPINT))
     {
+      printf("    USB_OTG_GINTSTS_OEPINT\r\n");
+
       epnum = 0U;
 
       /* Read in the device interrupt bits */
@@ -1183,6 +1192,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
 
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_IEPINT))
     {
+      printf("    USB_OTG_GINTSTS_IEPINT\r\n");
+
       /* Read in the device interrupt bits */
       ep_intr = USB_ReadDevAllInEpInterrupt(hpcd->Instance);
 
@@ -1263,6 +1274,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
     /* Handle Resume Interrupt */
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_WKUINT))
     {
+      printf("    USB_OTG_GINTSTS_WKUINT\r\n");
+
       /* Clear the Remote Wake-up Signaling */
       USBx_DEVICE->DCTL &= ~USB_OTG_DCTL_RWUSIG;
 
@@ -1291,6 +1304,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
     /* Handle Suspend Interrupt */
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_USBSUSP))
     {
+      printf("    USB_OTG_GINTSTS_USBSUSP\r\n");
+
       if ((USBx_DEVICE->DSTS & USB_OTG_DSTS_SUSPSTS) == USB_OTG_DSTS_SUSPSTS)
       {
 #if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
@@ -1305,6 +1320,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
     /* Handle LPM Interrupt */
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_LPMINT))
     {
+      printf("    USB_OTG_GINTSTS_LPMINT\r\n");
+
       __HAL_PCD_CLEAR_FLAG(hpcd, USB_OTG_GINTSTS_LPMINT);
 
       if (hpcd->LPM_State == LPM_L0)
@@ -1331,6 +1348,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
     /* Handle Reset Interrupt */
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_USBRST))
     {
+      printf("    USB_OTG_GINTSTS_USBRST\r\n");
+
       USBx_DEVICE->DCTL &= ~USB_OTG_DCTL_RWUSIG;
       (void)USB_FlushTxFifo(hpcd->Instance, 0x10U);
 
@@ -1380,6 +1399,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
     /* Handle Enumeration done Interrupt */
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_ENUMDNE))
     {
+      printf("    USB_OTG_GINTSTS_ENUMDNE\r\n");
+
       (void)USB_ActivateSetup(hpcd->Instance);
       hpcd->Init.speed = USB_GetDevSpeed(hpcd->Instance);
 
@@ -1400,6 +1421,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
     /* Handle SOF Interrupt */
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_SOF))
     {
+      printf("    USB_OTG_GINTSTS_SOF\r\n");
+
 #if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
       hpcd->SOFCallback(hpcd);
 #else
@@ -1412,6 +1435,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
     /* Handle Global OUT NAK effective Interrupt */
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_BOUTNAKEFF))
     {
+      printf("    USB_OTG_GINTSTS_BOUTNAKEFF\r\n");
+
       USBx->GINTMSK &= ~USB_OTG_GINTMSK_GONAKEFFM;
 
       for (epnum = 1U; epnum < hpcd->Init.dev_endpoints; epnum++)
@@ -1427,6 +1452,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
     /* Handle Incomplete ISO IN Interrupt */
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_IISOIXFR))
     {
+      printf("    USB_OTG_GINTSTS_IISOIXFR\r\n");
+
       for (epnum = 1U; epnum < hpcd->Init.dev_endpoints; epnum++)
       {
         RegVal = USBx_INEP(epnum)->DIEPCTL;
@@ -1447,6 +1474,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
     /* Handle Incomplete ISO OUT Interrupt */
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_PXFR_INCOMPISOOUT))
     {
+      printf("    USB_OTG_GINTSTS_PXFR_INCOMPISOOUT\r\n");
+
       for (epnum = 1U; epnum < hpcd->Init.dev_endpoints; epnum++)
       {
         RegVal = USBx_OUTEP(epnum)->DOEPCTL;
@@ -1473,6 +1502,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
     /* Handle Connection event Interrupt */
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_SRQINT))
     {
+        printf("    USB_OTG_GINTSTS_SRQINT\r\n");
+
 #if (USE_HAL_PCD_REGISTER_CALLBACKS == 1U)
       hpcd->ConnectCallback(hpcd);
 #else
@@ -1485,6 +1516,8 @@ void HAL_PCD_IRQHandler(PCD_HandleTypeDef *hpcd)
     /* Handle Disconnection event Interrupt */
     if (__HAL_PCD_GET_FLAG(hpcd, USB_OTG_GINTSTS_OTGINT))
     {
+      printf("    USB_OTG_GINTSTS_OTGINT\r\n");
+
       RegVal = hpcd->Instance->GOTGINT;
 
       if ((RegVal & USB_OTG_GOTGINT_SEDET) == USB_OTG_GOTGINT_SEDET)
