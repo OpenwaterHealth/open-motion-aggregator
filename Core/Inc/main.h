@@ -32,7 +32,6 @@ extern "C" {
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "common.h"
-#include "cmsis_os.h"
 #include "camera_manager.h"
 
 /* USER CODE END Includes */

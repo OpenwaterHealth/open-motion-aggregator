@@ -15,11 +15,28 @@
 // Private variables
 extern uint8_t rxBuffer[COMMAND_MAX_SIZE];
 extern uint8_t txBuffer[COMMAND_MAX_SIZE];
+extern DMA_HandleTypeDef hdma_memtomem_dma2_stream1;
 
 volatile uint32_t ptrReceive;
 volatile uint8_t rx_flag = 0;
 volatile uint8_t tx_flag = 0;
+const uint32_t zero_val = 0;
+
 #define TX_TIMEOUT 5
+
+void ClearBuffer_DMA(void)
+{
+    // Clear using 32-bit writes (COMMAND_MAX_SIZE must be divisible by 4)
+    HAL_DMA_Start(&hdma_memtomem_dma2_stream1,
+                  (uint32_t)&zero_val,
+                  (uint32_t)rxBuffer,
+                  COMMAND_MAX_SIZE / 4);
+
+    // Wait until transfer completes (blocking version)
+    HAL_DMA_PollForTransfer(&hdma_memtomem_dma2_stream1,
+                            HAL_DMA_FULL_TRANSFER,
+                            HAL_MAX_DELAY);
+}
 
 void comms_interface_send(UartPacket *pResp) {
 	tx_flag = 0;  // Clear the flag before starting transmission
@@ -178,8 +195,10 @@ void comms_host_check_received(void) {
 	// printf("CMD Packet:\r\n");
 	// print_uart_packet(&cmd);
 
-	NextDataPacket: comms_interface_send(&resp);
-//	memset(rxBuffer, 0, sizeof(rxBuffer));
+NextDataPacket:
+	comms_interface_send(&resp);
+	//memset(rxBuffer, 0, sizeof(rxBuffer));
+	ClearBuffer_DMA();
 	ptrReceive = 0;
 	rx_flag = 0;
 	CDC_ReceiveToIdle(rxBuffer, COMMAND_MAX_SIZE);
