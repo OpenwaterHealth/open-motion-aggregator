@@ -31,9 +31,6 @@ static void process_basic_command(UartPacket *uartResp, UartPacket cmd)
 		uartResp->command = OW_CMD_NOP;
 		break;
 	case OW_CMD_PING:
-		uartResp->command = OW_CMD_PONG;
-		break;
-	case OW_CMD_PONG:
 		uartResp->command = OW_CMD_PING;
 		break;
 	case OW_CMD_VERSION:
@@ -51,15 +48,13 @@ static void process_basic_command(UartPacket *uartResp, UartPacket cmd)
 		break;
 	case OW_CMD_ECHO:
 		// exact copy
-		uartResp->id = cmd.id;
-		uartResp->packet_type = cmd.packet_type;
-		uartResp->command = cmd.command;
+		uartResp->command = OW_CMD_ECHO;
 		uartResp->data_len = cmd.data_len;
 		uartResp->data = cmd.data;
 		break;
 	case OW_CMD_TOGGLE_LED:
-		uartResp->id = cmd.id;
-		uartResp->command = cmd.command;
+		printf("Toggle LED\r\n");
+		uartResp->command = OW_CMD_TOGGLE_LED;
 		HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
 		break;
 	case OW_CMD_I2C_BROADCAST:
@@ -67,8 +62,7 @@ static void process_basic_command(UartPacket *uartResp, UartPacket cmd)
 		TCA9548A_SelectBroadcast(pCam->pI2c, 0x70);
 		break;
 	case OW_TOGGLE_CAMERA_STREAM:
-		uartResp->id = cmd.id;
-		uartResp->command = cmd.command;
+		uartResp->command = OW_TOGGLE_CAMERA_STREAM;
 		if (cmd.data_len == 1)
 		{
 			uint8_t cam_id = cmd.data[0];
@@ -89,7 +83,10 @@ static void process_basic_command(UartPacket *uartResp, UartPacket cmd)
 			printf("Invalid data length: %d\r\n", cmd.data_len);
 		}
 		break;
-
+	case OW_CMD_RESET:
+		uartResp->command = OW_CMD_RESET;
+		// softreset
+		break;
 	default:
 		uartResp->data_len = 0;
 		uartResp->packet_type = OW_UNKNOWN;

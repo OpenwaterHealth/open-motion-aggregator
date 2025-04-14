@@ -51,7 +51,6 @@ typedef enum {
 
 typedef enum {
 	OW_CMD_PING = 0x00,
-	OW_CMD_PONG = 0x01,
 	OW_CMD_VERSION = 0x02,
 	OW_CMD_ECHO = 0x03,
 	OW_CMD_TOGGLE_LED = 0x04,
