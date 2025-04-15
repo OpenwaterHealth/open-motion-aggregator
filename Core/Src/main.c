@@ -91,6 +91,7 @@ uint8_t FIRMWARE_VERSION_DATA[3] = {1, 0, 5};
 
 uint8_t rxBuffer[COMMAND_MAX_SIZE]  __attribute__((aligned(4)));
 uint8_t txBuffer[COMMAND_MAX_SIZE];
+uint32_t bitstream_len;
 __attribute__((section(".RAM_D1"))) uint8_t bitstream_buffer[MAX_BITSTREAM_SIZE]; // 160KB buffer
 
 ScanPacket scanPacketA;
@@ -231,9 +232,13 @@ int main(void)
   // enable I2C MUX
   HAL_GPIO_WritePin(MUX_RESET_GPIO_Port, MUX_RESET_Pin, GPIO_PIN_SET);
 
+  HAL_GPIO_WritePin(FS_OUT_EN_GPIO_Port, FS_OUT_EN_Pin, GPIO_PIN_SET);  //disable Framesync output
+  X02C1B_FSIN_EXT_enable();
+
   // test i2c
   PrintI2CSpeed(&hi2c1);
   HAL_Delay(100);
+  X02C1B_FSIN_EXT_disable();
 
   if (ICM20948_IsAlive(&hi2c1, 0) == HAL_OK)
     printf("IMU detected\r\n");
@@ -286,9 +291,9 @@ int main(void)
 
   // Select default camera
   TCA9548A_SelectChannel(&hi2c1, 0x70, get_active_cam()->i2c_target);
-  X02C1B_FSIN_EXT_enable();
+
   comms_host_start();
-  fill_frame_buffers();
+  // fill_frame_buffers();
   printf("System Running\r\n");
   /* USER CODE END 2 */
 
@@ -300,8 +305,8 @@ int main(void)
 
     /* USER CODE BEGIN 3 */
     comms_host_check_received(); // check comms
-    SendHistogramData();
-    HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
+    //SendHistogramData();
+    //HAL_GPIO_TogglePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin);
   }
   /* USER CODE END 3 */
 }

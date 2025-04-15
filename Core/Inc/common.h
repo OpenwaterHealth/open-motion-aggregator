@@ -19,6 +19,8 @@
 #define SPI_PACKET_LENGTH 4096
 #define USART_PACKET_LENGTH 4100
 
+#define verbose_on true
+
 typedef enum {
 	OW_START_BYTE = 0xAA,
 	OW_END_BYTE = 0xDD,
@@ -77,7 +79,6 @@ typedef enum {
 	OW_FPGA_RESET = 0x1F,
 	OW_FPGA_SOFT_RESET = 0x1A,
 	OW_HISTO = 0x1B,
-	OW_SCAN = 0x1C
 } MotionFPGACommands;
 
 typedef enum {

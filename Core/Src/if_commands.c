@@ -9,7 +9,6 @@
 #include "if_commands.h"
 #include "common.h"
 #include "jsmn.h"
-#include "crosslink.h"
 #include "i2c_master.h"
 #include "i2c_protocol.h"
 #include "0X02C1B.h"
@@ -95,8 +94,9 @@ static void process_basic_command(UartPacket *uartResp, UartPacket cmd)
 }
 
 extern uint8_t bitstream_buffer[];
+extern uint32_t bitstream_len;
+
 uint8_t* ptrBitstream;
-uint32_t Bitstream_Length;
 
 void I2C_DisableEnableReset(I2C_HandleTypeDef *hi2c)
 {
@@ -127,86 +127,157 @@ static void process_fpga_commands(UartPacket *uartResp, UartPacket cmd)
 	{
 	case OW_FPGA_ON:
 		uartResp->command = OW_FPGA_ON;
-		fpga_on(pCam);
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	    		if(!enable_fpga(i))
+	    		{
+	    			uartResp->packet_type = OW_ERROR;
+	    			printf("Failed to enable FPGA on camera %d\r\n", i);
+	    		}
+	        }
+	    }
 		break;
 	case OW_FPGA_OFF:
 		uartResp->command = OW_FPGA_OFF;
-		fpga_off(pCam);
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	    		if(!disable_fpga(i))
+	    		{
+	    			uartResp->packet_type = OW_ERROR;
+	    			printf("Failed to disable FPGA on camera %d\r\n", i);
+	    		}
+	        }
+	    }
 		break;
 	case OW_FPGA_ACTIVATE:
 		uartResp->command = OW_FPGA_ACTIVATE;
-		fpga_send_activation(pCam);
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	    		if(!activate_fpga(i))
+	    		{
+	    			uartResp->packet_type = OW_ERROR;
+	    			printf("Failed to Activate FPGA on camera %d\r\n", i);
+	    		}
+	        }
+	    }
 		break;
 	case OW_FPGA_ID:
 		uartResp->command = OW_FPGA_ID;
-#if 0
-		id_words[0] = HAL_GetUIDw0();
-		id_words[1] = HAL_GetUIDw1();
-		id_words[2] = HAL_GetUIDw2();
-		uartResp->data_len = 16;
-		uartResp->data = (uint8_t *)&id_words;
-#endif
-		fpga_checkid(pCam);
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	    		if(!verify_fpga(i))
+	    		{
+	    			uartResp->packet_type = OW_ERROR;
+	    			printf("Failed to Activate FPGA on camera %d\r\n", i);
+	    		}
+	        }
+	    }
 		break;
 	case OW_FPGA_ENTER_SRAM_PROG:
 		uartResp->command = OW_FPGA_ENTER_SRAM_PROG;
-		fpga_enter_sram_prog_mode(pCam);
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	    		if(!enter_sram_prog_fpga(i))
+	    		{
+	    			uartResp->packet_type = OW_ERROR;
+	    			printf("Failed to Activate FPGA on camera %d\r\n", i);
+	    		}
+	        }
+	    }
 		break;
 	case OW_FPGA_EXIT_SRAM_PROG:
 		uartResp->command = OW_FPGA_EXIT_SRAM_PROG;
-		fpga_exit_prog_mode(pCam);
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	    		if(!exit_sram_prog_fpga(i))
+	    		{
+	    			uartResp->packet_type = OW_ERROR;
+	    			printf("Failed to Activate FPGA on camera %d\r\n", i);
+	    		}
+	        }
+	    }
 		break;
 	case OW_FPGA_ERASE_SRAM:
 		uartResp->command = OW_FPGA_ERASE_SRAM;
-		fpga_erase_sram(pCam);
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	    		if(!erase_sram_fpga(i))
+	    		{
+	    			uartResp->packet_type = OW_ERROR;
+	    			printf("Failed to Activate FPGA on camera %d\r\n", i);
+	    		}
+	        }
+	    }
 		break;
 	case OW_FPGA_PROG_SRAM:
 		uartResp->command = OW_FPGA_PROG_SRAM;
-		fpga_program_sram(pCam, true, 0, 0);
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	    		if(!program_sram_fpga(i, true, 0, 0))
+	    		{
+	    			uartResp->packet_type = OW_ERROR;
+	    			printf("Failed to Program FPGA on camera %d\r\n", i);
+	    		}
+	        }
+	    }
 		break;
 	case OW_FPGA_USERCODE:
 		uartResp->command = OW_FPGA_USERCODE;
-		fpga_read_usercode(pCam);
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	        	read_usercode_fpga(i);
+	        }
+	    }
 		break;
 	case OW_FPGA_BITSTREAM:
 		uartResp->command = OW_FPGA_BITSTREAM;
-		//printf("ADDR: %d Length: %d \r\n", cmd.addr, cmd.data_len);
 		if(cmd.reserved == 0){
-			// printf("Received BLOCK: %d\r\n", cmd.addr);
-			if(cmd.addr == 0)
-			{
-				uint8_t writeArr[4];
-				writeArr[0] = 0x7A; writeArr[1] = 0x00; writeArr[2] = 0x00; writeArr[3] = 0x00;
+			if(cmd.addr == 0){
+				// first block
 				memset(bitstream_buffer, 0, MAX_BITSTREAM_SIZE);
 				ptrBitstream = bitstream_buffer;
-				Bitstream_Length = 0;
-				memcpy(ptrBitstream, writeArr, 4);  // Copy command data
-				ptrBitstream += 4;
-				Bitstream_Length+=4;
+				bitstream_len = 0;
 			}
-
 			memcpy(ptrBitstream, cmd.data, cmd.data_len);  // Copy data
 			ptrBitstream += cmd.data_len;
-			Bitstream_Length+=cmd.data_len;
+			bitstream_len+=cmd.data_len;
 		}else{
-			printf("Programming BITSTREAM\r\n");
-			fpga_program_sram(pCam, false, bitstream_buffer, Bitstream_Length);
+			uint16_t calc_crc = util_crc16(bitstream_buffer, bitstream_len);
+			uint16_t crc_valid = ((uint16_t)cmd.data[0] << 8) | cmd.data[1];
+			printf("BITSTREAM Size: %ld bytes CRC: 0x%04X\r\n",bitstream_len, calc_crc);
+			if(crc_valid != calc_crc) {
+    			uartResp->packet_type = OW_ERROR;
+    			printf("Failed crc check\r\n");
+			}
 		}
 		break;
 	case OW_FPGA_STATUS:
 		uartResp->command = OW_FPGA_STATUS;
-		fpga_read_status(pCam);
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	    		read_status_fpga(i);
+	        }
+	    }
 		break;
 	case OW_FPGA_RESET:
 		uartResp->command = OW_FPGA_RESET;
-		fpga_reset(pCam);
-		HAL_Delay(1);
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	        	if(!reset_camera(i))
+	        	{
+	    			uartResp->packet_type = OW_ERROR;
+	    			printf("Failed to reset camera %d\r\n", i);
 
-		I2C_DisableEnableReset(pCam->pI2c);
+	        	}
+	        }
+	    }
+
+		// I2C_DisableEnableReset(pCam->pI2c);
+
 		break;
 	case OW_FPGA_SOFT_RESET:
 		uartResp->command = OW_FPGA_SOFT_RESET;
-		fpga_soft_reset(pCam);
+		//fpga_soft_reset(pCam);
 		if(pCam->useUsart){
 			// method 1: clear the rxfifo
 //			cam.pUart->Instance->RQR |= USART_RQR_RXFRQ;
@@ -216,7 +287,6 @@ static void process_fpga_commands(UartPacket *uartResp, UartPacket cmd)
 			printf("Usart buffer reset\r\n");
 		}
 		break;
-	case OW_FPGA_SCAN:
 	default:
 		uartResp->data_len = 0;
 		uartResp->packet_type = OW_UNKNOWN;

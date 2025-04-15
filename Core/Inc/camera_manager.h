@@ -16,6 +16,7 @@ typedef struct {
 	GPIO_TypeDef *	gpio0_port;
 	uint16_t  		gpio0_pin;
 	I2C_HandleTypeDef * pI2c;
+	uint8_t  		device_address;
 	bool 			useUsart; // use usart over spi
 	bool 			useDma;
 	SPI_HandleTypeDef * pSpi;
@@ -51,6 +52,18 @@ void init_camera_sensors(void);
 CameraDevice* get_active_cam(void);
 CameraDevice* set_active_camera(int id);
 CameraDevice* get_camera_byID(int id);
+_Bool reset_camera(uint8_t cam_id);
+_Bool enable_fpga(uint8_t cam_id);
+_Bool disable_fpga(uint8_t cam_id);
+_Bool activate_fpga(uint8_t cam_id);
+_Bool verify_fpga(uint8_t cam_id);
+_Bool enter_sram_prog_fpga(uint8_t cam_id);
+_Bool exit_sram_prog_fpga(uint8_t cam_id);
+_Bool erase_sram_fpga(uint8_t cam_id);
+uint32_t read_status_fpga(uint8_t cam_id);
+uint32_t read_usercode_fpga(uint8_t cam_id);
+_Bool program_sram_fpga(uint8_t cam_id, bool rom_bitstream, uint8_t* pData, uint32_t Data_Len);
+
 void switch_frame_buffer(void);
 uint8_t* get_active_frame_buffer(void);
 uint8_t* get_inactive_frame_buffer(void);

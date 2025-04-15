@@ -8,6 +8,7 @@
 #include "X02C1B_Sensor_Config.h"
 #include <stdio.h>
 
+volatile _Bool ext_fsin_enabled = false;
 #define I2C_TIMEOUT 1000 // Set an appropriate timeout for I2C transactions
 
 static int X02C1B_write(I2C_HandleTypeDef * pI2c, uint16_t reg, uint8_t val)
@@ -203,8 +204,11 @@ float X02C1B_read_temp(CameraDevice *cam)
     return temperature;
 }
 
+
 int X02C1B_FSIN_EXT_enable()
 {
+	if(ext_fsin_enabled) return HAL_OK;
+
     /*Configure GPIO pin Output Level */
     HAL_GPIO_WritePin(FSIN_EN_GPIO_Port, FSIN_EN_Pin, GPIO_PIN_RESET);
  
@@ -220,9 +224,7 @@ int X02C1B_FSIN_EXT_enable()
 
 int X02C1B_FSIN_EXT_disable()
 {
-    /*Configure GPIO pin Output Level */
-    HAL_GPIO_WritePin(FSIN_EN_GPIO_Port, FSIN_EN_Pin, GPIO_PIN_SET);
-
+	if(!ext_fsin_enabled) return HAL_OK;
     /*Configure GPIO pin : FSIN_EN_Pin */
     GPIO_InitTypeDef GPIO_InitStruct = {0};
     GPIO_InitStruct.Pin = FSIN_EN_Pin;
@@ -230,6 +232,9 @@ int X02C1B_FSIN_EXT_disable()
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(FSIN_EN_GPIO_Port, &GPIO_InitStruct);
+
+    /*Configure GPIO pin Output Level */
+    HAL_GPIO_WritePin(FSIN_EN_GPIO_Port, FSIN_EN_Pin, GPIO_PIN_SET);
 
     return HAL_OK;
 }

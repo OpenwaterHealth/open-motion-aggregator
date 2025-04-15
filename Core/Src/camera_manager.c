@@ -6,13 +6,15 @@
  */
 
 #include "main.h"
+#include "crosslink.h"
+#include "uart_comms.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
-#include "uart_comms.h"
 
+#define FPGA_I2C_ADDRESS 0x40  // Replace with your FPGA's I2C address
 CameraDevice cam_array[CAMERA_COUNT];	// array of all the cameras
 
 static int _active_cam_idx = 0;
@@ -85,6 +87,7 @@ void init_camera_sensors() {
 	cam_array[0].useUsart = true;
 	cam_array[0].useDma = true;
 	cam_array[0].pI2c = &hi2c1;
+	cam_array[0].device_address = FPGA_I2C_ADDRESS;
 	cam_array[0].pSpi = NULL;
 	cam_array[0].pUart = &husart2;
 	cam_array[0].i2c_target = 0;
@@ -98,6 +101,7 @@ void init_camera_sensors() {
 	cam_array[1].useUsart = false;
 	cam_array[1].useDma = false;
 	cam_array[1].pI2c = &hi2c1;
+	cam_array[1].device_address = FPGA_I2C_ADDRESS;
 	cam_array[1].pSpi = &hspi6;
 	cam_array[1].pUart = NULL;
 	cam_array[1].i2c_target = 1;
@@ -111,6 +115,7 @@ void init_camera_sensors() {
 	cam_array[2].useUsart = true;
 	cam_array[2].useDma = true;
 	cam_array[2].pI2c = &hi2c1;
+	cam_array[2].device_address = FPGA_I2C_ADDRESS;
 	cam_array[2].pSpi = NULL;
 	cam_array[2].pUart = &husart3;
 	cam_array[2].i2c_target = 2;
@@ -124,6 +129,7 @@ void init_camera_sensors() {
 	cam_array[3].useUsart = true;
 	cam_array[3].useDma = true;
 	cam_array[3].pI2c = &hi2c1;
+	cam_array[3].device_address = FPGA_I2C_ADDRESS;
 	cam_array[3].pSpi = NULL;
 	cam_array[3].pUart = &husart6;
 	cam_array[3].i2c_target = 3;
@@ -137,6 +143,7 @@ void init_camera_sensors() {
 	cam_array[4].useUsart = true;
 	cam_array[4].useDma = true;
 	cam_array[4].pI2c = &hi2c1;
+	cam_array[4].device_address = FPGA_I2C_ADDRESS;
 	cam_array[4].pSpi = NULL;
 	cam_array[4].pUart = &husart1;
 	cam_array[4].i2c_target = 4;
@@ -150,6 +157,7 @@ void init_camera_sensors() {
 	cam_array[5].useUsart = false;
 	cam_array[5].useDma = true;
 	cam_array[5].pI2c = &hi2c1;
+	cam_array[5].device_address = FPGA_I2C_ADDRESS;
 	cam_array[5].pSpi = &hspi3;
 	cam_array[5].pUart = NULL;
 	cam_array[5].i2c_target = 5;
@@ -163,6 +171,7 @@ void init_camera_sensors() {
 	cam_array[6].useUsart = false;
 	cam_array[6].useDma = true;
 	cam_array[6].pI2c = &hi2c1;
+	cam_array[6].device_address = FPGA_I2C_ADDRESS;
 	cam_array[6].pSpi = &hspi2;
 	cam_array[6].pUart = NULL;
 	cam_array[6].i2c_target = 6;
@@ -176,6 +185,7 @@ void init_camera_sensors() {
 	cam_array[7].useUsart = false;
 	cam_array[7].useDma = true;
 	cam_array[7].pI2c = &hi2c1;
+	cam_array[7].device_address = FPGA_I2C_ADDRESS;
 	cam_array[7].pSpi = &hspi4;
 	cam_array[7].pUart = NULL;
 	cam_array[7].i2c_target = 7;
@@ -201,14 +211,232 @@ CameraDevice* get_active_cam(void) {
 }
 
 CameraDevice* set_active_camera(int id) {
+	if(id < 0 || id >= CAMERA_COUNT) return NULL;
+
 	_active_cam_idx = id;
 	return &cam_array[_active_cam_idx];
 }
 
 CameraDevice* get_camera_byID(int id) {
-	if(id < 0 || id > 7)
+	if(id < 0 || id >= CAMERA_COUNT)
 		return NULL;
 	return &cam_array[id];
+}
+
+_Bool reset_camera(uint8_t cam_id)
+{
+	if(cam_id < 0 || cam_id >= CAMERA_COUNT)
+	{
+		printf("Hard Reset Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+
+	printf("Hard Reset Camera %d Started\r\n", cam_id);
+	_active_cam_idx = cam_id;
+	CameraDevice *cam = &cam_array[_active_cam_idx];
+    HAL_GPIO_WritePin(cam->cresetb_port, cam->cresetb_pin, GPIO_PIN_SET);
+    HAL_Delay(5);
+
+    HAL_GPIO_WritePin(cam->cresetb_port, cam->cresetb_pin, GPIO_PIN_RESET);
+    HAL_Delay(5);
+
+    HAL_GPIO_WritePin(cam->cresetb_port, cam->cresetb_pin, GPIO_PIN_SET);
+    HAL_Delay(25);
+
+    HAL_GPIO_WritePin(cam->cresetb_port, cam->cresetb_pin, GPIO_PIN_RESET);
+    HAL_Delay(5);
+
+	printf("Hard Reset Camera %d Complete\r\n", cam_id);
+	return true;
+}
+
+_Bool enable_fpga(uint8_t cam_id)
+{
+	if(cam_id < 0 || cam_id >= CAMERA_COUNT)
+	{
+		printf("Enable FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+	printf("Enable FPGA Camera %d Started\r\n", cam_id);
+	_active_cam_idx = cam_id;
+	CameraDevice *cam = &cam_array[_active_cam_idx];
+    HAL_GPIO_WritePin(cam->cresetb_port, cam->cresetb_pin, GPIO_PIN_SET);
+    HAL_Delay(2);
+	printf("Enable FPGA Camera %d Complete\r\n", cam_id);
+	return true;
+}
+
+_Bool disable_fpga(uint8_t cam_id)
+{
+	if(cam_id < 0 || cam_id >= CAMERA_COUNT)
+	{
+		printf("Disable FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+	printf("Disable FPGA Camera %d Started\r\n", cam_id);
+	_active_cam_idx = cam_id;
+	CameraDevice *cam = &cam_array[_active_cam_idx];
+    HAL_GPIO_WritePin(cam->cresetb_port, cam->cresetb_pin, GPIO_PIN_RESET);
+    HAL_Delay(2);
+	printf("Disable FPGA Camera %d Complete\r\n", cam_id);
+	return true;
+}
+
+_Bool activate_fpga(uint8_t cam_id)
+{
+	if(cam_id < 0 || cam_id >= CAMERA_COUNT)
+	{
+		printf("Activate FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+	printf("Activate FPGA Camera %d Started\r\n", cam_id);
+	_active_cam_idx = cam_id;
+	CameraDevice *cam = &cam_array[_active_cam_idx];
+	if(fpga_send_activation(cam->pI2c, cam->device_address) == 1)
+	{
+		printf("Activate FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+	printf("Activate FPGA Camera %d Complete\r\n", cam_id);
+	return true;
+}
+
+_Bool verify_fpga(uint8_t cam_id)
+{
+	if(cam_id < 0 || cam_id >= CAMERA_COUNT)
+	{
+		printf("Activate FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+
+	printf("Activate FPGA Camera %d Started\r\n", cam_id);
+	_active_cam_idx = cam_id;
+	CameraDevice *cam = &cam_array[_active_cam_idx];
+	if(fpga_checkid(cam->pI2c, cam->device_address) == 1)
+	{
+		printf("Activate FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+	printf("Activate FPGA Camera %d Complete\r\n", cam_id);
+	return true;
+}
+
+_Bool enter_sram_prog_fpga(uint8_t cam_id)
+{
+	if(cam_id < 0 || cam_id >= CAMERA_COUNT)
+	{
+		printf("Activate FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+
+	printf("Activate FPGA Camera %d Started\r\n", cam_id);
+	_active_cam_idx = cam_id;
+	CameraDevice *cam = &cam_array[_active_cam_idx];
+	if(fpga_enter_sram_prog_mode(cam->pI2c, cam->device_address) == 1)
+	{
+		printf("Activate FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+	printf("Activate FPGA Camera %d Complete\r\n", cam_id);
+	return true;
+}
+
+_Bool exit_sram_prog_fpga(uint8_t cam_id)
+{
+	if(cam_id < 0 || cam_id >= CAMERA_COUNT)
+	{
+		printf("Activate FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+
+	printf("Activate FPGA Camera %d Started\r\n", cam_id);
+	_active_cam_idx = cam_id;
+	CameraDevice *cam = &cam_array[_active_cam_idx];
+	if(fpga_enter_sram_prog_mode(cam->pI2c, cam->device_address) == 1)
+	{
+		printf("Activate FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+	printf("Activate FPGA Camera %d Complete\r\n", cam_id);
+	return true;
+}
+
+_Bool erase_sram_fpga(uint8_t cam_id)
+{
+	if(cam_id < 0 || cam_id >= CAMERA_COUNT)
+	{
+		printf("Activate FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+
+	printf("Activate FPGA Camera %d Started\r\n", cam_id);
+	_active_cam_idx = cam_id;
+	CameraDevice *cam = &cam_array[_active_cam_idx];
+	if(fpga_erase_sram(cam->pI2c, cam->device_address) == 1)
+	{
+		printf("Activate FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+	printf("Activate FPGA Camera %d Complete\r\n", cam_id);
+	return true;
+}
+
+uint32_t read_status_fpga(uint8_t cam_id)
+{
+	uint32_t ret_val = 0;
+	if(cam_id < 0 || cam_id >= CAMERA_COUNT)
+	{
+		printf("Activate FPGA Camera %d Failed\r\n", cam_id);
+		return ret_val;
+	}
+
+	printf("Activate FPGA Camera %d Started\r\n", cam_id);
+	_active_cam_idx = cam_id;
+	CameraDevice *cam = &cam_array[_active_cam_idx];
+
+	ret_val = fpga_read_status(cam->pI2c, cam->device_address);
+
+	printf("Activate FPGA Camera %d Complete\r\n", cam_id);
+	return ret_val;
+}
+
+uint32_t read_usercode_fpga(uint8_t cam_id)
+{
+	uint32_t ret_val = 0;
+	if(cam_id < 0 || cam_id >= CAMERA_COUNT)
+	{
+		printf("Activate FPGA Camera %d Failed\r\n", cam_id);
+		return ret_val;
+	}
+
+	printf("Activate FPGA Camera %d Started\r\n", cam_id);
+	_active_cam_idx = cam_id;
+	CameraDevice *cam = &cam_array[_active_cam_idx];
+
+	ret_val = fpga_read_usercode(cam->pI2c, cam->device_address);
+
+	printf("Activate FPGA Camera %d Complete\r\n", cam_id);
+	return ret_val;
+}
+
+_Bool program_sram_fpga(uint8_t cam_id, bool rom_bitstream, uint8_t* pData, uint32_t Data_Len)
+{
+	if(cam_id < 0 || cam_id >= CAMERA_COUNT)
+	{
+		printf("Program FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+
+	printf("Program FPGA Camera %d Started\r\n", cam_id);
+	_active_cam_idx = cam_id;
+	CameraDevice *cam = &cam_array[_active_cam_idx];
+	if(fpga_program_sram(cam->pI2c, cam->device_address, rom_bitstream, pData, Data_Len) == 1)
+	{
+		printf("Program FPGA Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+
+	return true;
 }
 
 void switch_frame_buffer(void) {
