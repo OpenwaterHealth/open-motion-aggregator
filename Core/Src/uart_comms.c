@@ -197,8 +197,8 @@ void comms_host_check_received(void) {
 
 NextDataPacket:
 	comms_interface_send(&resp);
-	//memset(rxBuffer, 0, sizeof(rxBuffer));
-	ClearBuffer_DMA();
+	memset(rxBuffer, 0, sizeof(rxBuffer));
+	// ClearBuffer_DMA();
 	ptrReceive = 0;
 	rx_flag = 0;
 	CDC_ReceiveToIdle(rxBuffer, COMMAND_MAX_SIZE);

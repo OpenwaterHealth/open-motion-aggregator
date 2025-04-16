@@ -87,6 +87,33 @@ int X02C1B_configure_sensor(CameraDevice *cam) {
     return 0;
 }
 
+int X02C1B_set_test_pattern(CameraDevice *cam)
+{
+    int ret = X02C1B_write(cam->pI2c, 0x0100, 0x00);  // Stream off register address and value
+    if (ret < 0) {
+        printf("Camera %d Failed to stop streaming\r\n", cam->id+1);
+        return ret;
+    }
+    ret = X02C1B_write(cam->pI2c, 0x0107, 0x01);  // undocumented
+	if (ret < 0) {
+		printf("Camera %d Failed to stop streaming\r\n", cam->id+1);
+		return ret;
+	}
+
+	HAL_Delay(100);
+
+    ret = X02C1B_write_array(cam->pI2c, X02C1B_test_gradient_rgb_bar, ARRAY_SIZE(X02C1B_test_gradient_rgb_bar));
+    if (ret < 0) {
+        printf("Camera %d Sensor test pattern failed\r\n", cam->id+1);
+        return ret;
+    }
+    printf("Camera %d test pattern successfully configured\r\n", cam->id+1);
+
+	HAL_Delay(10);
+
+	return 0;
+}
+
 int X02C1B_soft_reset(CameraDevice *cam) {
     int ret = X02C1B_write(cam->pI2c, 0x0103, 0x01);  // Stream on register address and value
     if (ret < 0) {
@@ -202,6 +229,18 @@ float X02C1B_read_temp(CameraDevice *cam)
     printf("Camera %d Temperature: %f degC (0x%X)\r\n",cam->id+1,temperature,bytes);
 
     return temperature;
+}
+
+int X02C1B_set_gain(CameraDevice *cam)
+{
+
+	return 0;
+}
+
+int X02C1B_get_gain(CameraDevice *cam)
+{
+
+	return 0;
 }
 
 

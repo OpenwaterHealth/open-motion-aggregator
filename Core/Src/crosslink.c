@@ -6,6 +6,7 @@
  */
 
 #include "crosslink.h"
+#include "common.h"
 #include "main.h"
 #include "utils.h"
 
@@ -16,10 +17,7 @@
 #include <stdint.h>
 
 #define I2C_ADDRESS 0x40  // Replace with your FPGA's I2C address
-#define CHUNK_SIZE 1024  // Define a manageable chunk size (can be adjusted)
-#define BITSTREAM_SIZE 0x27EA1  // Replace with the size of your bitstream
-#define BITSTREAM_ADDR 0x70C80000
-
+#define BITSTREAM_CHUNK_SIZE 8192
 #define CMD_INITIATE 0xC0
 #define CMD_ISSUE 0x74
 #define CMD_ENABLE_SRAM 0xC6
@@ -37,18 +35,21 @@ unsigned char activation_key[5] = {0xFF, 0xA4, 0xC6, 0xF4, 0x8A};
 unsigned char write_buf[4];
 unsigned char read_buf[4];
 
-HAL_StatusTypeDef i2c_write_and_read(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *pData, uint16_t WriteSize, uint8_t *pReadData, uint16_t ReadSize)
-{
+extern uint8_t bitstream_buffer[];
+extern uint32_t bitstream_len;
+
+
+static int xi2c_write_bytes(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *data, uint16_t length) {
+    return HAL_I2C_Master_Transmit(hi2c, DevAddress << 1, data, length, HAL_MAX_DELAY);
+}
+
+static int xi2c_write_and_read(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *wbuf, uint16_t wlen, uint8_t *rbuf, uint16_t rlen) {
     txComplete = 0;
     rxComplete = 0;
     i2cError = 0;
 
-    // Write operation with NoStop (to generate a repeated start)
-    HAL_StatusTypeDef ret = HAL_I2C_Master_Seq_Transmit_IT(hi2c, DevAddress << 1, pData, WriteSize, I2C_FIRST_FRAME);
-    if (ret != HAL_OK)
-    {
-        return ret; // Return if the write operation fails
-    }
+    if (HAL_I2C_Master_Seq_Transmit_IT(hi2c, DevAddress << 1, wbuf, wlen, I2C_FIRST_FRAME) != HAL_OK)
+        return -1;
 
     // Wait for the transmission to complete
     while (!txComplete && !i2cError) {}
@@ -58,12 +59,9 @@ HAL_StatusTypeDef i2c_write_and_read(I2C_HandleTypeDef *hi2c, uint16_t DevAddres
         return HAL_ERROR;
     }
 
-    // Read operation with a repeated start condition
-    ret = HAL_I2C_Master_Seq_Receive_IT(hi2c, DevAddress << 1, pReadData, ReadSize, I2C_LAST_FRAME);
-    if (ret != HAL_OK)
-    {
-        return ret; // Return if the read operation fails
-    }
+
+    if (HAL_I2C_Master_Seq_Receive_IT(hi2c, DevAddress << 1, rbuf, rlen, I2C_LAST_FRAME) != HAL_OK)
+        return -1;
 
     // Wait for the reception to complete
     while (!rxComplete && !i2cError) {}
@@ -73,135 +71,55 @@ HAL_StatusTypeDef i2c_write_and_read(I2C_HandleTypeDef *hi2c, uint16_t DevAddres
         return HAL_ERROR;
     }
 
-    return HAL_OK; // Return HAL_OK if both operations succeed
-}
-
-HAL_StatusTypeDef i2c_write_bitstream(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *write_bitstream, uint32_t bitstream_len) {
-	int chunk_size = 1024;  // Define the chunk size
-    int total_len_bytes = bitstream_len;  // Total length in bytes
-    int num_chunks = (total_len_bytes + chunk_size - 1) / chunk_size;  // Calculate number of chunks
-    uint8_t *pData;
-	uint16_t datalen;
-
-    HAL_StatusTypeDef ret;
-    uint16_t offset = 0;
-    uint32_t frame_flag;
-    if(bitstream_len ==0) Error_Handler();
-    if(verbose_on) printf("Bitstream CRC: 0x%04X Length: %ld\r\n", util_crc16((uint8_t*)(write_bitstream+4), bitstream_len-4), bitstream_len-4);
-    if(verbose_on) printf("FULL CRC: 0x%04X Length: %ld\r\n", util_crc16(write_bitstream, bitstream_len), bitstream_len);
-
-    // Split into chunks and send them sequentially
-    for (int i = 0; i < num_chunks; i++) {
-        // Calculate the size of the current chunk
-        int current_chunk_size = (i == num_chunks - 1) ? (total_len_bytes % chunk_size) : chunk_size;
-        current_chunk_size = (total_len_bytes - offset) > chunk_size ? chunk_size : (total_len_bytes - offset);
-        if (current_chunk_size == 0) current_chunk_size = chunk_size;  // Handle case where the last chunk is exactly chunk_size bytes
-
-
-        // Decide frame flag for the chunk
-        if (i == 0) {
-            // First chunk
-            frame_flag = I2C_FIRST_AND_NEXT_FRAME;
-        } else if (i == num_chunks-1) {
-            // Last chunk
-            frame_flag = I2C_LAST_FRAME;
-        } else {
-            // Intermediate chunks
-            frame_flag = I2C_NEXT_FRAME;
-        }
-
-        // if(verbose_on) printf("Count: %d Chunk Size: %d\r\n", i, current_chunk_size);
-
-        // Check if the I2C peripheral is ready
-        while (HAL_I2C_GetState(hi2c) != HAL_I2C_STATE_READY) {
-            //if(verbose_on) printf("I2C busy, waiting...\r\n");
-            HAL_Delay(1);  // Add a small delay to avoid busy looping
-        }
-        pData = (uint8_t*)&write_bitstream[i * chunk_size];
-        datalen = (uint16_t)current_chunk_size;
-
-        // Transmit the current chunk
-        ret = HAL_I2C_Master_Seq_Transmit_IT(hi2c, DevAddress << 1, pData, datalen, frame_flag);
-        if (ret != HAL_OK) {
-        	if(verbose_on) printf("++++> i2c_write_long HAL TX HAL_StatusTypeDef: 0%04X I2C_ERROR: 0%04lX\r\n", ret, hi2c->ErrorCode);
-            return ret; // Return if any transmission fails
-        }
-
-        // Wait for the transmission to complete
-        while (!txComplete && !i2cError) {}
-
-        if (i2cError)
-        {
-            return HAL_ERROR;
-        }
-
-    }
-
-    if(verbose_on) printf("Programmed Successfully\r\n");
-    HAL_Delay(100);
-
     return HAL_OK;
 }
 
-HAL_StatusTypeDef i2c_write_byte(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint16_t size, uint8_t *pData) {
-    return HAL_I2C_Master_Transmit(hi2c, DevAddress << 1, pData, size, HAL_MAX_DELAY);
-}
-
-
-extern uint8_t bitstream_buffer[];
-HAL_StatusTypeDef i2c_write_long(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *write_command, uint16_t writecomm_len, uint8_t *write_data, uint32_t writedata_len) {
-	int chunk_size = 1024;  // Define the chunk size
-    int num_bytes_command = writecomm_len;  // Length in bytes for command data
-    int num_bytes_data = writedata_len;  // Length in bytes for data
-    int total_len_bytes = num_bytes_command + num_bytes_data;  // Total length in bytes
-    int num_chunks = (total_len_bytes + chunk_size - 1) / chunk_size;  // Calculate number of chunks
+static HAL_StatusTypeDef xi2c_write_long(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, uint8_t *cmd, int cmd_len, uint8_t *data, size_t data_len) {
+	HAL_StatusTypeDef ret;
+    size_t offset = 0;
+    uint32_t frame_flag;
+    size_t total_len = data_len+cmd_len;
+    int num_chunks = (total_len + BITSTREAM_CHUNK_SIZE - 1) / BITSTREAM_CHUNK_SIZE;  // Calculate number of chunks
     uint8_t *pData;
 	uint16_t datalen;
 
-    memset(bitstream_buffer, 0, MAX_BITSTREAM_SIZE);
+	memset(bitstream_buffer, 0, MAX_BITSTREAM_SIZE);
+    memcpy(bitstream_buffer, cmd, cmd_len);  // copy the long write command in
+    memcpy(bitstream_buffer + cmd_len, data, data_len);
 
-    // Combine write_command and write_data into one buffer
-    memcpy(bitstream_buffer, write_command, num_bytes_command);  // Copy command data
-    memcpy(bitstream_buffer + num_bytes_command, write_data, num_bytes_data);  // Copy data
-
-    HAL_StatusTypeDef ret;
-    uint16_t offset = 0;
-    uint32_t frame_flag;
-
-    // Split into chunks and send them sequentially
     for (int i = 0; i < num_chunks; i++) {
-        // Calculate the size of the current chunk
-        int current_chunk_size = (i == num_chunks - 1) ? (total_len_bytes % chunk_size) : chunk_size;
-        current_chunk_size = (total_len_bytes - offset) > chunk_size ? chunk_size : (total_len_bytes - offset);
-        if (current_chunk_size == 0) current_chunk_size = chunk_size;  // Handle case where the last chunk is exactly chunk_size bytes
+        size_t current_chunk_size = (total_len - offset > BITSTREAM_CHUNK_SIZE)
+                                     ? BITSTREAM_CHUNK_SIZE
+                                     : (total_len - offset);
 
-
-        // Decide frame flag for the chunk
-        if (i == 0) {
-            // First chunk
+        // Determine frame flags
+        if (i == 0 && num_chunks == 1) {
+            frame_flag = I2C_FIRST_AND_LAST_FRAME;
+        } else if (i == 0) {
             frame_flag = I2C_FIRST_AND_NEXT_FRAME;
-        } else if (i == num_chunks-1) {
-            // Last chunk
+        } else if (i == num_chunks - 1) {
             frame_flag = I2C_LAST_FRAME;
         } else {
-            // Intermediate chunks
             frame_flag = I2C_NEXT_FRAME;
         }
 
-        // if(verbose_on) printf("Count: %d Chunk Size: %d\r\n", i, current_chunk_size);
-
         // Check if the I2C peripheral is ready
-        while (HAL_I2C_GetState(hi2c) != HAL_I2C_STATE_READY) {
+        while (HAL_I2C_GetState(&hi2c1) != HAL_I2C_STATE_READY) {
             //if(verbose_on) printf("I2C busy, waiting...\r\n");
             HAL_Delay(1);  // Add a small delay to avoid busy looping
         }
-        pData = (uint8_t*)&bitstream_buffer[i * chunk_size];
+
+        pData = (uint8_t*)&bitstream_buffer[offset];
         datalen = (uint16_t)current_chunk_size;
+
+        // Reset completion flags
+        txComplete = 0;
+        i2cError = 0;
 
         // Transmit the current chunk
         ret = HAL_I2C_Master_Seq_Transmit_IT(hi2c, DevAddress << 1, pData, datalen, frame_flag);
         if (ret != HAL_OK) {
-        	if(verbose_on) printf("++++> i2c_write_long HAL TX HAL_StatusTypeDef: 0%04X I2C_ERROR: 0%04lX\r\n", ret, hi2c->ErrorCode);
+        	printf("++++> i2c_write_long HAL TX HAL_StatusTypeDef: 0%04X I2C_ERROR: 0%04lX\r\n", ret, hi2c1.ErrorCode);
             return ret; // Return if any transmission fails
         }
 
@@ -213,10 +131,9 @@ HAL_StatusTypeDef i2c_write_long(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, u
             return HAL_ERROR;
         }
 
+        offset += current_chunk_size;
     }
 
-    if(verbose_on) printf("Programmed Successfully\r\n");
-    HAL_Delay(100);
     return HAL_OK;
 }
 
@@ -224,7 +141,7 @@ int fpga_send_activation(I2C_HandleTypeDef *hi2c, uint16_t DevAddress)
 {
 	// Step 1: Initialize
 	if(verbose_on) printf("Step 1: Send Activation Key\r\n");
-	if (i2c_write_byte(hi2c, DevAddress, 5, activation_key) < 0) {
+	if (xi2c_write_bytes(hi2c, DevAddress, activation_key, 5) != HAL_OK) {
 		if(verbose_on) printf("failed to send activation key\r\n");
 	    return 1;  // Exit if writing activation key fails
 	}
@@ -237,16 +154,12 @@ int fpga_checkid(I2C_HandleTypeDef *hi2c, uint16_t DevAddress)
     // Step 2: Check IDCODE (Optional)
     if(verbose_on) printf("Step 2: Check IDCODE (Optional)\r\n");
     write_buf[0] = 0xE0; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
-    if (i2c_write_and_read(hi2c, DevAddress, write_buf, 4, read_buf, 4) < 0) {
+    if (xi2c_write_and_read(hi2c, DevAddress, write_buf, 4, read_buf, 4) != HAL_OK) {
         if(verbose_on) printf("failed to send IDCODE Command\r\n");
         return 1;  // Exit if write/read fails
     }
 
-    if(verbose_on) printf("Device ID read: ");
-    for (int i = 0; i < 4; i++) {
-        if(verbose_on) printf("%02X ", read_buf[i]);
-    }
-    if(verbose_on) printf("\r\n");
+    if(verbose_on) print_hex_buf("IDCODE", read_buf, 4);
 	return 0;
 }
 
@@ -255,7 +168,7 @@ int fpga_enter_sram_prog_mode(I2C_HandleTypeDef *hi2c, uint16_t DevAddress)
     // Step 3: Enable SRAM Programming Mode
     if(verbose_on) printf("Step 3: Enable SRAM Programming Mode\r\n");
     write_buf[0] = 0xC6; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
-    if (i2c_write_byte(hi2c, DevAddress, 4, write_buf) < 0) {
+    if (xi2c_write_bytes(hi2c, DevAddress, write_buf, 4) != HAL_OK) {
         if(verbose_on) printf("failed to send SRAM Command\r\n");
         return 1;  // Exit if writing fails
     }
@@ -269,7 +182,7 @@ int fpga_exit_prog_mode(I2C_HandleTypeDef *hi2c, uint16_t DevAddress)
     // Step 11: Exit Programming Mode
     if(verbose_on) printf("Step 10: Exit Programming Mode\r\n");
     write_buf[0] = 0x26; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
-    if (i2c_write_byte(hi2c, DevAddress, 4, write_buf) < 0) {
+    if (xi2c_write_bytes(hi2c, DevAddress, write_buf, 4) != HAL_OK) {
         if(verbose_on) printf("failed to send Exit Command\r\n");
         return 1;  // Exit if writing fails
     }
@@ -282,17 +195,12 @@ uint32_t fpga_read_status(I2C_HandleTypeDef *hi2c, uint16_t DevAddress)
     // Step 5: Read Status Register
     if(verbose_on) printf("Read Status Register\r\n");
     write_buf[0] = 0x3C; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
-    if (i2c_write_and_read(hi2c, DevAddress, write_buf, 4, read_buf, 4) < 0) {
+    if (xi2c_write_and_read(hi2c, DevAddress, write_buf, 4, read_buf, 4) != HAL_OK) {
         if(verbose_on) printf("failed to send READ Status Command\r\n");
         return 1;  // Exit if write/read fails
     }
 
-    // Check status register bits according to the guide (e.g., Bit-12 Busy = 0, Bit-13 Fail = 0)
-    if(verbose_on) printf("Status Register: ");
-    for (int i = 0; i < 4; i++) {
-        if(verbose_on) printf("%02X ", read_buf[i]);
-    }
-    if(verbose_on) printf("\r\n");
+    if(verbose_on) print_hex_buf("Erase Status", read_buf, 4);
     return 0;
 
 }
@@ -302,17 +210,12 @@ uint32_t fpga_read_usercode(I2C_HandleTypeDef *hi2c, uint16_t DevAddress)
     // Step 9: Read USERCODE (Optional)
     if(verbose_on) printf("Step 9: Verify USERCODE (Optional)\r\n");
     write_buf[0] = 0xC0; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
-    if (i2c_write_and_read(hi2c, DevAddress, write_buf, 4, read_buf, 4) < 0) {
+    if (xi2c_write_and_read(hi2c, DevAddress, write_buf, 4, read_buf, 4) != HAL_OK) {
         if(verbose_on) printf("failed to send USERCODE Command\r\n");
         return 1;  // Exit if write/read fails
     }
-    // Compare read_buf with expected USERCODE if necessary
 
-    if(verbose_on) printf("USERCODE: ");
-    for (int i = 0; i < 4; i++) {
-        if(verbose_on) printf("%02X ", read_buf[i]);
-    }
-    if(verbose_on) printf("\r\n");
+    if(verbose_on) print_hex_buf("User Register", read_buf, 4);
     return 0;
 }
 
@@ -321,7 +224,7 @@ int fpga_erase_sram(I2C_HandleTypeDef *hi2c, uint16_t DevAddress)
     // Step 4: Erase SRAM
     if(verbose_on) printf("Step 4: Erase SRAM...");
     write_buf[0] = 0x0E; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
-    if (i2c_write_byte(hi2c, DevAddress, 4, write_buf) < 0) {
+    if (xi2c_write_bytes(hi2c, DevAddress, write_buf, 4) != HAL_OK) {
         if(verbose_on) printf("\r\nFAILED to send SRAM Erase Command\r\n");
         return 1;  // Exit if writing fails
     }
@@ -329,15 +232,11 @@ int fpga_erase_sram(I2C_HandleTypeDef *hi2c, uint16_t DevAddress)
     return 0;
 }
 
-
-extern uint8_t bitstream_buffer[];
-extern uint32_t bitstream_len;
-
 int fpga_program_sram(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, bool rom_bitstream, uint8_t* pData, uint32_t Data_Len)
 {
     if(verbose_on) printf("Program SRAM\r\n");
     write_buf[0] = 0x46; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
-    if (i2c_write_byte(hi2c, DevAddress, 4, write_buf) < 0) {
+    if (xi2c_write_bytes(hi2c, DevAddress, write_buf, 4)!= HAL_OK) {
         if(verbose_on) printf("failed to send Exit Command\r\n");
         return 1;  // Exit if writing fails
     }
@@ -345,14 +244,94 @@ int fpga_program_sram(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, bool rom_bit
     if(rom_bitstream)
     {
     	write_buf[0] = 0x7A; write_buf[1] = 0x00; write_buf[2] = 0x00; write_buf[3] = 0x00;
-    	i2c_write_long(hi2c, DevAddress, write_buf, 4, (uint8_t *)bitstream_buffer, bitstream_len);
+    	xi2c_write_long(hi2c, DevAddress, write_buf, 4, (uint8_t *)bitstream_buffer, bitstream_len);
     }
     else
     {
-    	i2c_write_bitstream(hi2c, DevAddress, pData, Data_Len);
+    	return 1;
     }
 
     return 0;
+}
+
+
+int fpga_configure(I2C_HandleTypeDef *hi2c, uint16_t DevAddress, GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin) {
+	int ret_status = 0;
+	if(verbose_on) printf("Starting FPGA configuration...\r\n");
+
+    // Set GPIO HIGH
+    HAL_GPIO_WritePin(GPIOx, GPIO_Pin, GPIO_PIN_SET);
+    HAL_Delay(250);
+
+    // Set GPIO LOW
+    HAL_GPIO_WritePin(GPIOx, GPIO_Pin, GPIO_PIN_RESET);
+    HAL_Delay(250);
+
+    HAL_GPIO_WritePin(GPIOx, GPIO_Pin, GPIO_PIN_SET);
+    HAL_Delay(250);
+
+    // Set GPIO LOW
+    HAL_GPIO_WritePin(GPIOx, GPIO_Pin, GPIO_PIN_RESET);
+    HAL_Delay(1000);
+
+    // Activation Key
+    uint8_t activation_key[] = {0xFF, 0xA4, 0xC6, 0xF4, 0x8A};
+    xi2c_write_bytes(hi2c, DevAddress, activation_key, 5);
+    HAL_GPIO_WritePin(GPIOx, GPIO_Pin, GPIO_PIN_SET);
+    HAL_Delay(10);
+
+    // IDCODE
+    memset(read_buf, 0, 4);
+    memcpy(write_buf, (uint8_t[]){0xE0,0x00,0x00,0x00}, 4);
+    xi2c_write_and_read(hi2c, DevAddress, write_buf, 4, read_buf, 4);
+    if(verbose_on) print_hex_buf("IDCODE", read_buf, 4);
+
+    // Enable SRAM
+    memcpy(write_buf, (uint8_t[]){0xC6,0x00,0x00,0x00}, 4);
+    xi2c_write_bytes(hi2c, DevAddress, write_buf, 4);
+    HAL_Delay(1);
+
+    // Erase SRAM
+    memcpy(write_buf, (uint8_t[]){0x0E,0x00,0x00,0x00}, 4);
+    xi2c_write_bytes(hi2c, DevAddress, write_buf, 4);
+    HAL_Delay(5000);
+
+    // Read Status
+    memset(read_buf, 0, 4);
+    memcpy(write_buf, (uint8_t[]){0x3C,0x00,0x00,0x00}, 4);
+    xi2c_write_and_read(hi2c, DevAddress, write_buf, 4, read_buf, 4);
+    if(verbose_on) print_hex_buf("Erase Status", read_buf, 4);
+
+    // Program Command
+    memcpy(write_buf, (uint8_t[]){0x46,0x00,0x00,0x00}, 4);
+    xi2c_write_bytes(hi2c, DevAddress, write_buf, 4);
+    HAL_Delay(1);
+
+    // Send Bitstream
+    memcpy(write_buf, (uint8_t[]){0x7A,0x00,0x00,0x00}, 4);
+    xi2c_write_long(hi2c, DevAddress, write_buf, 4, (uint8_t*)0x081A0000, (size_t)163489);
+    HAL_Delay(1);
+
+    // USERCODE (optional)
+    memset(read_buf, 0, 4);
+    memcpy(write_buf, (uint8_t[]){0xC0,0x00,0x00,0x00}, 4);
+    xi2c_write_and_read(hi2c, DevAddress, write_buf, 4, read_buf, 4);
+    if(verbose_on) print_hex_buf("User Register", read_buf, 4);
+
+    // Final Status
+    memset(read_buf, 0, 4);
+    memcpy(write_buf, (uint8_t[]){0x3C,0x00,0x00,0x00}, 4);
+    xi2c_write_and_read(hi2c, DevAddress, write_buf, 4, read_buf, 4);
+    if(verbose_on) print_hex_buf("Program Status", read_buf, 4);
+
+    if(read_buf[2] != 0x0F) ret_status = 1;
+
+    // Exit Program Mode
+    memcpy(write_buf, (uint8_t[]){0x26,0x00,0x00,0x00}, 4);
+    xi2c_write_bytes(hi2c, DevAddress, write_buf, 4);
+
+    if(verbose_on) printf("FPGA configuration complete.\r\n");
+    return ret_status;
 }
 
 // Callback implementations

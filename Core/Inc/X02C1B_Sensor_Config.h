@@ -16,6 +16,12 @@ struct regval_list X02C1B_test_gradient_bar[] = {
 		{0x5102, 0x20},
 		{0x5103, 0x04},
 };
+
+struct regval_list X02C1B_test_gradient_rgb_bar[] = {
+		{0x5100, 0x80},
+		{0x5103, 0x00},
+};
+
 struct regval_list X02C1B_test_solid_a[] = {
 		{0x5000, 0x3f},
 		{0x5100, 0x80},

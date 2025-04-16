@@ -213,7 +213,14 @@ static void process_fpga_commands(UartPacket *uartResp, UartPacket cmd)
 		uartResp->command = OW_FPGA_PROG_SRAM;
 	    for (uint8_t i = 0; i < 8; i++) {
 	        if ((cmd.addr >> i) & 0x01) {
-	    		if(!program_sram_fpga(i, true, 0, 0))
+	        	_Bool func_ret = false;
+
+	        	if(cmd.reserved == 1) {
+	        		func_ret = program_fpga(i);
+	        	} else {
+	        		func_ret = program_sram_fpga(i, true, 0, 0);
+	        	}
+	    		if(!func_ret)
 	    		{
 	    			uartResp->packet_type = OW_ERROR;
 	    			printf("Failed to Program FPGA on camera %d\r\n", i);
@@ -235,14 +242,14 @@ static void process_fpga_commands(UartPacket *uartResp, UartPacket cmd)
 			if(cmd.addr == 0){
 				// first block
 				memset(bitstream_buffer, 0, MAX_BITSTREAM_SIZE);
-				ptrBitstream = bitstream_buffer;
+				ptrBitstream = (uint8_t*)(bitstream_buffer + 4);
 				bitstream_len = 0;
 			}
 			memcpy(ptrBitstream, cmd.data, cmd.data_len);  // Copy data
 			ptrBitstream += cmd.data_len;
 			bitstream_len+=cmd.data_len;
 		}else{
-			uint16_t calc_crc = util_crc16(bitstream_buffer, bitstream_len);
+			uint16_t calc_crc = util_crc16((uint8_t*)(bitstream_buffer + 4), bitstream_len);
 			uint16_t crc_valid = ((uint16_t)cmd.data[0] << 8) | cmd.data[1];
 			printf("BITSTREAM Size: %ld bytes CRC: 0x%04X\r\n",bitstream_len, calc_crc);
 			if(crc_valid != calc_crc) {
@@ -299,7 +306,7 @@ static void process_fpga_commands(UartPacket *uartResp, UartPacket cmd)
 static void process_camera_commands(UartPacket *uartResp, UartPacket cmd)
 {
 	CameraDevice* pCam = get_active_cam();
-
+	int result = 0;
 	switch (cmd.command)
 	{
 	case OW_CAMERA_SCAN:
@@ -321,13 +328,44 @@ static void process_camera_commands(UartPacket *uartResp, UartPacket cmd)
 		}
 		break;
 	case OW_CAMERA_SET_CONFIG:
-		printf("Setting Camera %d config\r\n",pCam->id+1);
 		uartResp->command = OW_CAMERA_SET_CONFIG;
-		uartResp->packet_type = OW_RESP;
-		if(X02C1B_configure_sensor(pCam)<0){
-			// error
-			uartResp->packet_type = OW_ERROR;
-		}
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	        	if(!configure_camera_sensor(i))
+	        	{
+	    			uartResp->packet_type = OW_ERROR;
+	    			printf("Failed set registers for camera %d\r\n", i);
+
+	        	}
+	        }
+	    }
+		break;
+	case OW_CAMERA_SINGLE_HISTOGRAM:
+		printf("Capture single histogram frame\r\n");
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	        	if(!capture_single_histogram(i))
+	        	{
+	    			uartResp->packet_type = OW_ERROR;
+	    			printf("Failed capture histo for camera %d\r\n", i);
+
+	        	}
+	        }
+	    }
+
+		break;
+	case OW_CAMERA_SET_TESTPATTERN:
+		printf("Set Gradient Test Pattern\r\n");
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	        	if(!configure_camera_testpattern(i))
+	        	{
+	    			uartResp->packet_type = OW_ERROR;
+	    			printf("Failed set camera test pattern for camera %d\r\n", i);
+
+	        	}
+	        }
+	    }
 		break;
 	case OW_CAMERA_OFF:
 		printf("Setting Camera %d Stream off\r\n",pCam->id+1);
@@ -352,20 +390,16 @@ static void process_camera_commands(UartPacket *uartResp, UartPacket cmd)
 			uartResp->packet_type = OW_ERROR;
 		}
 		break;
-	case OW_CAMERA_FSIN_ON:
-		printf("Enabling FSIN...\r\n");
-		uartResp->command = OW_CAMERA_FSIN_ON;
+	case OW_CAMERA_FSIN:
+		printf("Camera FSIN %s\r\n", cmd.reserved?"Enable":"Disable");
 		uartResp->packet_type = OW_RESP;
-		if(X02C1B_fsin_on()<0){
-			// error
-			uartResp->packet_type = OW_ERROR;
+		if(cmd.reserved == 0){
+			result = X02C1B_fsin_off();
+		} else {
+			result = X02C1B_fsin_on();
 		}
-		break;
-	case OW_CAMERA_FSIN_OFF:
-		printf("Disabling FSIN...\r\n");
-		uartResp->command = OW_CAMERA_FSIN_OFF;
-		uartResp->packet_type = OW_RESP;
-		if(X02C1B_fsin_off()<0){
+
+		if(result != 0){
 			// error
 			uartResp->packet_type = OW_ERROR;
 		}
@@ -391,19 +425,22 @@ static void process_camera_commands(UartPacket *uartResp, UartPacket cmd)
 	        uartResp->data = (uint8_t *)&temp; // Point to the static temp variable
 		}
 		break;
-	case OW_CAMERA_FSIN_EX_ENABLE:
+	case OW_CAMERA_FSIN_EXTERNAL:
 		printf("Enabling FSIN_EXT...\r\n");
-		uartResp->command = OW_CAMERA_FSIN_EX_ENABLE;
+		uartResp->command = OW_CAMERA_FSIN_EXTERNAL;
 		uartResp->packet_type = OW_RESP;
+		if(cmd.reserved == 0){
+			result = X02C1B_FSIN_EXT_disable();
+		} else {
+			result = X02C1B_FSIN_EXT_enable();
+		}
+
+		if(result != 0){
+			// error
+			uartResp->packet_type = OW_ERROR;
+		}
 		X02C1B_FSIN_EXT_enable();
 		break;
-	case OW_CAMERA_FSIN_EX_DISABLE:
-		printf("Disabling FSIN_EXT...\r\n");
-		uartResp->command = OW_CAMERA_FSIN_EX_DISABLE;
-		uartResp->packet_type = OW_RESP;
-		X02C1B_FSIN_EXT_disable();
-		break;
-
 	default:
 		uartResp->data_len = 0;
 		uartResp->command = cmd.command;

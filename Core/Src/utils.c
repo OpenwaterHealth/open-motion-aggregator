@@ -73,3 +73,43 @@ uint16_t util_hw_crc16(uint8_t* buf, uint32_t size)
 	printf("uwCRCValue 0x%08lx\r\n", uwCRCValue);
 	return (uint16_t)uwCRCValue;
 }
+
+void print_hex_buf(const char *label, uint8_t *buf, size_t len) {
+    if (label) printf("%s: ", label);
+    for (size_t i = 0; i < len; i++) {
+        printf("%02X ", buf[i]);
+    }
+    printf("\r\n");
+}
+
+void GPIO_SetHiZ(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin)
+{
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+    // Disable the pin before reconfiguring
+    HAL_GPIO_DeInit(GPIOx, GPIO_Pin);
+
+    GPIO_InitStruct.Pin = GPIO_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;      // Input mode
+    GPIO_InitStruct.Pull = GPIO_NOPULL;          // No pull-up, no pull-down
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Speed doesn't matter for input
+
+    HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
+}
+
+void GPIO_SetOutput(GPIO_TypeDef *GPIOx, uint16_t GPIO_Pin, GPIO_PinState PinState)
+{
+    GPIO_InitTypeDef GPIO_InitStruct = {0};
+
+    // Disable the pin before reconfiguring
+    HAL_GPIO_DeInit(GPIOx, GPIO_Pin);
+
+    GPIO_InitStruct.Pin = GPIO_Pin;
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;      // Input mode
+    GPIO_InitStruct.Pull = GPIO_NOPULL;          // No pull-up, no pull-down
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW; // Speed doesn't matter for input
+
+    HAL_GPIO_Init(GPIOx, &GPIO_InitStruct);
+
+    HAL_GPIO_WritePin(GPIOx, GPIO_Pin, PinState);
+}

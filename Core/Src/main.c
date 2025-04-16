@@ -248,8 +248,6 @@ int main(void)
   HAL_Delay(10);
 
   HAL_GPIO_WritePin(USB_RESET_GPIO_Port, USB_RESET_Pin, GPIO_PIN_SET);
-  HAL_Delay(100);
-  MX_USB_DEVICE_Init();
 
   HAL_GPIO_WritePin(ERROR_LED_GPIO_Port, ERROR_LED_Pin, GPIO_PIN_SET);
 
@@ -267,7 +265,7 @@ int main(void)
 
     if (scanI2cAtStart)
       printf("I2C Scanning bus %d\r\n", i + 1);
-    I2C_scan(&hi2c1, addresses_found, sizeof(addresses_found), scanI2cAtStart);
+    I2C_scan(&hi2c1, addresses_found, sizeof(addresses_found), false);
 
     for (int j = 0; j < sizeof(addresses_found); j++)
     {
@@ -291,6 +289,11 @@ int main(void)
 
   // Select default camera
   TCA9548A_SelectChannel(&hi2c1, 0x70, get_active_cam()->i2c_target);
+
+  HAL_Delay(500);
+  MX_USB_DEVICE_Init();
+  HAL_Delay(500);
+  //GPIO_SetHiZ(GPIOA, GPIO_PIN_2);
 
   comms_host_start();
   // fill_frame_buffers();
@@ -444,7 +447,7 @@ static void MX_I2C1_Init(void)
 
   /* USER CODE END I2C1_Init 1 */
   hi2c1.Instance = I2C1;
-  hi2c1.Init.Timing = 0x307075B1;
+  hi2c1.Init.Timing = 0x00B03FDB;
   hi2c1.Init.OwnAddress1 = 0;
   hi2c1.Init.AddressingMode = I2C_ADDRESSINGMODE_7BIT;
   hi2c1.Init.DualAddressMode = I2C_DUALADDRESS_DISABLE;
@@ -1017,7 +1020,7 @@ static void MX_USART2_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   husart2.Instance = USART2;
-  husart2.Init.BaudRate = 115200;
+  husart2.Init.BaudRate = 5000000;
   husart2.Init.WordLength = USART_WORDLENGTH_8B;
   husart2.Init.StopBits = USART_STOPBITS_1;
   husart2.Init.Parity = USART_PARITY_NONE;
@@ -1194,7 +1197,7 @@ static void MX_DMA_Init(void)
   hdma_memtomem_dma2_stream1.Init.PeriphDataAlignment = DMA_PDATAALIGN_WORD;
   hdma_memtomem_dma2_stream1.Init.MemDataAlignment = DMA_MDATAALIGN_WORD;
   hdma_memtomem_dma2_stream1.Init.Mode = DMA_NORMAL;
-  hdma_memtomem_dma2_stream1.Init.Priority = DMA_PRIORITY_LOW;
+  hdma_memtomem_dma2_stream1.Init.Priority = DMA_PRIORITY_MEDIUM;
   hdma_memtomem_dma2_stream1.Init.FIFOMode = DMA_FIFOMODE_ENABLE;
   hdma_memtomem_dma2_stream1.Init.FIFOThreshold = DMA_FIFO_THRESHOLD_FULL;
   hdma_memtomem_dma2_stream1.Init.MemBurst = DMA_MBURST_INC4;
@@ -1441,6 +1444,8 @@ void HAL_SPI_ErrorCallback(SPI_HandleTypeDef *hspi)
 // Interrupt handler for SPI reception
 void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 {
+  Camera_SPI_RxCpltCallback_Handler(hspi);
+
   uint8_t xBitToSet = 0x00;
   if (hspi->Instance == SPI2)
   {
@@ -1463,6 +1468,8 @@ void HAL_SPI_RxCpltCallback(SPI_HandleTypeDef *hspi)
 
 void HAL_USART_RxCpltCallback(USART_HandleTypeDef *husart)
 {
+  Camera_USART_RxCpltCallback_Handler(husart);
+
   uint8_t xBitToSet = 0x00;
   if (husart->Instance == USART1)
   { // Check if the interrupt is for USART2
