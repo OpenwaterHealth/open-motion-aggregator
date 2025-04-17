@@ -250,8 +250,8 @@ __ALIGN_BEGIN static uint8_t USBD_CDC_CfgDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIGN_E
   USB_DESC_TYPE_ENDPOINT,                     /* bDescriptorType: Endpoint */
   CDC_OUT_EP,                                 /* bEndpointAddress */
   0x02,                                       /* bmAttributes: Bulk */
-  LOBYTE(CDC_DATA_FS_MAX_PACKET_SIZE),        /* wMaxPacketSize */
-  HIBYTE(CDC_DATA_FS_MAX_PACKET_SIZE),
+  LOBYTE(CDC_DATA_HS_MAX_PACKET_SIZE),        /* wMaxPacketSize */
+  HIBYTE(CDC_DATA_HS_MAX_PACKET_SIZE),
   0x00,                                       /* bInterval */
 
   /* Endpoint IN Descriptor */
@@ -259,8 +259,8 @@ __ALIGN_BEGIN static uint8_t USBD_CDC_CfgDesc[USB_CDC_CONFIG_DESC_SIZ] __ALIGN_E
   USB_DESC_TYPE_ENDPOINT,                     /* bDescriptorType: Endpoint */
   CDC_IN_EP,                                  /* bEndpointAddress */
   0x02,                                       /* bmAttributes: Bulk */
-  LOBYTE(CDC_DATA_FS_MAX_PACKET_SIZE),        /* wMaxPacketSize */
-  HIBYTE(CDC_DATA_FS_MAX_PACKET_SIZE),
+  LOBYTE(CDC_DATA_HS_MAX_PACKET_SIZE),        /* wMaxPacketSize */
+  HIBYTE(CDC_DATA_HS_MAX_PACKET_SIZE),
   0x00                                        /* bInterval */
 };
 #endif /* USE_USBD_COMPOSITE  */
