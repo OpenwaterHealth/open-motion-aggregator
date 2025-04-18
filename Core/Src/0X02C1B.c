@@ -102,7 +102,7 @@ int X02C1B_set_test_pattern(CameraDevice *cam)
 
 	HAL_Delay(100);
 
-    ret = X02C1B_write_array(cam->pI2c, X02C1B_test_gradient_rgb_bar, ARRAY_SIZE(X02C1B_test_gradient_rgb_bar));
+    ret = X02C1B_write_array(cam->pI2c, X02C1B_test_gradient_bar, ARRAY_SIZE(X02C1B_test_gradient_bar));
     if (ret < 0) {
         printf("Camera %d Sensor test pattern failed\r\n", cam->id+1);
         return ret;

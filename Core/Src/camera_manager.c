@@ -568,10 +568,33 @@ _Bool configure_camera_testpattern(uint8_t cam_id)
 	return true;
 }
 
-volatile uint8_t my_frame[HISTOGRAM_DATA_SIZE] = {0};
+_Bool get_single_histogram(uint8_t cam_id, uint8_t* data, uint16_t* data_len)
+{
+	if(cam_id < 0 || cam_id >= CAMERA_COUNT)
+	{
+		printf("Capture HISTO for Camera %d Failed\r\n", cam_id);
+		return false;
+	}
+
+	printf("Get HISTO for Camera %d Registers Started\r\n", cam_id);
+	_active_cam_idx = cam_id;
+	CameraDevice *cam = &cam_array[_active_cam_idx];
+
+    if (!cam->pRecieveHistoBuffer) {
+        printf("No histogram buffer for camera %d\r\n", cam_id);
+        return false;
+    }
+
+    // Copy data into the provided buffer
+    memcpy(data, cam->pRecieveHistoBuffer, HISTOGRAM_DATA_SIZE);
+    *data_len = HISTOGRAM_DATA_SIZE;
+
+    return true;
+}
 
 _Bool capture_single_histogram(uint8_t cam_id)
 {
+	_Bool ret = true;
 	HAL_StatusTypeDef status = HAL_OK;
 	if(cam_id < 0 || cam_id >= CAMERA_COUNT)
 	{
@@ -596,9 +619,9 @@ _Bool capture_single_histogram(uint8_t cam_id)
 
 	if(cam->useUsart)
 	{
-		status = HAL_USART_Receive_DMA(cam->pUart, (uint8_t*)my_frame, HISTOGRAM_DATA_SIZE);
+		status = HAL_USART_Receive_DMA(cam->pUart, (uint8_t*)cam->pRecieveHistoBuffer, HISTOGRAM_DATA_SIZE);
 	} else {
-		status = HAL_SPI_Receive_DMA(cam->pSpi, (uint8_t*)my_frame, HISTOGRAM_DATA_SIZE);
+		status = HAL_SPI_Receive_DMA(cam->pSpi, (uint8_t*)cam->pRecieveHistoBuffer, HISTOGRAM_DATA_SIZE);
 	}
 
 	if(status != HAL_OK)
@@ -608,6 +631,7 @@ _Bool capture_single_histogram(uint8_t cam_id)
 	}
 
 	X02C1B_stream_on(cam);
+	HAL_Delay(10);
 
 	HAL_GPIO_WritePin(FSIN_GPIO_Port, FSIN_Pin, GPIO_PIN_SET);
 	HAL_Delay(25);
@@ -621,14 +645,28 @@ _Bool capture_single_histogram(uint8_t cam_id)
 	while(!cam->streaming_enabled){
 	    if (HAL_GetTick() > timeout) {
 	        printf("USART receive timeout!\r\n");
+	        if(cam->useUsart) {
+	            HAL_DMA_Abort(cam->pUart->hdmarx); // safely abort DMA
+	            __HAL_USART_DISABLE(cam->pUart);   // disable USART
+	            cam->pUart->RxXferCount = 0;       // force clear counters
+	            __HAL_USART_ENABLE(cam->pUart);    // re-enable USART
+	        } else {
+	            HAL_DMA_Abort(cam->pSpi->hdmarx);  // safely abort DMA
+	            __HAL_SPI_DISABLE(cam->pSpi);      // disable SPI
+	            cam->pSpi->RxXferCount = 0;
+	            __HAL_SPI_ENABLE(cam->pSpi);       // re-enable SPI
+	        }
+	    	ret = false;
 	        break;
 	    }
+	    HAL_Delay(1);
 	}
 
+	HAL_Delay(10);
 	X02C1B_stream_off(cam);
 	printf("Received Frame\r\n");
 
-	return true;
+	return ret;
 }
 
 void switch_frame_buffer(void) {
@@ -767,7 +805,6 @@ void Camera_USART_RxCpltCallback_Handler(USART_HandleTypeDef *husart)
 {
 	for(int i = 0; i < CAMERA_COUNT; i ++){
 		if(cam_array[i].pUart == husart){
-			printf("RX CPLT\r\n");
 			cam_array[i].streaming_enabled = true;
 			break;
 		}
@@ -778,7 +815,6 @@ void Camera_SPI_RxCpltCallback_Handler(SPI_HandleTypeDef *hspi)
 {
 	for(int i = 0; i < CAMERA_COUNT; i ++){
 		if(cam_array[i].pSpi == hspi){
-			printf("RX CPLT\r\n");
 			cam_array[i].streaming_enabled = true;
 			break;
 		}

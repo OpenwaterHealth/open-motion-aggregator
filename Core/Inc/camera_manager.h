@@ -65,6 +65,7 @@ _Bool program_fpga(uint8_t cam_id);
 _Bool configure_camera_sensor(uint8_t cam_id);
 _Bool configure_camera_testpattern(uint8_t cam_id);
 _Bool capture_single_histogram(uint8_t cam_id);
+_Bool get_single_histogram(uint8_t cam_id, uint8_t* data, uint16_t* data_len);
 
 void Camera_USART_RxCpltCallback_Handler(USART_HandleTypeDef *husart);
 void Camera_SPI_RxCpltCallback_Handler(SPI_HandleTypeDef *hspi);

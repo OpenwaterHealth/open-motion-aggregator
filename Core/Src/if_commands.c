@@ -352,7 +352,19 @@ static void process_camera_commands(UartPacket *uartResp, UartPacket cmd)
 	        	}
 	        }
 	    }
+		break;
+	case OW_CAMERA_GET_HISTOGRAM:
+		printf("Capture single histogram frame\r\n");
+	    for (uint8_t i = 0; i < 8; i++) {
+	        if ((cmd.addr >> i) & 0x01) {
+	        	if(!get_single_histogram(i, uartResp->data, &uartResp->data_len))
+	        	{
+	    			uartResp->packet_type = OW_ERROR;
+	    			printf("Failed capture histo for camera %d\r\n", i);
 
+	        	}
+	        }
+	    }
 		break;
 	case OW_CAMERA_SET_TESTPATTERN:
 		printf("Set Gradient Test Pattern\r\n");
